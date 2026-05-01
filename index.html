@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MuscleQuiz — Anatomie</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,500;1,300&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo">MuscleQuiz <span>— anatomie</span></div>
+  <nav>
+    <button class="nav-btn active" data-panel="add" onclick="switchPanel('add')">+ Ajouter</button>
+    <button class="nav-btn" data-panel="list" onclick="switchPanel('list')">Muscles <span class="count" id="nav-count">0</span></button>
+    <button class="nav-btn" data-panel="quiz" onclick="switchPanel('quiz')">Quiz</button>
+    <button class="nav-btn" data-panel="stats" onclick="switchPanel('stats')">Stats</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ADD PANEL -->
+  <div class="panel active" id="panel-add">
+    <div class="card">
+      <div class="card-title"><span class="icon">＋</span> Nouveau muscle</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2">
+          <label>Nom officiel *</label>
+          <input type="text" id="inp-name" placeholder="ex: Biceps brachial" />
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Région du corps *</label>
+          <select id="inp-region">
+            <option value="">Choisir...</option>
+            <option>Tête et cou</option>
+            <option>Épaule</option>
+            <option>Bras</option>
+            <option>Avant-bras et main</option>
+            <option>Thorax</option>
+            <option>Abdomen</option>
+            <option>Dos</option>
+            <option>Bassin et hanche</option>
+            <option>Cuisse</option>
+            <option>Jambe</option>
+            <option>Pied</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Synonymes / autres noms (séparés par des virgules)</label>
+          <input type="text" id="inp-synonyms" placeholder="ex: Biceps, Muscle bicipital" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Notes (origine, insertion, fonction...)</label>
+          <textarea id="inp-notes" placeholder="ex: Fléchisseur du coude, supinateur de l'avant-bras..."></textarea>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; margin-top:4px;">
+        <span id="add-error" style="color:var(--danger); font-size:12px;"></span>
+        <button class="btn btn-primary" onclick="addMuscle()">Ajouter le muscle →</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">⇅</span> Import / Export</div>
+      <p style="font-size:12px; color:var(--text2); margin-bottom:12px;">Sauvegarde ta liste en JSON ou importe un fichier existant. Tu peux aussi importer un CSV (colonnes : nom, région, synonymes, notes).</p>
+      <div class="io-row">
+        <button class="btn" onclick="exportJSON()">↓ Exporter JSON</button>
+        <button class="btn" onclick="exportCSV()">↓ Exporter CSV</button>
+        <div class="file-input-wrapper">
+          <button class="btn">↑ Importer JSON/CSV</button>
+          <input type="file" accept=".json,.csv" onchange="importFile(event)" />
+        </div>
+        <button class="btn btn-danger" onclick="confirmClear()">✕ Tout effacer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIST PANEL -->
+  <div class="panel" id="panel-list">
+    <div class="list-controls">
+      <input type="text" id="search-input" placeholder="Rechercher un muscle..." oninput="renderList()" />
+      <select id="filter-region" onchange="renderList()">
+        <option value="">Toutes les régions</option>
+      </select>
+      <select id="sort-by" onchange="renderList()">
+        <option value="name">Trier par nom</option>
+        <option value="region">Trier par région</option>
+        <option value="rate">Trier par taux de réussite</option>
+        <option value="date">Trier par date d'ajout</option>
+      </select>
+      <span id="list-count" style="font-size:12px; color:var(--text3); white-space:nowrap; margin-left:auto;"></span>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div id="list-container"></div>
+    </div>
+  </div>
+
+  <!-- QUIZ PANEL -->
+  <div class="panel" id="panel-quiz">
+    <div id="quiz-setup">
+      <div class="card">
+        <div class="card-title"><span class="icon">⚙</span> Paramètres du quiz</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Mode</label>
+            <select id="quiz-mode">
+              <option value="free">Saisie libre — tu écris le nom</option>
+              <option value="mcq">QCM — 4 choix proposés</option>
+              <option value="region">Région → Muscle — devine depuis la région</option>
+              <option value="muscle">Muscle → Région — trouve la région du muscle</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Filtrer par région</label>
+            <select id="quiz-region-filter">
+              <option value="">Toutes les régions</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre de questions</label>
+            <select id="quiz-count">
+              <option value="10">10 questions</option>
+              <option value="20">20 questions</option>
+              <option value="30">30 questions</option>
+              <option value="all">Tous les muscles</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ordre</label>
+            <select id="quiz-order">
+              <option value="random">Aléatoire</option>
+              <option value="worst">Les moins connus d'abord</option>
+              <option value="alphabetical">Alphabétique</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn btn-primary btn-full" onclick="startQuiz()" style="font-size:15px; padding:12px;">Lancer le quiz →</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="quiz-session" style="display:none;">
+      <div class="quiz-score-row" style="margin-bottom:1rem;">
+        <div class="score-box good"><div class="num" id="q-correct">0</div><div class="lbl">Correct</div></div>
+        <div class="score-box bad"><div class="num" id="q-wrong">0</div><div class="lbl">Faux</div></div>
+        <div class="score-box"><div class="num" id="q-remaining">—</div><div class="lbl">Restant</div></div>
+      </div>
+      <div class="quiz-progress"><div class="quiz-progress-fill" id="q-progress"></div></div>
+      <div class="quiz-card" id="q-card"></div>
+      <div style="display:flex; justify-content:center; margin-top:1rem;">
+        <button class="btn" onclick="endQuiz()">✕ Arrêter</button>
+      </div>
+    </div>
+
+    <div id="quiz-end" style="display:none;" class="quiz-end-card">
+      <div class="quiz-end-title" id="end-title">Quiz terminé !</div>
+      <div class="quiz-end-sub" id="end-sub"></div>
+      <div class="quiz-score-row" style="margin-bottom:1.5rem;" id="end-scores"></div>
+      <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startQuiz()">Rejouer →</button>
+        <button class="btn" onclick="showQuizSetup()">Changer les paramètres</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS PANEL -->
+  <div class="panel" id="panel-stats">
+    <div class="stats-grid" id="stats-summary"></div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table class="muscle-table" id="stats-table">
+        <thead><tr>
+          <th>Muscle</th>
+          <th>Région</th>
+          <th>Vu</th>
+          <th>Réussite</th>
+        </tr></thead>
+        <tbody id="stats-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal" id="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const STORE_KEY = 'musclequiz_muscles';
+const STATS_KEY = 'musclequiz_stats';
+
+function loadMuscles() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; }
+}
+function saveMuscles(arr) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(arr));
+  updateNavCount();
+}
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch { return {}; }
+}
+function saveStats(obj) { localStorage.setItem(STATS_KEY, JSON.stringify(obj)); }
+
+let muscles = loadMuscles();
+let stats = loadStats();
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelector('[data-panel="' + name + '"]').classList.add('active');
+  if (name === 'list') renderList();
+  if (name === 'stats') renderStats();
+  if (name === 'quiz') populateQuizFilters();
+}
+
+function updateNavCount() {
+  document.getElementById('nav-count').textContent = muscles.length;
+}
+
+// ─── REGION COLORS ───────────────────────────────────────────────────────────
+const REGION_COLORS = {
+  'Tête et cou':       '#d08a6e',
+  'Épaule':            '#7a9dd0',
+  'Bras':              '#6ea8d0',
+  'Avant-bras et main':'#5db8c7',
+  'Thorax':            '#c97a9d',
+  'Abdomen':           '#c99a5a',
+  'Dos':               '#7ab07a',
+  'Bassin et hanche':  '#a07ac9',
+  'Cuisse':            '#8ab07a',
+  'Jambe':             '#7aab8a',
+  'Pied':              '#9aaa6a',
+};
+function regionColor(r) { return REGION_COLORS[r] || '#aaa'; }
+
+// ─── ADD MUSCLE ──────────────────────────────────────────────────────────────
+function addMuscle() {
+  const name = document.getElementById('inp-name').value.trim();
+  const region = document.getElementById('inp-region').value;
+  const synonyms = document.getElementById('inp-synonyms').value.trim();
+  const notes = document.getElementById('inp-notes').value.trim();
+  const errEl = document.getElementById('add-error');
+
+  if (!name) { errEl.textContent = 'Le nom est requis.'; return; }
+  if (!region) { errEl.textContent = 'La région est requise.'; return; }
+  const dup = muscles.find(m => m.name.toLowerCase() === name.toLowerCase());
+  if (dup) { errEl.textContent = 'Ce muscle existe déjà.'; return; }
+
+  errEl.textContent = '';
+  const muscle = {
+    id: Date.now() + Math.random(),
+    name,
+    region,
+    synonyms: synonyms ? synonyms.split(',').map(s => s.trim()).filter(Boolean) : [],
+    notes,
+    createdAt: Date.now(),
+  };
+  muscles.push(muscle);
+  saveMuscles(muscles);
+
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-region').value = '';
+  document.getElementById('inp-synonyms').value = '';
+  document.getElementById('inp-notes').value = '';
+  document.getElementById('inp-name').focus();
+
+  toast('✓ ' + name + ' ajouté !');
+  updateNavCount();
+  populateRegionFilters();
+}
+
+// ─── LIST ─────────────────────────────────────────────────────────────────────
+function populateRegionFilters() {
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+  ['filter-region', 'quiz-region-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">' + (id === 'filter-region' ? 'Toutes les régions' : 'Toutes les régions') + '</option>';
+    regions.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r; opt.textContent = r;
+      el.appendChild(opt);
+    });
+    if (cur) el.value = cur;
+  });
+}
+
+function renderList() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const filterRegion = document.getElementById('filter-region').value;
+  const sortBy = document.getElementById('sort-by').value;
+
+  let list = muscles.filter(m => {
+    const matchSearch = !search ||
+      m.name.toLowerCase().includes(search) ||
+      (m.synonyms && m.synonyms.some(s => s.toLowerCase().includes(search))) ||
+      (m.notes && m.notes.toLowerCase().includes(search));
+    const matchRegion = !filterRegion || m.region === filterRegion;
+    return matchSearch && matchRegion;
+  });
+
+  if (sortBy === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
+  else if (sortBy === 'region') list.sort((a, b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
+  else if (sortBy === 'rate') list.sort((a, b) => getRate(a.id) - getRate(b.id));
+  else if (sortBy === 'date') list.sort((a, b) => b.createdAt - a.createdAt);
+
+  document.getElementById('list-count').textContent = list.length + ' muscle' + (list.length !== 1 ? 's' : '');
+
+  const container = document.getElementById('list-container');
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🫀</div><p>' +
+      (muscles.length === 0 ? 'Aucun muscle ajouté. Commence par en ajouter !' : 'Aucun résultat.') +
+      '</p></div>';
+    return;
+  }
+
+  // Group by region if sorted by region
+  if (sortBy === 'region') {
+    const groups = {};
+    list.forEach(m => { if (!groups[m.region]) groups[m.region] = []; groups[m.region].push(m); });
+    let html = '';
+    Object.keys(groups).sort().forEach(region => {
+      html += `<div class="region-section-header">
+        <span class="region-color-dot" style="background:${regionColor(region)}"></span>
+        ${region} <span style="color:var(--text3);margin-left:4px;">(${groups[region].length})</span>
+      </div>`;
+      html += '<table class="muscle-table"><tbody>';
+      groups[region].forEach(m => { html += muscleRow(m); });
+      html += '</tbody></table>';
+    });
+    container.innerHTML = html;
+  } else {
+    container.innerHTML = '<table class="muscle-table"><thead><tr>' +
+      '<th>Muscle</th><th>Région</th><th>Notes</th><th>Réussite</th><th></th>' +
+      '</tr></thead><tbody>' + list.map(muscleRow).join('') + '</tbody></table>';
+  }
+}
+
+function muscleRow(m) {
+  const s = stats[m.id] || { seen: 0, correct: 0 };
+  const rate = s.seen > 0 ? Math.round(s.correct / s.seen * 100) : null;
+  const barW = rate !== null ? rate : 0;
+  return `<tr>
+    <td>
+      <div class="muscle-name-cell">${esc(m.name)}</div>
+      ${m.synonyms && m.synonyms.length ? '<div class="muscle-synonyms">' + m.synonyms.map(esc).join(', ') + '</div>' : ''}
+    </td>
+    <td><span class="badge badge-region" style="background:${regionColor(m.region)}22;color:${regionColor(m.region)}">
+      ${esc(m.region)}
+    </span></td>
+    <td><div class="muscle-notes">${esc(m.notes || '—')}</div></td>
+    <td>
+      ${s.seen > 0 ? `<div class="stat-bar-wrap">
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${barW}%"></div></div>
+        <span class="stat-pct">${barW}%</span>
+      </div>` : '<span style="color:var(--text3);font-size:12px;">—</span>'}
+    </td>
+    <td>
+      <button class="btn btn-sm" onclick="editMuscle('${m.id}')">✎</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteMuscle('${m.id}')" style="margin-left:4px;">✕</button>
+    </td>
+  </tr>`;
+}
+
+function getRate(id) {
+  const s = stats[id];
+  if (!s || s.seen === 0) return 101;
+  return s.correct / s.seen;
+}
+
+// ─── DELETE / EDIT ───────────────────────────────────────────────────────────
+function deleteMuscle(id) {
+  const m = muscles.find(x => x.id == id);
+  showModal('Supprimer ' + m.name + ' ?', 'Cette action est irréversible.',
+    [{ label: 'Supprimer', cls: 'btn btn-danger', action: () => {
+      muscles = muscles.filter(x => x.id != id);
+      saveMuscles(muscles);
+      renderList();
+      hideModal();
+      toast('Supprimé.');
+    }},
+    { label: 'Annuler', cls: 'btn', action: hideModal }]);
+}
+
+function editMuscle(id) {
+  const m = muscles.find(x => x.id == id);
+  const modalBody = `
+    <div class="form-row">
+      <div class="form-group"><label>Nom</label>
+        <input type="text" id="edit-name" value="${esc(m.name)}" /></div>
+      <div class="form-group"><label>Région</label>
+        <select id="edit-region">${['Tête et cou','Épaule','Bras','Avant-bras et main','Thorax','Abdomen','Dos','Bassin et hanche','Cuisse','Jambe','Pied']
+          .map(r => `<option${r === m.region ? ' selected' : ''}>${r}</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px;"><label>Synonymes</label>
+      <input type="text" id="edit-synonyms" value="${esc((m.synonyms||[]).join(', '))}" /></div>
+    <div class="form-group"><label>Notes</label>
+      <textarea id="edit-notes">${esc(m.notes||'')}</textarea></div>
+  `;
+  showModal('Modifier ' + m.name, modalBody, [
+    { label: 'Sauvegarder', cls: 'btn btn-primary', action: () => {
+      m.name = document.getElementById('edit-name').value.trim();
+      m.region = document.getElementById('edit-region').value;
+      m.synonyms = document.getElementById('edit-synonyms').value.split(',').map(s=>s.trim()).filter(Boolean);
+      m.notes = document.getElementById('edit-notes').value.trim();
+      saveMuscles(muscles);
+      renderList();
+      hideModal();
+      toast('Modifié !');
+    }},
+    { label: 'Annuler', cls: 'btn', action: hideModal },
+  ]);
+}
+
+function confirmClear() {
+  showModal('Tout effacer ?', 'Tous les muscles et statistiques seront supprimés.', [
+    { label: 'Tout effacer', cls: 'btn btn-danger', action: () => {
+      muscles = []; stats = {};
+      saveMuscles(muscles); saveStats(stats);
+      hideModal(); renderList(); toast('Liste effacée.');
+    }},
+    { label: 'Annuler', cls: 'btn', action: hideModal },
+  ]);
+}
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function showModal(title, body, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = typeof body === 'string' ? body : '';
+  const actEl = document.getElementById('modal-actions');
+  actEl.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = a.cls;
+    btn.textContent = a.label;
+    btn.onclick = a.action;
+    actEl.appendChild(btn);
+  });
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function hideModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) hideModal();
+});
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────────────────────
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(muscles, null, 2)], { type: 'application/json' });
+  dl(blob, 'muscles.json');
+}
+function exportCSV() {
+  const rows = [['Nom','Région','Synonymes','Notes']];
+  muscles.forEach(m => rows.push([m.name, m.region, (m.synonyms||[]).join(' | '), m.notes||'']));
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+  dl(new Blob([csv], { type: 'text/csv' }), 'muscles.csv');
+}
+function dl(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+function importFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      if (file.name.endsWith('.csv')) importCSV(ev.target.result);
+      else importJSON(ev.target.result);
+    } catch(err) { toast('Erreur lors de l\'import : ' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+function importJSON(text) {
+  const data = JSON.parse(text);
+  if (!Array.isArray(data)) throw new Error('Format invalide');
+  let added = 0;
+  data.forEach(m => {
+    if (!m.name || !m.region) return;
+    if (muscles.find(x => x.name.toLowerCase() === m.name.toLowerCase())) return;
+    muscles.push({ id: Date.now() + Math.random(), name: m.name, region: m.region,
+      synonyms: m.synonyms || [], notes: m.notes || '', createdAt: Date.now() });
+    added++;
+  });
+  saveMuscles(muscles); populateRegionFilters();
+  toast(added + ' muscle(s) importé(s) !');
+}
+function importCSV(text) {
+  const lines = text.trim().split('\n').slice(1);
+  let added = 0;
+  lines.forEach(line => {
+    const cols = line.split(',').map(c => c.replace(/^"|"$/g,'').replace(/""/g,'"'));
+    const [name, region, synonyms, notes] = cols;
+    if (!name || !region) return;
+    if (muscles.find(x => x.name.toLowerCase() === name.toLowerCase())) return;
+    muscles.push({ id: Date.now() + Math.random(), name, region,
+      synonyms: synonyms ? synonyms.split('|').map(s=>s.trim()).filter(Boolean) : [],
+      notes: notes || '', createdAt: Date.now() });
+    added++;
+  });
+  saveMuscles(muscles); populateRegionFilters();
+  toast(added + ' muscle(s) importé(s) depuis CSV !');
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────────────────────────
+let quizQueue = [], quizIdx = 0, quizCorrect = 0, quizWrong = 0, quizAnswered = false;
+
+function populateQuizFilters() { populateRegionFilters(); }
+
+function startQuiz() {
+  const mode = document.getElementById('quiz-mode').value;
+  const regionFilter = document.getElementById('quiz-region-filter').value;
+  const countSel = document.getElementById('quiz-count').value;
+  const order = document.getElementById('quiz-order').value;
+
+  let pool = muscles.filter(m => !regionFilter || m.region === regionFilter);
+  if (pool.length === 0) { toast('Aucun muscle dans cette sélection !'); return; }
+
+  if (order === 'random') shuffle(pool);
+  else if (order === 'worst') pool.sort((a, b) => getRate(a.id) - getRate(b.id));
+  else pool.sort((a, b) => a.name.localeCompare(b.name));
+
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  quizQueue = pool.slice(0, count);
+  quizIdx = 0; quizCorrect = 0; quizWrong = 0; quizAnswered = false;
+
+  document.getElementById('quiz-setup').style.display = 'none';
+  document.getElementById('quiz-end').style.display = 'none';
+  document.getElementById('quiz-session').style.display = 'block';
+
+  renderQuizQuestion(mode);
+}
+
+function renderQuizQuestion(mode) {
+  mode = mode || document.getElementById('quiz-mode').value;
+  if (quizIdx >= quizQueue.length) { showQuizEnd(); return; }
+
+  quizAnswered = false;
+  const m = quizQueue[quizIdx];
+  const total = quizQueue.length;
+  const progress = quizIdx / total * 100;
+
+  document.getElementById('q-correct').textContent = quizCorrect;
+  document.getElementById('q-wrong').textContent = quizWrong;
+  document.getElementById('q-remaining').textContent = total - quizIdx;
+  document.getElementById('q-progress').style.width = progress + '%';
+
+  const card = document.getElementById('q-card');
+
+  if (mode === 'free') {
+    card.innerHTML = `
+      <div class="quiz-prompt-label">Quelle est la région de ce muscle ?</div>
+      <div class="quiz-prompt">${esc(m.name)}</div>
+      ${m.synonyms && m.synonyms.length ? '<div class="quiz-hint">alias : ' + m.synonyms.map(esc).join(', ') + '</div>' : ''}
+      <div class="quiz-input-row">
+        <input type="text" id="q-input" placeholder="Nom de la région..." autocomplete="off" autocapitalize="sentences" />
+        <button class="btn btn-primary" onclick="checkFree()">OK</button>
+      </div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <button class="btn" id="q-next-btn" style="display:none;" onclick="nextQuestion()">Question suivante →</button>
+    `;
+    const inp = document.getElementById('q-input');
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkFree(); });
+
+  } else if (mode === 'mcq') {
+    // 4 options including the correct one
+    const options = getMCQOptions(m, 'region', 4);
+    card.innerHTML = `
+      <div class="quiz-prompt-label">Région de ce muscle ?</div>
+      <div class="quiz-prompt">${esc(m.name)}</div>
+      ${m.synonyms && m.synonyms.length ? '<div class="quiz-hint">alias : ' + m.synonyms.map(esc).join(', ') + '</div>' : ''}
+      <div class="quiz-mcq-options" id="q-options">
+        ${options.map((opt, i) => `<button class="mcq-btn" id="mcq-${i}" onclick="checkMCQ(${i}, '${esc(opt)}', '${esc(m.region)}')">${esc(opt)}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <button class="btn" id="q-next-btn" style="display:none;" onclick="nextQuestion()">Question suivante →</button>
+    `;
+
+  } else if (mode === 'region') {
+    card.innerHTML = `
+      <div class="quiz-prompt-label">Donnez un muscle de cette région</div>
+      <div class="quiz-prompt"><em>${esc(m.region)}</em></div>
+      <div class="quiz-hint">Indice : ${m.name.length} lettre(s)</div>
+      <div class="quiz-input-row">
+        <input type="text" id="q-input" placeholder="Nom du muscle..." autocomplete="off" autocapitalize="sentences" />
+        <button class="btn btn-primary" onclick="checkRegionMode()">OK</button>
+      </div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <div class="quiz-hint" id="q-reveal" style="display:none;"></div>
+      <button class="btn" id="q-next-btn" style="display:none;" onclick="nextQuestion()">Question suivante →</button>
+    `;
+    const inp = document.getElementById('q-input');
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') checkRegionMode(); });
+
+  } else if (mode === 'muscle') {
+    const options = getMCQOptions(m, 'muscle', 4);
+    card.innerHTML = `
+      <div class="quiz-prompt-label">Quel muscle appartient à...</div>
+      <div class="quiz-prompt"><em>${esc(m.region)}</em></div>
+      <div class="quiz-mcq-options" id="q-options">
+        ${options.map((opt, i) => `<button class="mcq-btn" id="mcq-${i}" onclick="checkMuscleMCQ(${i}, '${esc(opt)}', '${esc(m.name)}')">${esc(opt)}</button>`).join('')}
+      </div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+      <button class="btn" id="q-next-btn" style="display:none;" onclick="nextQuestion()">Question suivante →</button>
+    `;
+  }
+}
+
+function checkFree() {
+  if (quizAnswered) return;
+  const m = quizQueue[quizIdx];
+  const input = document.getElementById('q-input');
+  const answer = input.value.trim().toLowerCase();
+  const correct = m.region.toLowerCase();
+  const ok = answer === correct || levenshtein(answer, correct) <= 2;
+  resolveQuestion(ok, m.region);
+}
+
+function checkMCQ(idx, chosen, correct) {
+  if (quizAnswered) return;
+  const ok = chosen === correct;
+  document.querySelectorAll('.mcq-btn').forEach(b => b.disabled = true);
+  const btn = document.getElementById('mcq-' + idx);
+  btn.classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) {
+    // highlight correct
+    document.querySelectorAll('.mcq-btn').forEach(b => {
+      if (b.textContent.trim() === correct) b.classList.add('correct');
+    });
+  }
+  resolveQuestion(ok, correct);
+}
+
+function checkRegionMode() {
+  if (quizAnswered) return;
+  const m = quizQueue[quizIdx];
+  const input = document.getElementById('q-input');
+  const answer = input.value.trim().toLowerCase();
+  const correct = m.name.toLowerCase();
+  const allValid = muscles.filter(x => x.region === m.region).map(x => x.name.toLowerCase());
+  const ok = allValid.some(v => v === answer || levenshtein(answer, v) <= 2);
+  const revealEl = document.getElementById('q-reveal');
+  if (!ok && revealEl) { revealEl.style.display = 'block'; revealEl.textContent = 'Réponse attendue : ' + m.name; }
+  resolveQuestion(ok, m.name);
+}
+
+function checkMuscleMCQ(idx, chosen, correct) {
+  if (quizAnswered) return;
+  const ok = chosen === correct;
+  document.querySelectorAll('.mcq-btn').forEach(b => b.disabled = true);
+  document.getElementById('mcq-' + idx).classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) {
+    document.querySelectorAll('.mcq-btn').forEach(b => {
+      if (b.textContent.trim() === correct) b.classList.add('correct');
+    });
+  }
+  resolveQuestion(ok, correct);
+}
+
+function resolveQuestion(ok, correctLabel) {
+  quizAnswered = true;
+  const m = quizQueue[quizIdx];
+  if (!stats[m.id]) stats[m.id] = { seen: 0, correct: 0 };
+  stats[m.id].seen++;
+  if (ok) { stats[m.id].correct++; quizCorrect++; } else { quizWrong++; }
+  saveStats(stats);
+
+  const fb = document.getElementById('q-feedback');
+  if (fb) {
+    fb.textContent = ok ? '✓ Correct !' : '✗ ' + correctLabel;
+    fb.className = 'quiz-feedback ' + (ok ? 'correct' : 'wrong');
+    fb.classList.add('pop');
+  }
+  document.getElementById('q-correct').textContent = quizCorrect;
+  document.getElementById('q-wrong').textContent = quizWrong;
+  document.getElementById('q-remaining').textContent = quizQueue.length - quizIdx - 1;
+
+  const nextBtn = document.getElementById('q-next-btn');
+  if (nextBtn) nextBtn.style.display = 'inline-flex';
+
+  // Auto-advance after 1.5s for correct
+  if (ok) setTimeout(() => { if (quizAnswered) nextQuestion(); }, 1500);
+}
+
+function nextQuestion() {
+  quizIdx++;
+  renderQuizQuestion();
+}
+
+function showQuizEnd() {
+  document.getElementById('quiz-session').style.display = 'none';
+  document.getElementById('quiz-end').style.display = 'block';
+  const pct = quizQueue.length > 0 ? Math.round(quizCorrect / quizQueue.length * 100) : 0;
+  let emoji = pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  document.getElementById('end-title').textContent = emoji + ' Quiz terminé !';
+  document.getElementById('end-sub').textContent = pct + '% de réussite sur ' + quizQueue.length + ' questions';
+  document.getElementById('end-scores').innerHTML = `
+    <div class="score-box good"><div class="num">${quizCorrect}</div><div class="lbl">Corrects</div></div>
+    <div class="score-box bad"><div class="num">${quizWrong}</div><div class="lbl">Faux</div></div>
+    <div class="score-box"><div class="num">${pct}%</div><div class="lbl">Réussite</div></div>
+  `;
+}
+
+function endQuiz() {
+  showModal('Arrêter le quiz ?', 'Ta progression sera perdue.', [
+    { label: 'Arrêter', cls: 'btn btn-danger', action: () => { hideModal(); showQuizSetup(); }},
+    { label: 'Continuer', cls: 'btn btn-primary', action: hideModal },
+  ]);
+}
+
+function showQuizSetup() {
+  document.getElementById('quiz-session').style.display = 'none';
+  document.getElementById('quiz-end').style.display = 'none';
+  document.getElementById('quiz-setup').style.display = 'block';
+}
+
+// ─── STATS PANEL ─────────────────────────────────────────────────────────────
+function renderStats() {
+  const total = muscles.length;
+  const seen = muscles.filter(m => stats[m.id] && stats[m.id].seen > 0).length;
+  const totalAnswers = Object.values(stats).reduce((a, s) => a + s.seen, 0);
+  const totalCorrect = Object.values(stats).reduce((a, s) => a + s.correct, 0);
+  const globalRate = totalAnswers > 0 ? Math.round(totalCorrect / totalAnswers * 100) : 0;
+
+  document.getElementById('stats-summary').innerHTML = `
+    <div class="stat-card"><div class="big">${total}</div><div class="sub">Muscles</div></div>
+    <div class="stat-card"><div class="big">${seen}</div><div class="sub">Pratiqués</div></div>
+    <div class="stat-card"><div class="big">${totalAnswers}</div><div class="sub">Réponses</div></div>
+    <div class="stat-card"><div class="big">${globalRate}%</div><div class="sub">Taux global</div></div>
+  `;
+
+  const sorted = [...muscles].sort((a, b) => getRate(a.id) - getRate(b.id));
+  const tbody = document.getElementById('stats-body');
+  tbody.innerHTML = sorted.map(m => {
+    const s = stats[m.id] || { seen: 0, correct: 0 };
+    const rate = s.seen > 0 ? Math.round(s.correct / s.seen * 100) : null;
+    return `<tr>
+      <td>${esc(m.name)}</td>
+      <td><span class="badge badge-region" style="background:${regionColor(m.region)}22;color:${regionColor(m.region)}">${esc(m.region)}</span></td>
+      <td>${s.seen}</td>
+      <td>${rate !== null ? `<div class="stat-bar-wrap"><div class="stat-bar"><div class="stat-bar-fill" style="width:${rate}%"></div></div><span class="stat-pct">${rate}%</span></div>` : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getMCQOptions(m, type, n) {
+  // type: 'region' → pick n regions; 'muscle' → pick n muscle names
+  let correct, pool;
+  if (type === 'region') {
+    correct = m.region;
+    pool = [...new Set(muscles.map(x => x.region))].filter(r => r !== correct);
+  } else {
+    correct = m.name;
+    pool = muscles.map(x => x.name).filter(nm => nm !== correct);
+  }
+  shuffle(pool);
+  const options = [correct, ...pool.slice(0, n - 1)];
+  return shuffle(options);
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+updateNavCount();
+populateRegionFilters();
+renderList();
+</script>
+</body>
+</html>
