@@ -21,8 +21,9 @@
       <button class="nav-btn"        data-panel="list"  onclick="switchPanel('list')">
         Muscles <span class="nav-badge" id="nav-count">0</span>
       </button>
-      <button class="nav-btn" data-panel="quiz"  onclick="switchPanel('quiz')">Quiz</button>
-      <button class="nav-btn" data-panel="stats" onclick="switchPanel('stats')">Stats</button>
+      <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
+      <button class="nav-btn" data-panel="recall" onclick="switchPanel('recall')">Recall</button>
+      <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
     </nav>
   </div>
 </header>
@@ -320,6 +321,96 @@
     </div>
   </div>
 
+  <!-- ══ RECALL PANEL ══ -->
+  <div class="panel" id="panel-recall">
+    <div class="page-title">
+      <h1>Recall</h1>
+      <p>Name every muscle you know. Type a name — it lights up when correct.</p>
+    </div>
+
+    <!-- Setup card -->
+    <div id="recall-setup" class="card">
+      <div class="card-header">
+        <div class="card-header-icon">&#128302;</div>
+        <div><h2>Start a recall session</h2><p>No hints. No order. Just you and your memory.</p></div>
+      </div>
+      <div class="form-grid" style="margin-bottom:1rem;">
+        <div class="form-field">
+          <label class="form-label">Filter by region</label>
+          <div class="select-wrap">
+            <select id="recall-region-filter"><option value="">All regions</option></select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Timer (optional)</label>
+          <div class="select-wrap">
+            <select id="recall-timer">
+              <option value="0">No timer</option>
+              <option value="300">5 minutes</option>
+              <option value="600">10 minutes</option>
+              <option value="900">15 minutes</option>
+              <option value="1200">20 minutes</option>
+              <option value="1800">30 minutes</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="startRecall()">Start recall</button>
+    </div>
+
+    <!-- Session -->
+    <div id="recall-session" style="display:none;">
+
+      <!-- Top bar: input + score + timer -->
+      <div class="recall-topbar">
+        <div class="recall-input-wrap">
+          <input type="text" id="recall-input"
+            placeholder="Type a muscle name and press Enter..."
+            autocomplete="off" autocapitalize="words"
+            oninput="onRecallInput()" />
+          <div class="recall-input-feedback" id="recall-input-feedback"></div>
+        </div>
+        <div class="recall-hud">
+          <div class="recall-hud-chip">
+            <span class="recall-hud-val" id="recall-found">0</span>
+            <span class="recall-hud-lbl">found</span>
+          </div>
+          <div class="recall-hud-chip">
+            <span class="recall-hud-val" id="recall-total-count">0</span>
+            <span class="recall-hud-lbl">total</span>
+          </div>
+          <div class="recall-hud-chip recall-timer-chip" id="recall-timer-chip" style="display:none;">
+            <span class="recall-hud-val" id="recall-clock">00:00</span>
+            <span class="recall-hud-lbl">remaining</span>
+          </div>
+          <button class="btn btn-sm" onclick="giveUpRecall()">Give up</button>
+          <button class="btn btn-sm btn-danger" onclick="stopRecall()">Stop</button>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="quiz-progress" style="margin-bottom:1.25rem;">
+        <div class="quiz-progress-fill" id="recall-progress" style="width:0%"></div>
+      </div>
+
+      <!-- Grid by region -->
+      <div id="recall-grid"></div>
+    </div>
+
+    <!-- End screen -->
+    <div id="recall-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="recall-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="recall-end-title">Session complete!</div>
+      <div class="quiz-end-sub" id="recall-end-sub"></div>
+      <div class="quiz-end-scores" id="recall-end-scores"></div>
+      <div id="recall-missed-wrap" style="width:100%;max-width:700px;text-align:left;"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startRecall()">Play again</button>
+        <button class="btn" onclick="showRecallSetup()">Change settings</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -337,6 +428,10 @@
     <button class="bottom-nav-btn" data-panel="quiz" onclick="switchPanel('quiz')">
       <span class="bnav-icon">&#129504;</span>
       <span class="bnav-label">Quiz</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="recall" onclick="switchPanel('recall')">
+      <span class="bnav-icon">&#128302;</span>
+      <span class="bnav-label">Recall</span>
     </button>
     <button class="bottom-nav-btn" data-panel="stats" onclick="switchPanel('stats')">
       <span class="bnav-icon">&#128202;</span>
@@ -389,9 +484,10 @@ function switchPanel(name) {
   document.querySelectorAll('[data-panel]').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   document.querySelectorAll('[data-panel="' + name + '"]').forEach(b => b.classList.add('active'));
-  if (name === 'list')  { populateFilters(); renderList(); }
-  if (name === 'stats') { renderStats(); }
-  if (name === 'quiz')  { populateFilters(); }
+  if (name === 'list')   { populateFilters(); renderList(); }
+  if (name === 'stats')  { renderStats(); }
+  if (name === 'quiz')   { populateFilters(); }
+  if (name === 'recall') { populateRecallFilters(); }
 }
 
 function updateNavCount() {
@@ -445,6 +541,16 @@ function populateFilters() {
     regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; el.appendChild(o); });
     el.value = cur;
   });
+}
+
+function populateRecallFilters() {
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+  const el = document.getElementById('recall-region-filter');
+  if (!el) return;
+  const cur = el.value;
+  el.innerHTML = '<option value="">All regions</option>';
+  regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; el.appendChild(o); });
+  el.value = cur;
 }
 
 // ── LIST ──────────────────────────────────────────────────────────────────────
@@ -998,6 +1104,283 @@ function lev(a,b) {
   const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
   for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
   return dp[m][n];
+}
+
+// ── RECALL MODE ───────────────────────────────────────────────────────────────
+let recallPool       = [];   // all muscles in session
+let recallFound      = new Set(); // ids of found muscles
+let recallTimerSec   = 0;
+let recallTimerLeft  = 0;
+let recallTimerIntvl = null;
+let recallStartTime  = null;
+let recallTypingTimer= null;
+
+function startRecall() {
+  const fReg = document.getElementById('recall-region-filter').value;
+  const timerVal = parseInt(document.getElementById('recall-timer').value);
+
+  recallPool = muscles.filter(m => !fReg || m.region === fReg);
+  if (!recallPool.length) { toast('No muscles to recall!'); return; }
+
+  recallFound     = new Set();
+  recallTimerSec  = timerVal;
+  recallTimerLeft = timerVal;
+  recallStartTime = Date.now();
+
+  document.getElementById('recall-setup').style.display   = 'none';
+  document.getElementById('recall-end').style.display     = 'none';
+  document.getElementById('recall-session').style.display = 'block';
+
+  document.getElementById('recall-total-count').textContent = recallPool.length;
+  document.getElementById('recall-found').textContent       = 0;
+  document.getElementById('recall-progress').style.width    = '0%';
+
+  // Timer
+  const chip = document.getElementById('recall-timer-chip');
+  if (timerVal > 0) {
+    chip.style.display = 'flex';
+    updateRecallClock();
+    recallTimerIntvl = setInterval(() => {
+      recallTimerLeft--;
+      updateRecallClock();
+      if (recallTimerLeft <= 0) { clearInterval(recallTimerIntvl); endRecall(true); }
+    }, 1000);
+  } else {
+    chip.style.display = 'none';
+  }
+
+  buildRecallGrid();
+
+  const inp = document.getElementById('recall-input');
+  inp.value = '';
+  inp.focus();
+}
+
+function updateRecallClock() {
+  const m = String(Math.floor(recallTimerLeft / 60)).padStart(2,'0');
+  const s = String(recallTimerLeft % 60).padStart(2,'0');
+  const el = document.getElementById('recall-clock');
+  el.textContent = m + ':' + s;
+  // Turn red when under 60s
+  el.style.color = recallTimerLeft <= 60 ? 'var(--err)' : '';
+}
+
+function buildRecallGrid() {
+  // Group by region
+  const groups = {};
+  recallPool.forEach(m => {
+    if (!groups[m.region]) groups[m.region] = [];
+    groups[m.region].push(m);
+  });
+
+  const container = document.getElementById('recall-grid');
+  container.innerHTML = '';
+
+  Object.keys(groups).sort().forEach(region => {
+    const color = rc(region);
+    const section = document.createElement('div');
+    section.className = 'recall-region-section';
+    section.dataset.region = region;
+
+    const header = document.createElement('div');
+    header.className = 'recall-region-header';
+    header.innerHTML = `<span class="region-dot" style="background:${color}"></span>${esc(region)}<span class="recall-region-count" id="rcount-${CSS.escape(region)}">0 / ${groups[region].length}</span>`;
+    section.appendChild(header);
+
+    const grid = document.createElement('div');
+    grid.className = 'recall-cells';
+
+    groups[region].sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
+      const cell = document.createElement('div');
+      cell.className = 'recall-cell';
+      cell.id = 'rcell-' + m.id;
+      cell.dataset.name = m.name.toLowerCase();
+      cell.dataset.len  = m.name.length;
+
+      // Blank placeholder: show length dots
+      cell.innerHTML = `<span class="recall-cell-blank">
+        <span class="recall-cell-dots">${'·'.repeat(Math.min(m.name.length, 24))}</span>
+        <span class="recall-cell-len">${m.name.length}</span>
+      </span>
+      <span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
+
+      grid.appendChild(cell);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+function onRecallInput() {
+  clearTimeout(recallTypingTimer);
+  const inp = document.getElementById('recall-input');
+  const raw = inp.value.trim();
+  if (!raw) { setRecallFeedback('', ''); return; }
+
+  // Check immediately on each keystroke
+  checkRecallAnswer(raw, inp);
+}
+
+function checkRecallAnswer(raw, inp) {
+  const answer = raw.toLowerCase().replace(/\s+/g, ' ');
+
+  // Try exact match first, then fuzzy (lev ≤ 2 for longer names, ≤ 1 for short)
+  let matched = null;
+  for (const m of recallPool) {
+    if (recallFound.has(m.id)) continue;
+    const canonical = m.name.toLowerCase();
+    const threshold = canonical.length <= 5 ? 1 : 2;
+    if (canonical === answer || lev(answer, canonical) <= threshold) {
+      matched = m;
+      break;
+    }
+    // Also check synonyms
+    if (m.synonyms && m.synonyms.some(s => {
+      const sl = s.toLowerCase();
+      return sl === answer || lev(answer, sl) <= threshold;
+    })) {
+      matched = m;
+      break;
+    }
+  }
+
+  if (matched) {
+    // Found!
+    recallFound.add(matched.id);
+    revealRecallCell(matched);
+    inp.value = '';
+    setRecallFeedback('correct', '✓ ' + matched.name);
+    clearTimeout(recallTypingTimer);
+    recallTypingTimer = setTimeout(() => setRecallFeedback('', ''), 1800);
+
+    // Update counters
+    document.getElementById('recall-found').textContent = recallFound.size;
+    document.getElementById('recall-progress').style.width = (recallFound.size / recallPool.length * 100) + '%';
+
+    // Update region counter
+    updateRegionCount(matched.region);
+
+    // All found?
+    if (recallFound.size === recallPool.length) {
+      setTimeout(() => endRecall(false), 600);
+    }
+  } else {
+    // Show subtle "not found yet" only if user paused typing
+    clearTimeout(recallTypingTimer);
+    recallTypingTimer = setTimeout(() => {
+      if (document.getElementById('recall-input').value.trim()) {
+        setRecallFeedback('pending', '');
+      }
+    }, 600);
+  }
+}
+
+function setRecallFeedback(type, msg) {
+  const el = document.getElementById('recall-input-feedback');
+  const inp = document.getElementById('recall-input');
+  el.textContent = msg;
+  el.className = 'recall-input-feedback ' + type;
+  inp.className = type === 'correct' ? 'recall-correct-flash' : '';
+  if (type === 'correct') setTimeout(() => { if(inp) inp.className = ''; }, 400);
+}
+
+function revealRecallCell(m) {
+  const cell = document.getElementById('rcell-' + m.id);
+  if (!cell) return;
+  cell.classList.add('found');
+  cell.querySelector('.recall-cell-blank').style.display = 'none';
+  cell.querySelector('.recall-cell-name').style.display = '';
+  // Scroll into view gently
+  cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function updateRegionCount(region) {
+  const regionMuscles = recallPool.filter(m => m.region === region);
+  const found = regionMuscles.filter(m => recallFound.has(m.id)).length;
+  const el = document.getElementById('rcount-' + CSS.escape(region));
+  if (el) {
+    el.textContent = found + ' / ' + regionMuscles.length;
+    if (found === regionMuscles.length) el.classList.add('complete');
+  }
+}
+
+function giveUpRecall() {
+  // Reveal all unfound cells
+  recallPool.forEach(m => {
+    if (!recallFound.has(m.id)) {
+      const cell = document.getElementById('rcell-' + m.id);
+      if (!cell) return;
+      cell.classList.add('missed');
+      cell.querySelector('.recall-cell-blank').style.display = 'none';
+      cell.querySelector('.recall-cell-name').style.display = '';
+    }
+  });
+  clearInterval(recallTimerIntvl);
+  setTimeout(() => endRecall(false, true), 1200);
+}
+
+function stopRecall() {
+  clearInterval(recallTimerIntvl);
+  showRecallSetup();
+}
+
+function showRecallSetup() {
+  clearInterval(recallTimerIntvl);
+  document.getElementById('recall-session').style.display = 'none';
+  document.getElementById('recall-end').style.display     = 'none';
+  document.getElementById('recall-setup').style.display   = 'block';
+}
+
+function endRecall(timedOut, gaveUp) {
+  clearInterval(recallTimerIntvl);
+  document.getElementById('recall-session').style.display = 'none';
+  document.getElementById('recall-end').style.display     = 'flex';
+
+  const found = recallFound.size;
+  const total = recallPool.length;
+  const pct   = Math.round(found / total * 100);
+  const elapsed = Math.round((Date.now() - recallStartTime) / 1000);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2,'0');
+  const ss = String(elapsed % 60).padStart(2,'0');
+
+  const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  document.getElementById('recall-end-emoji').textContent = emoji;
+
+  let title = pct === 100 ? 'Perfect recall!' : timedOut ? "Time's up!" : gaveUp ? 'Session ended' : 'Session complete!';
+  document.getElementById('recall-end-title').textContent = title;
+  document.getElementById('recall-end-sub').textContent   = `${found} / ${total} muscles recalled (${pct}%) in ${mm}:${ss}`;
+
+  document.getElementById('recall-end-scores').innerHTML = `
+    <div class="end-score-box ok"><div class="val">${found}</div><div class="lbl">Found</div></div>
+    <div class="end-score-box err"><div class="val">${total - found}</div><div class="lbl">Missed</div></div>
+    <div class="end-score-box"><div class="val">${pct}%</div><div class="lbl">Rate</div></div>`;
+
+  // List missed muscles
+  const missed = recallPool.filter(m => !recallFound.has(m.id));
+  const wrap = document.getElementById('recall-missed-wrap');
+  if (missed.length > 0) {
+    // Group missed by region
+    const groups = {};
+    missed.forEach(m => { if (!groups[m.region]) groups[m.region] = []; groups[m.region].push(m.name); });
+    let html = `<div class="card" style="margin-top:1rem;">
+      <div class="card-header"><div class="card-header-icon">&#10007;</div><div><h2>Missed (${missed.length})</h2></div></div>`;
+    Object.keys(groups).sort().forEach(region => {
+      const color = rc(region);
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span class="region-dot" style="background:${color}"></span>${esc(region)}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${groups[region].map(name => `<span class="badge" style="background:var(--err-bg);color:var(--err);border:1px solid var(--err-border)">${esc(name)}</span>`).join('')}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+  } else {
+    wrap.innerHTML = '';
+  }
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
