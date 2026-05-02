@@ -226,7 +226,12 @@ main {
   box-shadow: var(--shadow-sm);
 }
 .card + .card { margin-top: var(--gap); }
-.card--flush { padding: 0; overflow: hidden; }
+.card--flush { padding: 0; }
+.card--flush .muscle-table-wrap,
+.card--flush #recall-grid { border-radius: 0 0 var(--r-lg) var(--r-lg); overflow: hidden; }
+.card--flush .muscle-table-wrap:first-child,
+.card--flush #recall-grid:first-child { border-radius: var(--r-lg); }
+
 
 .card-header {
   display: flex;
@@ -496,7 +501,7 @@ select { cursor: pointer; }
 .list-count { font-size: 12.5px; color: var(--text3); white-space: nowrap; margin-left: auto; }
 
 /* Table */
-.muscle-table-wrap { overflow-x: auto; }
+.muscle-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .muscle-table {
   width: 100%;
   border-collapse: collapse;
@@ -1419,4 +1424,275 @@ select { cursor: pointer; }
 @media (max-width: 480px) {
   .recall-hud-chip { padding: 6px 10px; min-width: 50px; }
   .recall-hud-val  { font-size: 18px; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FLASHCARDS
+   ══════════════════════════════════════════════════════════════ */
+
+/* Toolbar */
+.cards-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.cards-counter {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/* Stage */
+.cards-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* 3D flip wrapper */
+.flashcard-wrap {
+  perspective: 1200px;
+  width: 100%;
+  max-width: 640px;
+}
+
+.flashcard {
+  position: relative;
+  width: 100%;
+  min-height: 380px;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.45, 0, 0.25, 1);
+  cursor: pointer;
+  border-radius: var(--r-xl);
+}
+.flashcard.flipped {
+  transform: rotateY(180deg);
+}
+
+/* Both faces */
+.flashcard-front,
+.flashcard-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.flashcard-back {
+  transform: rotateY(180deg);
+}
+
+/* Colour stripe at top */
+.fc-region-bar {
+  height: 5px;
+  flex-shrink: 0;
+}
+
+/* FRONT body */
+.fc-front-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2.5rem 2rem 2rem;
+  gap: 10px;
+}
+
+.fc-region-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.fc-muscle-name {
+  font-family: var(--serif);
+  font-size: clamp(26px, 5vw, 42px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.15;
+  margin: 4px 0;
+}
+
+.fc-depth-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface2);
+  color: var(--text3);
+  border: 1px solid var(--border);
+  letter-spacing: 0.04em;
+}
+
+.fc-synonyms {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.fc-tap-hint {
+  margin-top: 1rem;
+  font-size: 12px;
+  color: var(--text4);
+  letter-spacing: 0.04em;
+}
+
+/* BACK */
+.fc-back-header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.fc-back-header .fc-muscle-name {
+  font-size: clamp(18px, 3vw, 26px);
+}
+
+.fc-back-fields {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.fc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fc-field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.fc-field-icon { font-size: 13px; line-height: 1; }
+.fc-field-val {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  padding-left: 20px;
+}
+
+.fc-no-data {
+  font-size: 13px;
+  color: var(--text3);
+  text-align: center;
+  padding: 2rem 0;
+  line-height: 1.7;
+}
+
+/* Navigation row */
+.cards-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 640px;
+}
+.cards-nav-btn {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.cards-nav-btn:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: none; }
+
+.cards-nav-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.cards-flip-btn {
+  font-size: 13px;
+  padding: 7px 18px;
+  border-radius: 99px;
+  background: var(--accent-light);
+  border-color: var(--accent-mid);
+  color: var(--accent-text);
+  font-weight: 500;
+}
+.cards-flip-btn:hover { background: var(--accent-mid); }
+
+/* Progress dots */
+.cards-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 8px;
+}
+.cdot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-mid);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.cdot.active {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+/* Keyboard hint */
+.cards-hint {
+  font-size: 11.5px;
+  color: var(--text4);
+  letter-spacing: 0.03em;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .flashcard { min-height: 320px; }
+  .fc-front-body { padding: 2rem 1.25rem 1.5rem; }
+  .fc-back-header { padding: 1rem 1.25rem 0.75rem; }
+  .fc-back-fields { padding: 0.75rem 1.25rem 1.25rem; gap: 0.75rem; }
+  .fc-field-val { font-size: 13px; }
+  .cards-hint { display: none; }
+}
+@media (max-width: 480px) {
+  .flashcard { min-height: 280px; }
+  .cards-nav-btn { width: 40px; height: 40px; font-size: 15px; }
+  .cards-toolbar { gap: 6px; }
+  .cards-counter { width: 100%; text-align: right; margin-left: 0; }
+}
+
+/* Dark mode tweaks */
+@media (prefers-color-scheme: dark) {
+  .flashcard-front,
+  .flashcard-back { box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
 }

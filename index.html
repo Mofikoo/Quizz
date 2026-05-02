@@ -22,6 +22,7 @@
         Muscles <span class="nav-badge" id="nav-count">0</span>
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
+      <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
       <button class="nav-btn" data-panel="recall" onclick="switchPanel('recall')">Recall</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
     </nav>
@@ -411,6 +412,69 @@
     </div>
   </div>
 
+  <!-- ══ CARDS PANEL ══ -->
+  <div class="panel" id="panel-cards">
+    <div class="page-title">
+      <h1>Flashcards</h1>
+      <p>Study muscle anatomy one card at a time. Tap the card to flip it.</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="cards-toolbar">
+      <div class="select-wrap" style="flex:1;max-width:200px">
+        <select id="cards-region-filter" onchange="initCards()">
+          <option value="">All regions</option>
+        </select>
+      </div>
+      <div class="select-wrap" style="flex:1;max-width:160px">
+        <select id="cards-depth-filter" onchange="initCards()">
+          <option value="">All depths</option>
+          <option>Superficial</option>
+          <option>Deep</option>
+          <option>Intermediate</option>
+        </select>
+      </div>
+      <div class="select-wrap" style="flex:1;max-width:160px">
+        <select id="cards-order" onchange="initCards()">
+          <option value="alpha">Alphabetical</option>
+          <option value="region">By region</option>
+          <option value="random">Random</option>
+        </select>
+      </div>
+      <span class="cards-counter" id="cards-counter"></span>
+    </div>
+
+    <!-- Card stage -->
+    <div class="cards-stage" id="cards-stage">
+      <div class="flashcard-wrap" id="flashcard-wrap">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+          <div class="flashcard-front" id="fc-front"></div>
+          <div class="flashcard-back"  id="fc-back"></div>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <div class="cards-nav">
+        <button class="btn btn-lg cards-nav-btn" id="cards-prev" onclick="prevCard()">&#8592;</button>
+        <div class="cards-nav-center">
+          <button class="btn cards-flip-btn" onclick="flipCard()">Flip card</button>
+          <div class="cards-dots" id="cards-dots"></div>
+        </div>
+        <button class="btn btn-lg cards-nav-btn" id="cards-next" onclick="nextCard()">&#8594;</button>
+      </div>
+
+      <!-- Keyboard hint -->
+      <p class="cards-hint">← → to navigate &nbsp;·&nbsp; Space to flip</p>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="cards-empty" style="display:none">
+      <div class="empty-icon">&#128218;</div>
+      <div class="empty-title">No muscles found</div>
+      <p class="empty-sub">Add muscles or change the filters.</p>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -428,6 +492,10 @@
     <button class="bottom-nav-btn" data-panel="quiz" onclick="switchPanel('quiz')">
       <span class="bnav-icon">&#129504;</span>
       <span class="bnav-label">Quiz</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="cards" onclick="switchPanel('cards')">
+      <span class="bnav-icon">&#128218;</span>
+      <span class="bnav-label">Cards</span>
     </button>
     <button class="bottom-nav-btn" data-panel="recall" onclick="switchPanel('recall')">
       <span class="bnav-icon">&#128302;</span>
@@ -488,6 +556,7 @@ function switchPanel(name) {
   if (name === 'stats')  { renderStats(); }
   if (name === 'quiz')   { populateFilters(); }
   if (name === 'recall') { populateRecallFilters(); }
+  if (name === 'cards')  { initCards(); }
 }
 
 function updateNavCount() {
@@ -1393,6 +1462,177 @@ function endRecall(timedOut, gaveUp) {
     wrap.innerHTML = '';
   }
 }
+
+
+// ── FLASHCARDS ────────────────────────────────────────────────────────────────
+let cardDeck  = [];
+let cardIdx   = 0;
+let cardFlipped = false;
+
+function initCards() {
+  const fReg   = document.getElementById('cards-region-filter').value;
+  const fDepth = document.getElementById('cards-depth-filter').value;
+  const order  = document.getElementById('cards-order').value;
+
+  let pool = muscles.filter(m => {
+    if (fReg   && m.region !== fReg)   return false;
+    if (fDepth && m.depth  !== fDepth) return false;
+    return true;
+  });
+
+  if (order === 'alpha')  pool.sort((a,b) => a.name.localeCompare(b.name));
+  if (order === 'region') pool.sort((a,b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
+  if (order === 'random') shuffle(pool);
+
+  cardDeck   = pool;
+  cardIdx    = 0;
+  cardFlipped = false;
+
+  // Populate region filter
+  const rfEl = document.getElementById('cards-region-filter');
+  const curReg = rfEl.value;
+  rfEl.innerHTML = '<option value="">All regions</option>';
+  [...new Set(muscles.map(m => m.region))].sort().forEach(r => {
+    const o = document.createElement('option');
+    o.value = r; o.textContent = r;
+    rfEl.appendChild(o);
+  });
+  rfEl.value = curReg;
+
+  if (!cardDeck.length) {
+    document.getElementById('cards-stage').style.display = 'none';
+    document.getElementById('cards-empty').style.display = '';
+    return;
+  }
+  document.getElementById('cards-stage').style.display = '';
+  document.getElementById('cards-empty').style.display = 'none';
+
+  renderCard();
+}
+
+function renderCard() {
+  if (!cardDeck.length) return;
+  const m   = cardDeck[cardIdx];
+  const n   = m.notes || {};
+  const color = rc(m.region);
+  cardFlipped = false;
+
+  // Update counter
+  document.getElementById('cards-counter').textContent = (cardIdx + 1) + ' / ' + cardDeck.length;
+
+  // Remove flip class
+  const fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+
+  // ── FRONT ──────────────────────────────────────────────────────
+  const depthBadge = m.depth
+    ? `<span class="fc-depth-badge">${esc(m.depth)}</span>` : '';
+
+  document.getElementById('fc-front').innerHTML = `
+    <div class="fc-region-bar" style="background:${color}"></div>
+    <div class="fc-front-body">
+      <span class="fc-region-label" style="color:${color}">
+        <span class="region-dot" style="background:${color}"></span>
+        ${esc(m.region)}
+      </span>
+      <h2 class="fc-muscle-name">${esc(m.name)}</h2>
+      ${depthBadge}
+      ${m.synonyms && m.synonyms.length
+        ? `<p class="fc-synonyms">${m.synonyms.map(esc).join(' &middot; ')}</p>` : ''}
+      <p class="fc-tap-hint">Tap to reveal anatomy</p>
+    </div>
+  `;
+
+  // ── BACK ───────────────────────────────────────────────────────
+  const fields = [
+    { icon: '📍', label: 'Origin',    val: n.origin    },
+    { icon: '🎯', label: 'Insertion', val: n.insertion },
+    { icon: '⚡', label: 'Function',  val: n.function  },
+    { icon: '📝', label: 'Notes',     val: n.extra     },
+  ].filter(f => f.val && f.val.trim());
+
+  const fieldsHTML = fields.length
+    ? fields.map(f => `
+      <div class="fc-field">
+        <div class="fc-field-label"><span class="fc-field-icon">${f.icon}</span>${f.label}</div>
+        <div class="fc-field-val">${esc(f.val)}</div>
+      </div>`).join('')
+    : '<p class="fc-no-data">No anatomy data for this muscle yet.<br>Edit it in the Muscles tab.</p>';
+
+  document.getElementById('fc-back').innerHTML = `
+    <div class="fc-region-bar" style="background:${color}"></div>
+    <div class="fc-back-header">
+      <span class="fc-region-label" style="color:${color}">
+        <span class="region-dot" style="background:${color}"></span>
+        ${esc(m.region)}
+      </span>
+      <h2 class="fc-muscle-name">${esc(m.name)}</h2>
+    </div>
+    <div class="fc-back-fields">${fieldsHTML}</div>
+  `;
+
+  // Dots
+  renderCardDots();
+  updateCardNav();
+}
+
+function flipCard() {
+  cardFlipped = !cardFlipped;
+  const fc = document.getElementById('flashcard');
+  fc.classList.toggle('flipped', cardFlipped);
+}
+
+function nextCard() {
+  if (cardIdx >= cardDeck.length - 1) return;
+  cardIdx++;
+  renderCard();
+}
+
+function prevCard() {
+  if (cardIdx <= 0) return;
+  cardIdx--;
+  renderCard();
+}
+
+function renderCardDots() {
+  const dotsEl = document.getElementById('cards-dots');
+  const total  = cardDeck.length;
+  // Show at most 9 dots; if more, show position indicator instead
+  if (total <= 15) {
+    dotsEl.innerHTML = Array.from({length: total}, (_,i) =>
+      `<span class="cdot ${i === cardIdx ? 'active' : ''}"></span>`
+    ).join('');
+  } else {
+    // Sliding window of 9 dots around current
+    dotsEl.innerHTML = '';
+  }
+}
+
+function updateCardNav() {
+  document.getElementById('cards-prev').disabled = cardIdx === 0;
+  document.getElementById('cards-next').disabled = cardIdx === cardDeck.length - 1;
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  const panel = document.querySelector('.panel.active');
+  if (!panel || panel.id !== 'panel-cards') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  { e.preventDefault(); nextCard(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    { e.preventDefault(); prevCard(); }
+  if (e.key === ' ')                                      { e.preventDefault(); flipCard(); }
+});
+
+// Swipe support
+(function() {
+  let startX = 0;
+  const wrap = document.getElementById('flashcard-wrap');
+  if (!wrap) return;
+  wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+  wrap.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) { dx < 0 ? nextCard() : prevCard(); }
+  }, {passive:true});
+})();
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 updateNavCount();
