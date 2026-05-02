@@ -1166,50 +1166,60 @@ function updateRecallClock() {
 }
 
 function buildRecallGrid() {
-  // Group by region
+  // Group by region, sorted alphabetically within each group
   const groups = {};
   recallPool.forEach(m => {
     if (!groups[m.region]) groups[m.region] = [];
     groups[m.region].push(m);
   });
+  const regionKeys = Object.keys(groups).sort();
+  regionKeys.forEach(r => groups[r].sort((a,b) => a.name.localeCompare(b.name)));
 
   const container = document.getElementById('recall-grid');
   container.innerHTML = '';
 
-  Object.keys(groups).sort().forEach(region => {
+  // Build one <table> with one column per region
+  // Each column: header row + one row per muscle (padded to max length)
+  const maxLen = Math.max(...regionKeys.map(r => groups[r].length));
+
+  const table = document.createElement('table');
+  table.className = 'recall-table';
+
+  // Header row
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  regionKeys.forEach(region => {
     const color = rc(region);
-    const section = document.createElement('div');
-    section.className = 'recall-region-section';
-    section.dataset.region = region;
-
-    const header = document.createElement('div');
-    header.className = 'recall-region-header';
-    header.innerHTML = `<span class="region-dot" style="background:${color}"></span>${esc(region)}<span class="recall-region-count" id="rcount-${CSS.escape(region)}">0 / ${groups[region].length}</span>`;
-    section.appendChild(header);
-
-    const grid = document.createElement('div');
-    grid.className = 'recall-cells';
-
-    groups[region].sort((a,b) => a.name.localeCompare(b.name)).forEach(m => {
-      const cell = document.createElement('div');
-      cell.className = 'recall-cell';
-      cell.id = 'rcell-' + m.id;
-      cell.dataset.name = m.name.toLowerCase();
-      cell.dataset.len  = m.name.length;
-
-      // Blank placeholder: show length dots
-      cell.innerHTML = `<span class="recall-cell-blank">
-        <span class="recall-cell-dots">${'·'.repeat(Math.min(m.name.length, 24))}</span>
-        <span class="recall-cell-len">${m.name.length}</span>
-      </span>
-      <span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
-
-      grid.appendChild(cell);
-    });
-
-    section.appendChild(grid);
-    container.appendChild(section);
+    const th = document.createElement('th');
+    th.className = 'recall-col-header';
+    th.style.setProperty('--rc', color);
+    th.innerHTML = `<span class="recall-col-title">${esc(region)}</span><span class="recall-region-count" id="rcount-${CSS.escape(region)}">0 / ${groups[region].length}</span>`;
+    headerRow.appendChild(th);
   });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Body rows
+  const tbody = document.createElement('tbody');
+  for (let i = 0; i < maxLen; i++) {
+    const tr = document.createElement('tr');
+    regionKeys.forEach(region => {
+      const td = document.createElement('td');
+      const m = groups[region][i];
+      if (m) {
+        td.className = 'recall-cell';
+        td.id = 'rcell-' + m.id;
+        td.dataset.name = m.name.toLowerCase();
+        td.innerHTML = `<span class="recall-cell-blank"><span class="recall-cell-len">${m.name.length}</span></span><span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
+      } else {
+        td.className = 'recall-cell recall-cell--empty';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
 }
 
 function onRecallInput() {
@@ -1289,10 +1299,10 @@ function revealRecallCell(m) {
   const cell = document.getElementById('rcell-' + m.id);
   if (!cell) return;
   cell.classList.add('found');
-  cell.querySelector('.recall-cell-blank').style.display = 'none';
-  cell.querySelector('.recall-cell-name').style.display = '';
-  // Scroll into view gently
-  cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  const blank = cell.querySelector('.recall-cell-blank');
+  const name  = cell.querySelector('.recall-cell-name');
+  if (blank) blank.style.display = 'none';
+  if (name)  name.style.display  = '';
 }
 
 function updateRegionCount(region) {
@@ -1306,14 +1316,15 @@ function updateRegionCount(region) {
 }
 
 function giveUpRecall() {
-  // Reveal all unfound cells
   recallPool.forEach(m => {
     if (!recallFound.has(m.id)) {
       const cell = document.getElementById('rcell-' + m.id);
       if (!cell) return;
       cell.classList.add('missed');
-      cell.querySelector('.recall-cell-blank').style.display = 'none';
-      cell.querySelector('.recall-cell-name').style.display = '';
+      const blank = cell.querySelector('.recall-cell-blank');
+      const name  = cell.querySelector('.recall-cell-name');
+      if (blank) blank.style.display = 'none';
+      if (name)  name.style.display  = '';
     }
   });
   clearInterval(recallTimerIntvl);
