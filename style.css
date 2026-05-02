@@ -503,9 +503,6 @@ select { cursor: pointer; }
   min-width: 480px;
 }
 .muscle-table th {
-  position: sticky;
-  top: 62px;
-  z-index: 10;
   text-align: left;
   padding: 10px 14px;
   font-size: 11px;
