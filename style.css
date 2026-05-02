@@ -1300,9 +1300,6 @@ select { cursor: pointer; }
 /* Column headers */
 .recall-col-header {
   padding: 0;
-  position: sticky;
-  top: 62px;           /* below the app header */
-  z-index: 20;
   background: var(--surface);
   border: 1px solid var(--border);
   border-bottom: 3px solid var(--rc, #999);

@@ -1185,6 +1185,7 @@ function lev(a,b) {
 
 // ── RECALL MODE ───────────────────────────────────────────────────────────────
 let recallPool       = [];   // all muscles in session
+let recallCellMap    = new Map(); // id → pool index, built in buildRecallGrid
 let recallFound      = new Set(); // ids of found muscles
 let recallTimerSec   = 0;
 let recallTimerLeft  = 0;
@@ -1276,9 +1277,9 @@ function buildRecallGrid() {
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // Index every muscle in the pool by its position → stable, no float issues
-  const poolIndex = new Map();
-  recallPool.forEach((m, idx) => poolIndex.set(m.id, idx));
+  // Build module-level id→index map so revealRecallCell can find cells fast
+  recallCellMap.clear();
+  recallPool.forEach((m, idx) => recallCellMap.set(m.id, idx));
 
   // Body rows
   const tbody = document.createElement('tbody');
@@ -1288,10 +1289,9 @@ function buildRecallGrid() {
       const td = document.createElement('td');
       const m = groups[region][i];
       if (m) {
-        const pidx = poolIndex.get(m.id);
+        const pidx = recallCellMap.get(m.id);
         td.className = 'recall-cell';
-        td.id = 'rcell-' + pidx;          // simple numeric index, always safe
-        td.dataset.pidx = pidx;           // pool index for reverse lookup
+        td.id = 'rcell-' + pidx;
         td.innerHTML = `<span class="recall-cell-blank"><span class="recall-cell-len">${m.name.length}</span></span><span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
       } else {
         td.className = 'recall-cell recall-cell--empty';
@@ -1388,9 +1388,10 @@ function setRecallFeedback(type, msg) {
 }
 
 function revealRecallCell(m) {
-  const idx  = recallPool.indexOf(m);
+  const idx  = recallCellMap.get(m.id);
+  if (idx === undefined) { console.warn('rcell not found for', m.name, m.id); return; }
   const cell = document.getElementById('rcell-' + idx);
-  if (!cell) return;
+  if (!cell) { console.warn('DOM cell missing: rcell-' + idx); return; }
   cell.classList.add('found');
   const blank = cell.querySelector('.recall-cell-blank');
   const name  = cell.querySelector('.recall-cell-name');
@@ -1409,8 +1410,9 @@ function updateRegionCount(region) {
 }
 
 function giveUpRecall() {
-  recallPool.forEach((m, idx) => {
+  recallPool.forEach((m) => {
     if (!recallFound.has(m.id)) {
+      const idx  = recallCellMap.get(m.id);
       const cell = document.getElementById('rcell-' + idx);
       if (!cell) return;
       cell.classList.add('missed');
