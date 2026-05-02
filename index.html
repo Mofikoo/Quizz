@@ -1309,28 +1309,35 @@ function onRecallInput() {
   checkRecallAnswer(raw, inp);
 }
 
+function normalizeRecall(s) {
+  // Lowercase + strip everything that isn't a letter, digit or space.
+  // This makes case, accents, parentheses, hyphens, dots, & invisible to matching.
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+}
+
 function recallMatches(answer, canonical) {
-  // Exact match always wins
+  // Both sides are already normalized before this function is called.
   if (answer === canonical) return true;
 
-  // Tolerance based on canonical length (spaces included — multi-word names are long)
-  // ≤ 7 chars  → 0 errors (exact only: Psoas, Soleus, Gracilis...)
-  // 8–11 chars → 1 error  (Trapezius, Diaphragm, Popliteus...)
-  // 12+ chars  → 2 errors (Sternocleidomastoid, Biceps Brachii, Adductor Magnus...)
+  // Tolerance based on the normalized canonical length:
+  // ≤ 7 chars  → 0 errors  (Psoas, Soleus, Gracilis…)
+  // 8–11 chars → 1 error   (Trapezius, Diaphragm, Popliteus…)
+  // 12+ chars  → 2 errors  (Sternocleidomastoid, Biceps Brachii…)
   const t = canonical.length <= 7 ? 0 : canonical.length <= 11 ? 1 : 2;
   if (t === 0) return false;
   return lev(answer, canonical) <= t;
 }
 
 function checkRecallAnswer(raw, inp) {
-  const answer = raw.toLowerCase().replace(/\s+/g, ' ').trim();
+  const answer = normalizeRecall(raw);
   if (answer.length < 3) return;
 
   let matched = null;
   for (const m of recallPool) {
     if (recallFound.has(m.id)) continue;
-    if (recallMatches(answer, m.name.toLowerCase())) { matched = m; break; }
-    if (m.synonyms && m.synonyms.some(s => recallMatches(answer, s.toLowerCase()))) {
+    const canonical = normalizeRecall(m.name);
+    if (recallMatches(answer, canonical)) { matched = m; break; }
+    if (m.synonyms && m.synonyms.some(s => recallMatches(answer, normalizeRecall(s)))) {
       matched = m; break;
     }
   }
