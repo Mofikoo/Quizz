@@ -1169,10 +1169,18 @@ function mcqOpts(m, type, n) {
   return shuffle([correct,...pool.slice(0,n-1)]);
 }
 function lev(a,b) {
-  const m=a.length,n=b.length;
-  const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
-  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-  return dp[m][n];
+  // Damerau-Levenshtein: transpositions (ab→ba) count as 1 op, not 2
+  const m=a.length, n=b.length;
+  const d={};
+  for(let i=-1;i<=m;i++) d[i+','+(-1)]=i+1;
+  for(let j=-1;j<=n;j++) d[(-1)+','+j]=j+1;
+  for(let i=0;i<m;i++) for(let j=0;j<n;j++){
+    const cost=a[i]===b[j]?0:1;
+    d[i+','+j]=Math.min(d[(i-1)+','+j]+1, d[i+','+(j-1)]+1, d[(i-1)+','+(j-1)]+cost);
+    if(i>0&&j>0&&a[i]===b[j-1]&&a[i-1]===b[j])
+      d[i+','+j]=Math.min(d[i+','+j], d[(i-2)+','+(j-2)]+cost);
+  }
+  return d[(m-1)+','+(n-1)];
 }
 
 // ── RECALL MODE ───────────────────────────────────────────────────────────────
@@ -1301,26 +1309,29 @@ function onRecallInput() {
   checkRecallAnswer(raw, inp);
 }
 
-function checkRecallAnswer(raw, inp) {
-  const answer = raw.toLowerCase().replace(/\s+/g, ' ');
+function recallMatches(answer, canonical) {
+  // Exact match always wins
+  if (answer === canonical) return true;
 
-  // Try exact match first, then fuzzy (lev ≤ 2 for longer names, ≤ 1 for short)
+  // Tolerance based on canonical length (spaces included — multi-word names are long)
+  // ≤ 7 chars  → 0 errors (exact only: Psoas, Soleus, Gracilis...)
+  // 8–11 chars → 1 error  (Trapezius, Diaphragm, Popliteus...)
+  // 12+ chars  → 2 errors (Sternocleidomastoid, Biceps Brachii, Adductor Magnus...)
+  const t = canonical.length <= 7 ? 0 : canonical.length <= 11 ? 1 : 2;
+  if (t === 0) return false;
+  return lev(answer, canonical) <= t;
+}
+
+function checkRecallAnswer(raw, inp) {
+  const answer = raw.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (answer.length < 3) return;
+
   let matched = null;
   for (const m of recallPool) {
     if (recallFound.has(m.id)) continue;
-    const canonical = m.name.toLowerCase();
-    const threshold = canonical.length <= 5 ? 1 : 2;
-    if (canonical === answer || lev(answer, canonical) <= threshold) {
-      matched = m;
-      break;
-    }
-    // Also check synonyms
-    if (m.synonyms && m.synonyms.some(s => {
-      const sl = s.toLowerCase();
-      return sl === answer || lev(answer, sl) <= threshold;
-    })) {
-      matched = m;
-      break;
+    if (recallMatches(answer, m.name.toLowerCase())) { matched = m; break; }
+    if (m.synonyms && m.synonyms.some(s => recallMatches(answer, s.toLowerCase()))) {
+      matched = m; break;
     }
   }
 
