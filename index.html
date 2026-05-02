@@ -1315,21 +1315,28 @@ function onRecallInput() {
 }
 
 function normalizeRecall(s) {
-  // Lowercase + strip everything that isn't a letter, digit or space.
-  // This makes case, accents, parentheses, hyphens, dots, & invisible to matching.
-  return s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  // Lowercase, replace every non-alphanumeric char (parens, hyphens, &, accents…)
+  // with a space, then collapse spaces. Case and punctuation are ignored entirely.
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function recallMatches(answer, canonical) {
   // Both sides are already normalized before this function is called.
   if (answer === canonical) return true;
 
-  // Tolerance based on the normalized canonical length:
-  // ≤ 7 chars  → 0 errors  (Psoas, Soleus, Gracilis…)
-  // 8–11 chars → 1 error   (Trapezius, Diaphragm, Popliteus…)
-  // 12+ chars  → 2 errors  (Sternocleidomastoid, Biceps Brachii…)
-  const t = canonical.length <= 7 ? 0 : canonical.length <= 11 ? 1 : 2;
+  // Tolerance table (based on normalized canonical length):
+  //  ≤ 8 chars  → 0 errors  exact only  (Psoas, Soleus, Honduras, Gracilis…)
+  //  9–11 chars → 1 error   substitutions / transpositions  (Trapezius, Diaphragm…)
+  // 12–18 chars → 2 errors  (Biceps Brachii, Adductor Magnus…)
+  // 19+ chars   → 3 errors  (Sternocleidomastoid, Levator Labii…)
+  const t = canonical.length <= 8 ? 0
+          : canonical.length <= 11 ? 1
+          : canonical.length <= 18 ? 2 : 3;
   if (t === 0) return false;
+
+  // Exact length required — no shortening accepted, only substitutions/transpositions.
+  if (answer.length < canonical.length) return false;
+
   return lev(answer, canonical) <= t;
 }
 
