@@ -335,25 +335,27 @@
         <div class="card-header-icon">&#128302;</div>
         <div><h2>Start a recall session</h2><p>No hints. No order. Just you and your memory.</p></div>
       </div>
-      <div class="form-grid" style="margin-bottom:1rem;">
-        <div class="form-field">
-          <label class="form-label">Filter by region</label>
-          <div class="select-wrap">
-            <select id="recall-region-filter"><option value="">All regions</option></select>
+      <div class="form-field" style="margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label class="form-label">Regions</label>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm" onclick="recallSelectAll()">All</button>
+            <button class="btn btn-sm" onclick="recallSelectNone()">None</button>
           </div>
         </div>
-        <div class="form-field">
-          <label class="form-label">Timer (optional)</label>
-          <div class="select-wrap">
-            <select id="recall-timer">
-              <option value="0">No timer</option>
-              <option value="300">5 minutes</option>
-              <option value="600">10 minutes</option>
-              <option value="900">15 minutes</option>
-              <option value="1200">20 minutes</option>
-              <option value="1800">30 minutes</option>
-            </select>
-          </div>
+        <div class="recall-region-checks" id="recall-region-checks"></div>
+      </div>
+      <div class="form-field" style="margin-bottom:1rem;">
+        <label class="form-label">Timer (optional)</label>
+        <div class="select-wrap" style="max-width:200px;">
+          <select id="recall-timer">
+            <option value="0">No timer</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+            <option value="900">15 minutes</option>
+            <option value="1200">20 minutes</option>
+            <option value="1800">30 minutes</option>
+          </select>
         </div>
       </div>
       <button class="btn btn-primary btn-full btn-lg" onclick="startRecall()">Start recall</button>
@@ -614,12 +616,46 @@ function populateFilters() {
 
 function populateRecallFilters() {
   const regions = [...new Set(muscles.map(m => m.region))].sort();
-  const el = document.getElementById('recall-region-filter');
-  if (!el) return;
-  const cur = el.value;
-  el.innerHTML = '<option value="">All regions</option>';
-  regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; el.appendChild(o); });
-  el.value = cur;
+  const container = document.getElementById('recall-region-checks');
+  if (!container) return;
+
+  // Remember currently checked regions (default: all checked)
+  const existing = new Set(
+    [...container.querySelectorAll('input[type=checkbox]:checked')].map(el => el.value)
+  );
+  const isFirstLoad = container.children.length === 0;
+
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color  = rc(r);
+    const count  = muscles.filter(m => m.region === r).length;
+    const checked = isFirstLoad || existing.has(r);
+    const label  = document.createElement('label');
+    label.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    label.innerHTML = `
+      <input type="checkbox" value="${r}" ${checked ? 'checked' : ''}
+        onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+      <span class="region-dot" style="background:${color}"></span>
+      <span>${r}</span>
+      <span class="recall-chip-count">${count}</span>`;
+    container.appendChild(label);
+  });
+}
+
+function recallSelectAll() {
+  document.querySelectorAll('#recall-region-checks input').forEach(cb => {
+    cb.checked = true;
+    cb.closest('label').classList.add('checked');
+  });
+}
+function recallSelectNone() {
+  document.querySelectorAll('#recall-region-checks input').forEach(cb => {
+    cb.checked = false;
+    cb.closest('label').classList.remove('checked');
+  });
+}
+function getRecallRegions() {
+  return [...document.querySelectorAll('#recall-region-checks input:checked')].map(cb => cb.value);
 }
 
 // ── LIST ──────────────────────────────────────────────────────────────────────
@@ -1194,11 +1230,12 @@ let recallStartTime  = null;
 let recallTypingTimer= null;
 
 function startRecall() {
-  const fReg = document.getElementById('recall-region-filter').value;
+  const selectedRegions = getRecallRegions();
   const timerVal = parseInt(document.getElementById('recall-timer').value);
 
-  recallPool = muscles.filter(m => !fReg || m.region === fReg);
-  if (!recallPool.length) { toast('No muscles to recall!'); return; }
+  if (selectedRegions.length === 0) { toast('Select at least one region!'); return; }
+  recallPool = muscles.filter(m => selectedRegions.includes(m.region));
+  if (!recallPool.length) { toast('No muscles in selection!'); return; }
 
   recallFound     = new Set();
   recallTimerSec  = timerVal;
