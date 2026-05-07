@@ -22,6 +22,7 @@
         Muscles <span class="nav-badge" id="nav-count">0</span>
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
+      <button class="nav-btn" data-panel="anatomy" onclick="switchPanel('anatomy')">Anatomy</button>
       <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
       <button class="nav-btn" data-panel="recall" onclick="switchPanel('recall')">Recall</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
@@ -335,25 +336,27 @@
         <div class="card-header-icon">&#128302;</div>
         <div><h2>Start a recall session</h2><p>No hints. No order. Just you and your memory.</p></div>
       </div>
-      <div class="form-grid" style="margin-bottom:1rem;">
-        <div class="form-field">
-          <label class="form-label">Filter by region</label>
-          <div class="select-wrap">
-            <select id="recall-region-filter"><option value="">All regions</option></select>
+      <div class="form-field" style="margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label class="form-label">Regions</label>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm" onclick="recallSelectAll()">All</button>
+            <button class="btn btn-sm" onclick="recallSelectNone()">None</button>
           </div>
         </div>
-        <div class="form-field">
-          <label class="form-label">Timer (optional)</label>
-          <div class="select-wrap">
-            <select id="recall-timer">
-              <option value="0">No timer</option>
-              <option value="300">5 minutes</option>
-              <option value="600">10 minutes</option>
-              <option value="900">15 minutes</option>
-              <option value="1200">20 minutes</option>
-              <option value="1800">30 minutes</option>
-            </select>
-          </div>
+        <div class="recall-region-checks" id="recall-region-checks"></div>
+      </div>
+      <div class="form-field" style="margin-bottom:1rem;">
+        <label class="form-label">Timer (optional)</label>
+        <div class="select-wrap" style="max-width:200px;">
+          <select id="recall-timer">
+            <option value="0">No timer</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+            <option value="900">15 minutes</option>
+            <option value="1200">20 minutes</option>
+            <option value="1800">30 minutes</option>
+          </select>
         </div>
       </div>
       <button class="btn btn-primary btn-full btn-lg" onclick="startRecall()">Start recall</button>
@@ -475,6 +478,114 @@
     </div>
   </div>
 
+  <!-- ══ ANATOMY QUIZ PANEL ══ -->
+  <div class="panel" id="panel-anatomy">
+
+    <!-- Setup -->
+    <div id="anatomy-setup">
+      <div class="page-title">
+        <h1>Anatomy Quiz</h1>
+        <p>Fill in the origin, insertion and/or function of each muscle from memory.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm" onclick="anatSelectAll()">All</button>
+              <button class="btn btn-sm" onclick="anatSelectNone()">None</button>
+            </div>
+          </div>
+          <div class="recall-region-checks" id="anatomy-region-checks"></div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="margin-bottom:8px;display:block;">Train on</label>
+          <div class="anat-field-picks" id="anat-field-picks">
+            <label class="recall-region-chip checked" id="pick-origin">
+              <input type="checkbox" value="origin" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>📍</span><span>Origin</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-insertion">
+              <input type="checkbox" value="insertion" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>🎯</span><span>Insertion</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-function">
+              <input type="checkbox" value="function" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>⚡</span><span>Function</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="quiz-options-row">
+          <div class="form-field">
+            <label class="form-label">Questions</label>
+            <div class="select-wrap">
+              <select id="anat-count">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Order</label>
+            <div class="select-wrap">
+              <select id="anat-order">
+                <option value="random">Random</option>
+                <option value="worst">Weakest first</option>
+                <option value="alpha">Alphabetical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" onclick="startAnatomyQuiz()">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div id="anatomy-session" style="display:none;">
+      <div class="anat-session-header">
+        <div class="anat-progress-label">
+          <span id="anat-q-num">1</span> / <span id="anat-q-total">10</span>
+        </div>
+        <div class="quiz-progress" style="flex:1;margin:0;">
+          <div class="quiz-progress-fill" id="anat-progress" style="width:0%"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="stopAnatomyQuiz()">Stop</button>
+      </div>
+
+      <div class="anat-card" id="anat-card"></div>
+
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:1.25rem;" id="anat-actions">
+        <button class="btn btn-primary btn-lg" onclick="submitAnatAnswer()">Check answer</button>
+        <button class="btn" onclick="skipAnatQuestion()">Skip</button>
+      </div>
+    </div>
+
+    <!-- End -->
+    <div id="anatomy-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="anat-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="anat-end-title">Done!</div>
+      <div class="quiz-end-sub" id="anat-end-sub"></div>
+      <div class="quiz-end-scores" id="anat-end-scores"></div>
+      <div id="anat-review" style="width:100%;max-width:800px;"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startAnatomyQuiz()">Play again</button>
+        <button class="btn" onclick="showAnatomySetup()">Settings</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -492,6 +603,10 @@
     <button class="bottom-nav-btn" data-panel="quiz" onclick="switchPanel('quiz')">
       <span class="bnav-icon">&#129504;</span>
       <span class="bnav-label">Quiz</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="anatomy" onclick="switchPanel('anatomy')">
+      <span class="bnav-icon">&#128203;</span>
+      <span class="bnav-label">Anatomy</span>
     </button>
     <button class="bottom-nav-btn" data-panel="cards" onclick="switchPanel('cards')">
       <span class="bnav-icon">&#128218;</span>
@@ -557,6 +672,7 @@ function switchPanel(name) {
   if (name === 'quiz')   { populateFilters(); }
   if (name === 'recall') { populateRecallFilters(); }
   if (name === 'cards')  { initCards(); }
+  if (name === 'anatomy') { initAnatomyQuiz(); }
 }
 
 function updateNavCount() {
@@ -614,12 +730,46 @@ function populateFilters() {
 
 function populateRecallFilters() {
   const regions = [...new Set(muscles.map(m => m.region))].sort();
-  const el = document.getElementById('recall-region-filter');
-  if (!el) return;
-  const cur = el.value;
-  el.innerHTML = '<option value="">All regions</option>';
-  regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; el.appendChild(o); });
-  el.value = cur;
+  const container = document.getElementById('recall-region-checks');
+  if (!container) return;
+
+  // Remember currently checked regions (default: all checked)
+  const existing = new Set(
+    [...container.querySelectorAll('input[type=checkbox]:checked')].map(el => el.value)
+  );
+  const isFirstLoad = container.children.length === 0;
+
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color  = rc(r);
+    const count  = muscles.filter(m => m.region === r).length;
+    const checked = isFirstLoad || existing.has(r);
+    const label  = document.createElement('label');
+    label.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    label.innerHTML = `
+      <input type="checkbox" value="${r}" ${checked ? 'checked' : ''}
+        onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+      <span class="region-dot" style="background:${color}"></span>
+      <span>${r}</span>
+      <span class="recall-chip-count">${count}</span>`;
+    container.appendChild(label);
+  });
+}
+
+function recallSelectAll() {
+  document.querySelectorAll('#recall-region-checks input').forEach(cb => {
+    cb.checked = true;
+    cb.closest('label').classList.add('checked');
+  });
+}
+function recallSelectNone() {
+  document.querySelectorAll('#recall-region-checks input').forEach(cb => {
+    cb.checked = false;
+    cb.closest('label').classList.remove('checked');
+  });
+}
+function getRecallRegions() {
+  return [...document.querySelectorAll('#recall-region-checks input:checked')].map(cb => cb.value);
 }
 
 // ── LIST ──────────────────────────────────────────────────────────────────────
@@ -1194,11 +1344,12 @@ let recallStartTime  = null;
 let recallTypingTimer= null;
 
 function startRecall() {
-  const fReg = document.getElementById('recall-region-filter').value;
+  const selectedRegions = getRecallRegions();
   const timerVal = parseInt(document.getElementById('recall-timer').value);
 
-  recallPool = muscles.filter(m => !fReg || m.region === fReg);
-  if (!recallPool.length) { toast('No muscles to recall!'); return; }
+  if (selectedRegions.length === 0) { toast('Select at least one region!'); return; }
+  recallPool = muscles.filter(m => selectedRegions.includes(m.region));
+  if (!recallPool.length) { toast('No muscles in selection!'); return; }
 
   recallFound     = new Set();
   recallTimerSec  = timerVal;
@@ -1344,13 +1495,22 @@ function checkRecallAnswer(raw, inp) {
   const answer = normalizeRecall(raw);
   if (answer.length < 3) return;
 
+  // Pass 1: exact match only (prevents fuzzy collisions between similar names)
   let matched = null;
   for (const m of recallPool) {
     if (recallFound.has(m.id)) continue;
-    const canonical = normalizeRecall(m.name);
-    if (recallMatches(answer, canonical)) { matched = m; break; }
-    if (m.synonyms && m.synonyms.some(s => recallMatches(answer, normalizeRecall(s)))) {
-      matched = m; break;
+    if (normalizeRecall(m.name) === answer) { matched = m; break; }
+    if (m.synonyms && m.synonyms.some(s => normalizeRecall(s) === answer)) { matched = m; break; }
+  }
+  // Pass 2: fuzzy only if no exact match found
+  if (!matched) {
+    for (const m of recallPool) {
+      if (recallFound.has(m.id)) continue;
+      const canonical = normalizeRecall(m.name);
+      if (recallMatches(answer, canonical)) { matched = m; break; }
+      if (m.synonyms && m.synonyms.some(s => recallMatches(answer, normalizeRecall(s)))) {
+        matched = m; break;
+      }
     }
   }
 
@@ -1496,6 +1656,236 @@ function endRecall(timedOut, gaveUp) {
   }
 }
 
+
+
+// ── ANATOMY QUIZ ──────────────────────────────────────────────────────────────
+let anatPool    = [];
+let anatIdx     = 0;
+let anatResults = []; // { muscle, fields, answers }
+const ANAT_FIELDS = {
+  origin:    { label: 'Origin',    icon: '📍' },
+  insertion: { label: 'Insertion', icon: '🎯' },
+  function:  { label: 'Function',  icon: '⚡' },
+};
+
+function initAnatomyQuiz() {
+  // Populate region chips
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+  const container = document.getElementById('anatomy-region-checks');
+  if (!container) return;
+  const existing = new Set(
+    [...container.querySelectorAll('input:checked')].map(el => el.value)
+  );
+  const first = container.children.length === 0;
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color = rc(r);
+    const count = muscles.filter(m => m.region === r).length;
+    const checked = first || existing.has(r);
+    const lbl = document.createElement('label');
+    lbl.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    lbl.innerHTML = `<input type="checkbox" value="${r}" ${checked?'checked':''} onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span class="region-dot" style="background:${color}"></span><span>${r}</span><span class="recall-chip-count">${count}</span>`;
+    container.appendChild(lbl);
+  });
+}
+
+function anatSelectAll() {
+  document.querySelectorAll('#anatomy-region-checks input').forEach(cb => {
+    cb.checked = true; cb.closest('label').classList.add('checked');
+  });
+}
+function anatSelectNone() {
+  document.querySelectorAll('#anatomy-region-checks input').forEach(cb => {
+    cb.checked = false; cb.closest('label').classList.remove('checked');
+  });
+}
+function toggleAnatPick(cb) {
+  cb.closest('label').classList.toggle('checked', cb.checked);
+}
+function getAnatRegions() {
+  return [...document.querySelectorAll('#anatomy-region-checks input:checked')].map(cb => cb.value);
+}
+function getAnatFields() {
+  return [...document.querySelectorAll('#anat-field-picks input:checked')].map(cb => cb.value);
+}
+
+function startAnatomyQuiz() {
+  const selectedRegions = getAnatRegions();
+  const selectedFields  = getAnatFields();
+  const countSel = document.getElementById('anat-count').value;
+  const order    = document.getElementById('anat-order').value;
+
+  if (!selectedRegions.length) { toast('Select at least one region!'); return; }
+  if (!selectedFields.length)  { toast('Select at least one field!'); return; }
+
+  // Only include muscles that have at least one of the selected fields filled
+  let pool = muscles.filter(m => {
+    if (!selectedRegions.includes(m.region)) return false;
+    const n = m.notes || {};
+    return selectedFields.some(f => n[f] && n[f].trim());
+  });
+
+  if (!pool.length) { toast('No muscles with that data in this selection!'); return; }
+
+  if (order === 'random') shuffle(pool);
+  else if (order === 'alpha') pool.sort((a,b) => a.name.localeCompare(b.name));
+  else pool.sort((a,b) => getRate(a.id) - getRate(b.id));
+
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  anatPool    = pool.slice(0, count);
+  anatIdx     = 0;
+  anatResults = [];
+
+  document.getElementById('anatomy-setup').style.display   = 'none';
+  document.getElementById('anatomy-end').style.display     = 'none';
+  document.getElementById('anatomy-session').style.display = 'block';
+  document.getElementById('anat-q-total').textContent = anatPool.length;
+
+  renderAnatQuestion();
+}
+
+function renderAnatQuestion() {
+  if (anatIdx >= anatPool.length) { showAnatomyEnd(); return; }
+  const m      = anatPool[anatIdx];
+  const fields = getAnatFields().filter(f => m.notes && m.notes[f] && m.notes[f].trim());
+  const color  = rc(m.region);
+
+  document.getElementById('anat-q-num').textContent      = anatIdx + 1;
+  document.getElementById('anat-progress').style.width   = (anatIdx / anatPool.length * 100) + '%';
+  document.getElementById('anat-actions').style.display  = 'flex';
+
+  const card = document.getElementById('anat-card');
+  card.innerHTML = `
+    <div class="anat-muscle-header">
+      <div class="fc-region-bar" style="background:${color};border-radius:var(--r-lg) var(--r-lg) 0 0;margin:-1px -1px 0;"></div>
+      <div class="anat-muscle-inner">
+        <span class="fc-region-label" style="color:${color}">
+          <span class="region-dot" style="background:${color}"></span>${esc(m.region)}
+          ${m.depth ? `<span style="opacity:.6;font-weight:400;margin-left:4px;">· ${esc(m.depth)}</span>` : ''}
+        </span>
+        <h2 class="fc-muscle-name" style="font-size:clamp(20px,3vw,28px)">${esc(m.name)}</h2>
+        ${m.synonyms&&m.synonyms.length ? `<p class="fc-synonyms">${m.synonyms.slice(0,2).map(esc).join(' · ')}</p>` : ''}
+      </div>
+    </div>
+    <div class="anat-fields-form" id="anat-fields-form">
+      ${fields.map(f => `
+        <div class="anat-field-row" id="anat-row-${f}">
+          <div class="anat-field-head">
+            <span class="fc-field-icon">${ANAT_FIELDS[f].icon}</span>
+            <span class="fc-field-label" style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">${ANAT_FIELDS[f].label}</span>
+          </div>
+          <textarea class="anat-textarea" id="anat-inp-${f}" placeholder="Your answer…" rows="2"
+            onkeydown="if(event.key==='Enter'&&event.ctrlKey)submitAnatAnswer()"></textarea>
+          <div class="anat-field-feedback" id="anat-fb-${f}" style="display:none"></div>
+        </div>`).join('')}
+    </div>`;
+
+  // Focus first textarea
+  const first = card.querySelector('textarea');
+  if (first) setTimeout(() => first.focus(), 50);
+}
+
+function submitAnatAnswer() {
+  const m      = anatPool[anatIdx];
+  const fields = getAnatFields().filter(f => m.notes && m.notes[f] && m.notes[f].trim());
+  const n      = m.notes || {};
+
+  let allAnswered = true;
+  const result = { muscle: m, fields: {} };
+
+  fields.forEach(f => {
+    const inp = document.getElementById('anat-inp-' + f);
+    const fb  = document.getElementById('anat-fb-' + f);
+    const row = document.getElementById('anat-row-' + f);
+    if (!inp) return;
+
+    const answer   = inp.value.trim();
+    const correct  = (n[f] || '').trim();
+
+    if (!answer) { allAnswered = false; inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),400); return; }
+
+    // Reveal: show correct answer for comparison
+    inp.disabled = true;
+    fb.style.display = 'block';
+    fb.innerHTML = `<div class="anat-correct-answer"><span class="anat-fb-label">Correct answer:</span>${esc(correct)}</div>`;
+    row.classList.add('revealed');
+    result.fields[f] = { answer, correct };
+  });
+
+  if (!allAnswered) return;
+
+  anatResults.push(result);
+  document.getElementById('anat-actions').innerHTML = `
+    <button class="btn btn-primary btn-lg" onclick="nextAnatQuestion()">
+      ${anatIdx + 1 < anatPool.length ? 'Next →' : 'See results'}
+    </button>`;
+}
+
+function skipAnatQuestion() {
+  const m      = anatPool[anatIdx];
+  const fields = getAnatFields().filter(f => m.notes && m.notes[f] && m.notes[f].trim());
+  const n      = m.notes || {};
+  const result = { muscle: m, fields: {}, skipped: true };
+  fields.forEach(f => { result.fields[f] = { answer: '', correct: (n[f]||'').trim() }; });
+  anatResults.push(result);
+  nextAnatQuestion();
+}
+
+function nextAnatQuestion() {
+  anatIdx++;
+  renderAnatQuestion();
+}
+
+function showAnatomyEnd() {
+  document.getElementById('anatomy-session').style.display = 'none';
+  document.getElementById('anatomy-end').style.display     = 'flex';
+
+  const total   = anatResults.length;
+  const skipped = anatResults.filter(r => r.skipped).length;
+
+  document.getElementById('anat-end-emoji').textContent = skipped === 0 ? '🎉' : skipped < total/2 ? '💪' : '📚';
+  document.getElementById('anat-end-title').textContent  = 'Session complete!';
+  document.getElementById('anat-end-sub').textContent    = `${total} muscle${total!==1?'s':''} reviewed · ${skipped} skipped`;
+  document.getElementById('anat-end-scores').innerHTML   = `
+    <div class="end-score-box"><div class="val">${total}</div><div class="lbl">Reviewed</div></div>
+    <div class="end-score-box err"><div class="val">${skipped}</div><div class="lbl">Skipped</div></div>`;
+
+  // Review — show all results
+  const review = document.getElementById('anat-review');
+  review.innerHTML = `<div class="anat-review-list">` +
+    anatResults.map(r => {
+      const color = rc(r.muscle.region);
+      const fieldRows = Object.entries(r.fields).map(([f, d]) => `
+        <div class="anat-review-field">
+          <div class="anat-field-head" style="margin-bottom:4px;">
+            <span class="fc-field-icon">${ANAT_FIELDS[f]?.icon||''}</span>
+            <span style="font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${ANAT_FIELDS[f]?.label||f}</span>
+          </div>
+          ${d.answer ? `<div class="anat-review-your"><span style="font-size:10px;color:var(--text3)">Your answer:</span> ${esc(d.answer)}</div>` : `<div style="font-size:12px;color:var(--text3);font-style:italic">Skipped</div>`}
+          <div class="anat-review-correct"><span style="font-size:10px;color:var(--ok)">✓</span> ${esc(d.correct)}</div>
+        </div>`).join('');
+      return `<div class="anat-review-item">
+        <div class="anat-review-muscle">
+          <span class="region-dot" style="background:${color}"></span>
+          <strong>${esc(r.muscle.name)}</strong>
+          <span class="badge badge-region" style="background:${color}22;color:${color};border-color:${color}55;font-size:10px">${esc(r.muscle.region)}</span>
+        </div>
+        ${fieldRows}
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function showAnatomySetup() {
+  document.getElementById('anatomy-session').style.display = 'none';
+  document.getElementById('anatomy-end').style.display     = 'none';
+  document.getElementById('anatomy-setup').style.display   = 'block';
+}
+function stopAnatomyQuiz() {
+  showModal('Stop?', '<p>Progress will be lost.</p>', [
+    { label: 'Stop', cls: 'btn btn-danger', action: () => { hideModal(); showAnatomySetup(); }},
+    { label: 'Continue', cls: 'btn btn-primary', action: hideModal },
+  ]);
+}
 
 // ── FLASHCARDS ────────────────────────────────────────────────────────────────
 let cardDeck  = [];
