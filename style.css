@@ -1905,3 +1905,105 @@ select { cursor: pointer; }
   .anat-fields-form   { padding: 1rem; gap: 1rem; }
   .anat-session-header { flex-wrap: wrap; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MCQ ANATOMY
+   ══════════════════════════════════════════════════════════════ */
+
+.mcq-question-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-radius: var(--r-sm);
+}
+
+.mcq-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+.mcq-anat-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-mid);
+  border-radius: var(--r);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  text-align: left;
+  line-height: 1.45;
+  transition: all 0.14s;
+}
+.mcq-anat-opt:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent-mid);
+  color: var(--accent-text);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+.mcq-anat-opt:disabled { cursor: default; transform: none; box-shadow: none; }
+.mcq-anat-opt.correct  {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 500;
+}
+.mcq-anat-opt.wrong {
+  background: var(--err-bg);
+  border-color: var(--err);
+  color: var(--err);
+}
+
+.mcq-opt-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: var(--bg2);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--text3);
+  margin-top: 1px;
+}
+.mcq-anat-opt.correct .mcq-opt-letter { background: var(--ok); color: white; }
+.mcq-anat-opt.wrong   .mcq-opt-letter { background: var(--err); color: white; }
+
+.mcq-anat-feedback {
+  padding: 10px 1.5rem 1.25rem;
+}
+.mcq-fb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mcq-fb-icon {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+.mcq-fb-icon.ok  { color: var(--ok); }
+.mcq-fb-icon.err { color: var(--err); }
+.mcq-fb-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 600px) {
+  .mcq-options-grid { grid-template-columns: 1fr; }
+  .mcq-anat-opt { font-size: 13px; }
+}

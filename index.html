@@ -23,6 +23,7 @@
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
       <button class="nav-btn" data-panel="anatomy" onclick="switchPanel('anatomy')">Anatomy</button>
+      <button class="nav-btn" data-panel="mcq"     onclick="switchPanel('mcq')">MCQ</button>
       <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
       <button class="nav-btn" data-panel="recall" onclick="switchPanel('recall')">Recall</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
@@ -586,6 +587,112 @@
     </div>
   </div>
 
+  <!-- ══ MCQ ANATOMY PANEL ══ -->
+  <div class="panel" id="panel-mcq">
+
+    <!-- Setup -->
+    <div id="mcq-setup">
+      <div class="page-title">
+        <h1>MCQ — Anatomy</h1>
+        <p>4 choices from the same body region. Pick the correct one.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm" onclick="mcqSelectAll()">All</button>
+              <button class="btn btn-sm" onclick="mcqSelectNone()">None</button>
+            </div>
+          </div>
+          <div class="recall-region-checks" id="mcq-region-checks"></div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="margin-bottom:8px;display:block;">Train on</label>
+          <div class="anat-field-picks" id="mcq-field-picks">
+            <label class="recall-region-chip checked" id="mcqpick-origin">
+              <input type="checkbox" value="origin" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#128205;</span><span>Origin</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-insertion">
+              <input type="checkbox" value="insertion" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#127919;</span><span>Insertion</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-function">
+              <input type="checkbox" value="function" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#9889;</span><span>Function</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="quiz-options-row">
+          <div class="form-field">
+            <label class="form-label">Questions</label>
+            <div class="select-wrap">
+              <select id="mcq-count">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Order</label>
+            <div class="select-wrap">
+              <select id="mcq-order">
+                <option value="random">Random</option>
+                <option value="worst">Weakest first</option>
+                <option value="alpha">Alphabetical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" onclick="startMCQ()">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div id="mcq-session" style="display:none;">
+      <div class="anat-session-header">
+        <div class="anat-progress-label">
+          <span id="mcq-q-num">1</span> / <span id="mcq-q-total">10</span>
+        </div>
+        <div class="quiz-progress" style="flex:1;margin:0;">
+          <div class="quiz-progress-fill" id="mcq-progress" style="width:0%"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--ok);font-weight:500;" id="mcq-score-ok">0 ✓</span>
+          <span style="font-size:12px;color:var(--err);font-weight:500;" id="mcq-score-err">0 ✗</span>
+          <button class="btn btn-ghost btn-sm" onclick="stopMCQ()">Stop</button>
+        </div>
+      </div>
+      <div class="anat-card" id="mcq-card"></div>
+    </div>
+
+    <!-- End -->
+    <div id="mcq-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="mcq-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="mcq-end-title">Done!</div>
+      <div class="quiz-end-sub" id="mcq-end-sub"></div>
+      <div class="quiz-end-scores" id="mcq-end-scores"></div>
+      <div id="mcq-review" style="width:100%;max-width:800px;"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startMCQ()">Play again</button>
+        <button class="btn" onclick="showMCQSetup()">Settings</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -673,6 +780,7 @@ function switchPanel(name) {
   if (name === 'recall') { populateRecallFilters(); }
   if (name === 'cards')  { initCards(); }
   if (name === 'anatomy') { initAnatomyQuiz(); }
+  if (name === 'mcq')     { initMCQ(); }
 }
 
 function updateNavCount() {
@@ -1657,6 +1765,296 @@ function endRecall(timedOut, gaveUp) {
 }
 
 
+
+
+// ── MCQ ANATOMY QUIZ ──────────────────────────────────────────────────────────
+let mcqPool      = [];
+let mcqIdx       = 0;
+let mcqCorrect   = 0;
+let mcqWrong     = 0;
+let mcqAnswered  = false;
+let mcqReview    = [];
+
+const MCQ_FIELDS = {
+  origin:    { label: 'Origin',    icon: '📍' },
+  insertion: { label: 'Insertion', icon: '🎯' },
+  function:  { label: 'Function',  icon: '⚡' },
+};
+
+function initMCQ() {
+  const regions   = [...new Set(muscles.map(m => m.region))].sort();
+  const container = document.getElementById('mcq-region-checks');
+  if (!container) return;
+  const existing = new Set([...container.querySelectorAll('input:checked')].map(el => el.value));
+  const first    = container.children.length === 0;
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color   = rc(r);
+    const count   = muscles.filter(m => m.region === r).length;
+    const checked = first || existing.has(r);
+    const lbl     = document.createElement('label');
+    lbl.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    lbl.innerHTML = `<input type="checkbox" value="${r}" ${checked?'checked':''} onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span class="region-dot" style="background:${color}"></span><span>${r}</span><span class="recall-chip-count">${count}</span>`;
+    container.appendChild(lbl);
+  });
+}
+function mcqSelectAll()  { document.querySelectorAll('#mcq-region-checks input').forEach(cb => { cb.checked=true;  cb.closest('label').classList.add('checked'); }); }
+function mcqSelectNone() { document.querySelectorAll('#mcq-region-checks input').forEach(cb => { cb.checked=false; cb.closest('label').classList.remove('checked'); }); }
+function getMCQRegions() { return [...document.querySelectorAll('#mcq-region-checks input:checked')].map(cb => cb.value); }
+function getMCQFields()  { return [...document.querySelectorAll('#mcq-field-picks input:checked')].map(cb => cb.value); }
+
+function startMCQ() {
+  const selRegions = getMCQRegions();
+  const selFields  = getMCQFields();
+  const countSel   = document.getElementById('mcq-count').value;
+  const order      = document.getElementById('mcq-order').value;
+
+  if (!selRegions.length) { toast('Select at least one region!'); return; }
+  if (!selFields.length)  { toast('Select at least one field!'); return; }
+
+  // Build candidate list: muscle + field pairs where the field is non-empty
+  let pairs = [];
+  muscles.forEach(m => {
+    if (!selRegions.includes(m.region)) return;
+    const n = m.notes || {};
+    selFields.forEach(f => {
+      if (n[f] && n[f].trim()) pairs.push({ muscle: m, field: f });
+    });
+  });
+
+  if (pairs.length < 4) { toast('Need at least 4 muscles with data for MCQ!'); return; }
+
+  if (order === 'random') shuffle(pairs);
+  else if (order === 'alpha') pairs.sort((a,b) => a.muscle.name.localeCompare(b.muscle.name));
+  else pairs.sort((a,b) => getRate(a.muscle.id) - getRate(b.muscle.id));
+
+  const count = countSel === 'all' ? pairs.length : Math.min(parseInt(countSel), pairs.length);
+  mcqPool     = pairs.slice(0, count);
+  mcqIdx      = 0; mcqCorrect = 0; mcqWrong = 0; mcqAnswered = false; mcqReview = [];
+
+  document.getElementById('mcq-setup').style.display   = 'none';
+  document.getElementById('mcq-end').style.display     = 'none';
+  document.getElementById('mcq-session').style.display = 'block';
+  document.getElementById('mcq-q-total').textContent   = mcqPool.length;
+
+  renderMCQQuestion();
+}
+
+// ── Distractor generation ─────────────────────────────────────────────────────
+// Strategy: prefer distractors from the SAME region, then neighbour regions,
+// then any region as last resort. Never repeat the correct answer text.
+const REGION_NEIGHBOURS = {
+  'Arm':              ['Shoulder','Forearm'],
+  'Forearm':          ['Arm','Hand'],
+  'Hand':             ['Forearm'],
+  'Shoulder':         ['Arm','Back','Thorax','Neck'],
+  'Thorax':           ['Shoulder','Abdomen','Back'],
+  'Abdomen':          ['Thorax','Back','Pelvis & Gluteal'],
+  'Back':             ['Shoulder','Neck','Thorax','Abdomen','Pelvis & Gluteal'],
+  'Neck':             ['Back','Shoulder'],
+  'Pelvis & Gluteal': ['Abdomen','Back','Thigh'],
+  'Thigh':            ['Pelvis & Gluteal','Leg'],
+  'Leg':              ['Thigh','Foot'],
+  'Foot':             ['Leg'],
+  'Head & Face':      ['Neck'],
+};
+
+function getMCQDistractors(correctMuscle, field, n) {
+  const correctText = (correctMuscle.notes || {})[field] || '';
+  const region      = correctMuscle.region;
+  const neighbours  = REGION_NEIGHBOURS[region] || [];
+
+  // Build candidate pool ordered by proximity
+  const tiers = [
+    muscles.filter(m => m.id !== correctMuscle.id && m.region === region),
+    muscles.filter(m => m.id !== correctMuscle.id && neighbours.includes(m.region)),
+    muscles.filter(m => m.id !== correctMuscle.id && !neighbours.includes(m.region) && m.region !== region),
+  ];
+
+  const seen  = new Set([correctText.trim().toLowerCase()]);
+  const picks = [];
+
+  for (const tier of tiers) {
+    if (picks.length >= n) break;
+    shuffle(tier);
+    for (const m of tier) {
+      if (picks.length >= n) break;
+      const val = ((m.notes || {})[field] || '').trim();
+      if (!val) continue;
+      // Avoid near-duplicates: skip if text is very similar to already-picked options
+      const valLow = val.toLowerCase();
+      if (seen.has(valLow)) continue;
+      // Simple dedup: skip if levenshtein distance < 10 from any existing pick
+      let tooSimilar = false;
+      for (const s of seen) {
+        if (Math.abs(val.length - s.length) < 8 && lev(valLow.slice(0,30), s.slice(0,30)) < 8) {
+          tooSimilar = true; break;
+        }
+      }
+      if (tooSimilar) continue;
+      seen.add(valLow);
+      picks.push({ muscle: m, val });
+    }
+  }
+
+  return picks.slice(0, n);
+}
+
+function renderMCQQuestion() {
+  if (mcqIdx >= mcqPool.length) { showMCQEnd(); return; }
+  mcqAnswered = false;
+  const { muscle: m, field } = mcqPool[mcqIdx];
+  const color   = rc(m.region);
+  const correct = ((m.notes || {})[field] || '').trim();
+  const fInfo   = MCQ_FIELDS[field];
+
+  document.getElementById('mcq-q-num').textContent    = mcqIdx + 1;
+  document.getElementById('mcq-progress').style.width = (mcqIdx / mcqPool.length * 100) + '%';
+  document.getElementById('mcq-score-ok').textContent  = mcqCorrect + ' ✓';
+  document.getElementById('mcq-score-err').textContent = mcqWrong + ' ✗';
+
+  // Build 4 options: 1 correct + 3 distractors
+  const distractors = getMCQDistractors(m, field, 3);
+  if (distractors.length < 3) {
+    // Not enough distractors — skip this question silently
+    mcqIdx++;
+    renderMCQQuestion();
+    return;
+  }
+  const options = shuffle([
+    { val: correct, isCorrect: true },
+    ...distractors.map(d => ({ val: d.val, isCorrect: false, source: d.muscle.name })),
+  ]);
+
+  const card = document.getElementById('mcq-card');
+  card.innerHTML = `
+    <div class="anat-muscle-header">
+      <div class="fc-region-bar" style="background:${color};border-radius:var(--r-lg) var(--r-lg) 0 0;margin:-1px -1px 0;"></div>
+      <div class="anat-muscle-inner">
+        <span class="fc-region-label" style="color:${color}">
+          <span class="region-dot" style="background:${color}"></span>${esc(m.region)}
+          ${m.depth?`<span style="opacity:.6;font-weight:400;margin-left:4px;">· ${esc(m.depth)}</span>`:''}
+        </span>
+        <h2 class="fc-muscle-name" style="font-size:clamp(18px,3vw,26px)">${esc(m.name)}</h2>
+        ${m.synonyms&&m.synonyms.length?`<p class="fc-synonyms">${m.synonyms.slice(0,2).map(esc).join(' · ')}</p>`:''}
+        <div class="mcq-question-label">
+          <span>${fInfo.icon}</span>
+          <span>What is the <strong>${fInfo.label.toLowerCase()}</strong> of this muscle?</span>
+        </div>
+      </div>
+    </div>
+    <div class="mcq-options-grid" id="mcq-opts">
+      ${options.map((o, i) => `
+        <button class="mcq-anat-opt" id="mcqopt-${i}" data-correct="${o.isCorrect}"
+          onclick="checkMCQAnat(${i}, ${o.isCorrect})">
+          <span class="mcq-opt-letter">${'ABCD'[i]}</span>
+          <span class="mcq-opt-text">${esc(o.val)}</span>
+        </button>`).join('')}
+    </div>
+    <div class="mcq-anat-feedback" id="mcq-anat-feedback" style="display:none"></div>`;
+}
+
+function checkMCQAnat(idx, isCorrect) {
+  if (mcqAnswered) return;
+  mcqAnswered = true;
+
+  const opts = document.querySelectorAll('.mcq-anat-opt');
+  opts.forEach(b => b.disabled = true);
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) {
+    // Highlight the correct button (stored as data-correct on each button)
+    opts.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
+    mcqWrong++;
+  } else {
+    mcqCorrect++;
+  }
+
+  // Update score display
+  document.getElementById('mcq-score-ok').textContent  = mcqCorrect + ' ✓';
+  document.getElementById('mcq-score-err').textContent = mcqWrong + ' ✗';
+
+  // Show feedback + next button
+  const fb = document.getElementById('mcq-anat-feedback');
+  fb.style.display = 'block';
+  fb.innerHTML = `
+    <div class="mcq-fb-row">
+      <span class="mcq-fb-icon ${isCorrect?'ok':'err'}">${isCorrect?'✓':'✗'}</span>
+      <span class="mcq-fb-text">${isCorrect ? 'Correct!' : 'Wrong.'}</span>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="nextMCQQuestion()">
+        ${mcqIdx + 1 < mcqPool.length ? 'Next →' : 'Results'}
+      </button>
+    </div>`;
+
+  // Store for review
+  const { muscle: m, field } = mcqPool[mcqIdx];
+  mcqReview.push({
+    muscle: m, field,
+    correct: isCorrect,
+    chosen: document.getElementById(`mcqopt-${idx}`).querySelector('.mcq-opt-text').textContent,
+    answer: ((m.notes||{})[field]||'').trim(),
+  });
+
+  if (isCorrect) setTimeout(() => { if (mcqAnswered) nextMCQQuestion(); }, 1200);
+}
+
+function nextMCQQuestion() {
+  mcqIdx++;
+  renderMCQQuestion();
+}
+
+function showMCQEnd() {
+  document.getElementById('mcq-session').style.display = 'none';
+  document.getElementById('mcq-end').style.display     = 'flex';
+
+  const total = mcqReview.length;
+  const pct   = total ? Math.round(mcqCorrect / total * 100) : 0;
+  document.getElementById('mcq-end-emoji').textContent = pct>=80?'🎉':pct>=60?'💪':'📚';
+  document.getElementById('mcq-end-title').textContent  = pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practicing!';
+  document.getElementById('mcq-end-sub').textContent    = `${pct}% correct over ${total} questions`;
+  document.getElementById('mcq-end-scores').innerHTML   = `
+    <div class="end-score-box ok"><div class="val">${mcqCorrect}</div><div class="lbl">Correct</div></div>
+    <div class="end-score-box err"><div class="val">${mcqWrong}</div><div class="lbl">Wrong</div></div>
+    <div class="end-score-box"><div class="val">${pct}%</div><div class="lbl">Rate</div></div>`;
+
+  // Review
+  const review = document.getElementById('mcq-review');
+  const wrong  = mcqReview.filter(r => !r.correct);
+  if (!wrong.length) { review.innerHTML = '<p style="text-align:center;color:var(--ok);font-weight:500;margin-top:1rem;">Perfect score — all correct!</p>'; return; }
+  review.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 10px;">
+      Missed (${wrong.length})
+    </div>
+    <div class="anat-review-list">
+      ${wrong.map(r => {
+        const color = rc(r.muscle.region);
+        const fInfo = MCQ_FIELDS[r.field];
+        return `<div class="anat-review-item">
+          <div class="anat-review-muscle">
+            <span class="region-dot" style="background:${color}"></span>
+            <strong>${esc(r.muscle.name)}</strong>
+            <span class="badge badge-region" style="background:${color}22;color:${color};border-color:${color}55;font-size:10px">${esc(r.muscle.region)}</span>
+            <span style="font-size:11px;color:var(--text3)">${fInfo.icon} ${fInfo.label}</span>
+          </div>
+          <div class="anat-review-field">
+            <div class="anat-review-your"><span style="font-size:10px;color:var(--err)">✗ Your answer:</span> ${esc(r.chosen)}</div>
+            <div class="anat-review-correct"><span style="font-size:10px;color:var(--ok)">✓ Correct:</span> ${esc(r.answer)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function stopMCQ() {
+  showModal('Stop?', '<p>Progress will be lost.</p>', [
+    { label: 'Stop', cls: 'btn btn-danger', action: () => { hideModal(); showMCQSetup(); }},
+    { label: 'Continue', cls: 'btn btn-primary', action: hideModal },
+  ]);
+}
+function showMCQSetup() {
+  document.getElementById('mcq-session').style.display = 'none';
+  document.getElementById('mcq-end').style.display     = 'none';
+  document.getElementById('mcq-setup').style.display   = 'block';
+}
 
 // ── ANATOMY QUIZ ──────────────────────────────────────────────────────────────
 let anatPool    = [];
