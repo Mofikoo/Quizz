@@ -520,6 +520,14 @@
               <input type="checkbox" value="function" checked onchange="toggleAnatPick(this)" style="display:none">
               <span>⚡</span><span>Function</span>
             </label>
+            <label class="recall-region-chip checked" id="pick-innervation">
+              <input type="checkbox" value="innervation" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>🧠</span><span>Innervation</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-blood-supply">
+              <input type="checkbox" value="blood_supply" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>🩸</span><span>Blood supply</span>
+            </label>
           </div>
         </div>
 
@@ -627,6 +635,14 @@
             <label class="recall-region-chip checked" id="mcqpick-function">
               <input type="checkbox" value="function" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
               <span>&#9889;</span><span>Function</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-innervation">
+              <input type="checkbox" value="innervation" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#129504;</span><span>Innervation</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-blood-supply">
+              <input type="checkbox" value="blood_supply" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#129656;</span><span>Blood supply</span>
             </label>
           </div>
         </div>
@@ -796,10 +812,12 @@ function addMuscle() {
   const region    = document.getElementById('inp-region').value;
   const depth     = document.getElementById('inp-depth').value;
   const synonyms  = document.getElementById('inp-synonyms').value.trim();
-  const origin    = document.getElementById('inp-origin').value.trim();
-  const insertion = document.getElementById('inp-insertion').value.trim();
-  const func_     = document.getElementById('inp-function').value.trim();
-  const notes     = document.getElementById('inp-notes').value.trim();
+  const origin      = document.getElementById('inp-origin').value.trim();
+  const insertion   = document.getElementById('inp-insertion').value.trim();
+  const func_       = document.getElementById('inp-function').value.trim();
+  const innervation = document.getElementById('inp-innervation').value.trim();
+  const bloodSupply = document.getElementById('inp-blood-supply').value.trim();
+  const notes       = document.getElementById('inp-notes').value.trim();
   const errEl     = document.getElementById('add-error');
 
   if (!name)   { errEl.textContent = 'Name is required.'; return; }
@@ -812,11 +830,11 @@ function addMuscle() {
   muscles.push({
     id: Date.now() + Math.random(), name, region, depth,
     synonyms: synonyms ? synonyms.split(',').map(s => s.trim()).filter(Boolean) : [],
-    notes: { origin, insertion, function: func_, extra: notes },
+    notes: { origin, insertion, function: func_, innervation, blood_supply: bloodSupply, extra: notes },
     createdAt: Date.now(),
   });
   saveMuscles(muscles);
-  ['inp-name','inp-synonyms','inp-origin','inp-insertion','inp-function','inp-notes'].forEach(id => document.getElementById(id).value = '');
+  ['inp-name','inp-synonyms','inp-origin','inp-insertion','inp-function','inp-innervation','inp-blood-supply','inp-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('inp-region').value = '';
   document.getElementById('inp-depth').value = '';
   document.getElementById('inp-name').focus();
@@ -969,7 +987,7 @@ function getRate(id) {
 function notesFlat(n) {
   if (!n) return '';
   if (typeof n === 'string') return n;
-  return [n.origin, n.insertion, n.function, n.extra].filter(Boolean).join(' ');
+  return [n.origin, n.insertion, n.function, n.innervation, n.blood_supply, n.extra].filter(Boolean).join(' ');
 }
 
 // ── DELETE / EDIT ─────────────────────────────────────────────────────────────
@@ -1014,6 +1032,10 @@ function editMuscle(id) {
         <input type="text" id="e-ins" value="${esc(n.insertion||'')}" /></div>
       <div class="form-field"><label class="form-label">Function</label>
         <textarea id="e-func">${esc(n.function||'')}</textarea></div>
+      <div class="form-field"><label class="form-label">Innervation</label>
+        <input type="text" id="e-innervation" value="${esc(n.innervation||'')}" /></div>
+      <div class="form-field"><label class="form-label">Blood supply</label>
+        <input type="text" id="e-blood-supply" value="${esc(n.blood_supply||'')}" /></div>
       <div class="form-field"><label class="form-label">Extra notes</label>
         <textarea id="e-notes">${esc(n.extra||'')}</textarea></div>
     </div>`, [
@@ -1023,10 +1045,12 @@ function editMuscle(id) {
       m.depth  = document.getElementById('e-depth').value;
       m.synonyms = document.getElementById('e-syn').value.split(',').map(s=>s.trim()).filter(Boolean);
       m.notes = {
-        origin:    document.getElementById('e-orig').value.trim(),
-        insertion: document.getElementById('e-ins').value.trim(),
-        function:  document.getElementById('e-func').value.trim(),
-        extra:     document.getElementById('e-notes').value.trim(),
+        origin:      document.getElementById('e-orig').value.trim(),
+        insertion:   document.getElementById('e-ins').value.trim(),
+        function:    document.getElementById('e-func').value.trim(),
+        innervation: document.getElementById('e-innervation').value.trim(),
+        blood_supply:document.getElementById('e-blood-supply').value.trim(),
+        extra:       document.getElementById('e-notes').value.trim(),
       };
       saveMuscles(muscles); renderList(); hideModal(); toast('Saved!');
     }},
@@ -1076,11 +1100,11 @@ function exportJSON() {
   dl(new Blob([JSON.stringify(muscles, null, 2)], {type:'application/json'}), 'muscles.json');
 }
 function exportCSV() {
-  const rows = [['Name','Region','Depth','Synonyms','Origin','Insertion','Function','Notes']];
+  const rows = [['Name','Region','Depth','Synonyms','Origin','Insertion','Function','Innervation','Blood supply','Notes']];
   muscles.forEach(m => {
     const n = m.notes || {};
     rows.push([m.name, m.region, m.depth||'', (m.synonyms||[]).join(' | '),
-      n.origin||'', n.insertion||'', n.function||'', n.extra||'']);
+      n.origin||'', n.insertion||'', n.function||'', n.innervation||'', n.blood_supply||'', n.extra||'']);
   });
   dl(new Blob([rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n')],
     {type:'text/csv'}), 'muscles.csv');
@@ -1121,9 +1145,10 @@ function importJSON(text) {
     let notes;
     if (m.notes && typeof m.notes === 'object') {
       notes = { origin: m.notes.origin||'', insertion: m.notes.insertion||'',
-                function: m.notes.function||'', extra: m.notes.extra||'' };
+                function: m.notes.function||'', innervation: m.notes.innervation||'',
+                blood_supply: m.notes.blood_supply||'', extra: m.notes.extra||'' };
     } else {
-      notes = { origin:'', insertion:'', function:'', extra: typeof m.notes === 'string' ? m.notes : '' };
+      notes = { origin:'', insertion:'', function:'', innervation:'', blood_supply:'', extra: typeof m.notes === 'string' ? m.notes : '' };
     }
 
     muscles.push({
@@ -1802,9 +1827,11 @@ let mcqAnswered  = false;
 let mcqReview    = [];
 
 const MCQ_FIELDS = {
-  origin:    { label: 'Origin',    icon: '📍' },
-  insertion: { label: 'Insertion', icon: '🎯' },
-  function:  { label: 'Function',  icon: '⚡' },
+  origin:      { label: 'Origin',       icon: '📍' },
+  insertion:   { label: 'Insertion',    icon: '🎯' },
+  function:    { label: 'Function',     icon: '⚡' },
+  innervation: { label: 'Innervation',  icon: '🧠' },
+  blood_supply:{ label: 'Blood supply', icon: '🩸' },
 };
 
 function initMCQ() {
@@ -2087,9 +2114,11 @@ let anatPool    = [];
 let anatIdx     = 0;
 let anatResults = []; // { muscle, fields, answers }
 const ANAT_FIELDS = {
-  origin:    { label: 'Origin',    icon: '📍' },
-  insertion: { label: 'Insertion', icon: '🎯' },
-  function:  { label: 'Function',  icon: '⚡' },
+  origin:      { label: 'Origin',       icon: '📍' },
+  insertion:   { label: 'Insertion',    icon: '🎯' },
+  function:    { label: 'Function',     icon: '⚡' },
+  innervation: { label: 'Innervation',  icon: '🧠' },
+  blood_supply:{ label: 'Blood supply', icon: '🩸' },
 };
 
 function initAnatomyQuiz() {
@@ -2392,10 +2421,12 @@ function renderCard() {
 
   // ── BACK ───────────────────────────────────────────────────────
   const fields = [
-    { icon: '📍', label: 'Origin',    val: n.origin    },
-    { icon: '🎯', label: 'Insertion', val: n.insertion },
-    { icon: '⚡', label: 'Function',  val: n.function  },
-    { icon: '📝', label: 'Notes',     val: n.extra     },
+    { icon: '📍', label: 'Origin',      val: n.origin      },
+    { icon: '🎯', label: 'Insertion',   val: n.insertion   },
+    { icon: '⚡', label: 'Function',    val: n.function    },
+    { icon: '🧠', label: 'Innervation', val: n.innervation },
+    { icon: '🩸', label: 'Blood supply',val: n.blood_supply},
+    { icon: '📝', label: 'Notes',       val: n.extra       },
   ].filter(f => f.val && f.val.trim());
 
   const fieldsHTML = fields.length
