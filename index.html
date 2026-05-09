@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MuscleQuiz — Anatomy</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="app">
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-main">MuscleQuiz</span>
+      <span class="logo-sub">— anatomy</span>
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn active" data-panel="add"   onclick="switchPanel('add')">+ Add</button>
+      <button class="nav-btn"        data-panel="list"  onclick="switchPanel('list')">
+        Muscles <span class="nav-badge" id="nav-count">0</span>
+      </button>
+      <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
+      <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
+      <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- ══ ADD PANEL ══ -->
+  <div class="panel active" id="panel-add">
+    <div class="page-title">
+      <h1>Add a muscle</h1>
+      <p>Fill in the official name and body region — other fields are optional.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-icon">+</div>
+        <div>
+          <h2>New muscle</h2>
+          <p>Required fields marked <span style="color:var(--err)">*</span></p>
+        </div>
+      </div>
+
+      <div class="form-grid form-grid--3">
+        <div class="form-field" style="grid-column:1/3">
+          <label class="form-label">Official name <span class="required">*</span></label>
+          <input type="text" id="inp-name" placeholder="e.g. Biceps brachii" autocomplete="off" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Region <span class="required">*</span></label>
+          <div class="select-wrap">
+            <select id="inp-region">
+              <option value="">Choose...</option>
+              <option>Neck</option>
+              <option>Shoulder</option>
+              <option>Arm</option>
+              <option>Forearm</option>
+              <option>Hand</option>
+              <option>Thorax</option>
+              <option>Abdomen</option>
+              <option>Back</option>
+              <option>Pelvis &amp; Gluteal</option>
+              <option>Thigh</option>
+              <option>Leg</option>
+              <option>Foot</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field form-span-2">
+          <label class="form-label">Synonyms (comma-separated)</label>
+          <input type="text" id="inp-synonyms" placeholder="e.g. Biceps, Two-headed muscle of the arm" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Depth</label>
+          <div class="select-wrap">
+            <select id="inp-depth">
+              <option value="">-</option>
+              <option>Superficial</option>
+              <option>Deep</option>
+              <option>Intermediate</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field form-span-2">
+          <label class="form-label">Origin</label>
+          <input type="text" id="inp-origin" placeholder="e.g. Short head: coracoid process of scapula..." />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Insertion</label>
+          <input type="text" id="inp-insertion" placeholder="e.g. Radial tuberosity, bicipital aponeurosis" />
+        </div>
+
+        <div class="form-field form-span-2">
+          <label class="form-label">Function</label>
+          <textarea id="inp-function" placeholder="e.g. Flexion of elbow, supination of forearm..."></textarea>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Extra notes</label>
+          <textarea id="inp-notes" placeholder="Clinical notes, landmarks, mnemonics..."></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <span id="add-error" class="form-error"></span>
+        <button class="btn btn-primary btn-lg" onclick="addMuscle()">Add muscle</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-header">
+        <div class="card-header-icon">&#8645;</div>
+        <div>
+          <h2>Import / Export</h2>
+          <p>Supports JSON (flat array or {muscles:[...]} format) and CSV</p>
+        </div>
+      </div>
+      <div class="import-export-grid">
+        <button class="btn" onclick="exportJSON()">Export JSON</button>
+        <button class="btn" onclick="exportCSV()">Export CSV</button>
+        <div class="file-input-wrapper">
+          <button class="btn">Import file</button>
+          <input type="file" accept=".json,.csv" onchange="importFile(event)" />
+        </div>
+        <button class="btn btn-danger" onclick="confirmClear()">Clear all</button>
+      </div>
+      <p class="form-hint" style="margin-top:10px;">
+        Accepted JSON: flat array <code>[{name,region,...}]</code> or reference format <code>{muscles:[...]}</code> with nested <code>notes.origin/insertion/function</code>.
+      </p>
+    </div>
+  </div>
+
+  <!-- ══ LIST PANEL ══ -->
+  <div class="panel" id="panel-list">
+    <div class="list-toolbar">
+      <div class="search-wrap">
+        <input type="search" id="search-input" placeholder="Search muscles..." oninput="renderList()" />
+      </div>
+      <div class="select-wrap" style="max-width:180px;flex:1">
+        <select id="filter-region" onchange="renderList()">
+          <option value="">All regions</option>
+        </select>
+      </div>
+      <div class="select-wrap" style="max-width:160px;flex:1">
+        <select id="filter-depth" onchange="renderList()">
+          <option value="">All depths</option>
+          <option>Superficial</option>
+          <option>Deep</option>
+          <option>Intermediate</option>
+        </select>
+      </div>
+      <div class="select-wrap" style="max-width:180px;flex:1">
+        <select id="sort-by" onchange="renderList()">
+          <option value="name">Sort: Name</option>
+          <option value="region">Sort: Region</option>
+          <option value="rate">Sort: Success rate</option>
+          <option value="date">Sort: Date added</option>
+        </select>
+      </div>
+      <span class="list-count" id="list-count"></span>
+    </div>
+    <div class="card card--flush">
+      <div class="muscle-table-wrap" id="list-container"></div>
+    </div>
+  </div>
+
+  <!-- ══ QUIZ PANEL ══ -->
+  <div class="panel" id="panel-quiz">
+    <div id="quiz-setup">
+      <div class="page-title">
+        <h1>Quiz</h1>
+        <p>Choose a mode and start. Results are tracked per muscle.</p>
+      </div>
+
+      <!-- ── Priority launchers ── -->
+      <div class="quiz-launchers">
+        <div class="quiz-launcher-card" onclick="switchPanel('recall')">
+          <div class="ql-icon">&#128302;</div>
+          <div class="ql-body">
+            <div class="ql-title">Recall — Muscle names</div>
+            <div class="ql-sub">Name every muscle from memory. Cells light up when correct.</div>
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" onclick="switchPanel('anatomy')">
+          <div class="ql-icon">&#9997;</div>
+          <div class="ql-body">
+            <div class="ql-title">Anatomy — Free input</div>
+            <div class="ql-sub">Write origins, insertions, innervations and functions from scratch.</div>
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" onclick="switchPanel('mcq')">
+          <div class="ql-icon">&#9673;</div>
+          <div class="ql-body">
+            <div class="ql-title">MCQ — Anatomy</div>
+            <div class="ql-sub">4 choices from the same region. Pick origin, insertion, innervation or function.</div>
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+      </div>
+
+
+      <div class="quiz-section-label">Quick quiz — regions &amp; names</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+
+        <label class="form-label" style="display:block;margin-bottom:8px;">Quiz mode</label>
+        <div class="quiz-mode-grid" id="quiz-mode-grid">
+          <div class="mode-card selected" data-mode="free" onclick="selectMode(this)">
+            <div class="mode-card-icon">&#9997;</div>
+            <div class="mode-card-title">Free input — region</div>
+            <div class="mode-card-sub">Type the body region of the shown muscle</div>
+          </div>
+          <div class="mode-card" data-mode="mcq" onclick="selectMode(this)">
+            <div class="mode-card-icon">&#9673;</div>
+            <div class="mode-card-title">MCQ — region</div>
+            <div class="mode-card-sub">4 choices — find the region</div>
+          </div>
+          <div class="mode-card" data-mode="region" onclick="selectMode(this)">
+            <div class="mode-card-icon">&#128506;</div>
+            <div class="mode-card-title">Region to Muscle</div>
+            <div class="mode-card-sub">Type a muscle from the shown region</div>
+          </div>
+          <div class="mode-card" data-mode="muscle" onclick="selectMode(this)">
+            <div class="mode-card-icon">&#127991;</div>
+            <div class="mode-card-title">Muscle to Region (MCQ)</div>
+            <div class="mode-card-sub">4 muscles — which belongs to this region?</div>
+          </div>
+          <div class="mode-card" data-mode="origin" onclick="selectMode(this)">
+            <div class="mode-card-icon">&#128205;</div>
+            <div class="mode-card-title">Guess origin</div>
+            <div class="mode-card-sub">See the name — find its anatomical origin</div>
+          </div>
+          <div class="mode-card" data-mode="function" onclick="selectMode(this)">
+            <div class="mode-card-icon">&#9889;</div>
+            <div class="mode-card-title">Guess function</div>
+            <div class="mode-card-sub">See the name — describe its main function</div>
+          </div>
+        </div>
+
+        <div class="quiz-options-row" style="margin-top:1rem;">
+          <div class="form-field">
+            <label class="form-label">Filter by region</label>
+            <div class="select-wrap">
+              <select id="quiz-region-filter"><option value="">All regions</option></select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Number of questions</label>
+            <div class="select-wrap">
+              <select id="quiz-count">
+                <option value="10">10 questions</option>
+                <option value="20">20 questions</option>
+                <option value="30">30 questions</option>
+                <option value="50">50 questions</option>
+                <option value="all">All muscles</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Order</label>
+            <div class="select-wrap">
+              <select id="quiz-order">
+                <option value="random">Random</option>
+                <option value="worst">Weakest first</option>
+                <option value="alpha">Alphabetical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" onclick="startQuiz()">Start quiz</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div id="quiz-session" style="display:none;">
+      <div class="quiz-scores-bar">
+        <div class="score-chip ok">
+          <span class="score-chip-icon">&#10003;</span>
+          <div>
+            <div class="score-chip-val" id="q-correct">0</div>
+            <div class="score-chip-lbl">Correct</div>
+          </div>
+        </div>
+        <div class="score-chip err">
+          <span class="score-chip-icon">&#10007;</span>
+          <div>
+            <div class="score-chip-val" id="q-wrong">0</div>
+            <div class="score-chip-lbl">Wrong</div>
+          </div>
+        </div>
+        <div class="score-chip">
+          <span class="score-chip-icon">&#9711;</span>
+          <div>
+            <div class="score-chip-val" id="q-remaining">-</div>
+            <div class="score-chip-lbl">Remaining</div>
+          </div>
+        </div>
+      </div>
+      <div class="quiz-progress">
+        <div class="quiz-progress-fill" id="q-progress" style="width:0%"></div>
+      </div>
+      <div class="quiz-card" id="q-card"></div>
+      <div style="display:flex;justify-content:center;margin-top:1rem;">
+        <button class="btn btn-ghost" onclick="endQuiz()">Stop quiz</button>
+      </div>
+    </div>
+
+    <!-- End -->
+    <div id="quiz-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="end-title">Quiz complete!</div>
+      <div class="quiz-end-sub" id="end-sub"></div>
+      <div class="quiz-end-scores" id="end-scores"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startQuiz()">Play again</button>
+        <button class="btn" onclick="showQuizSetup()">Change settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STATS PANEL ══ -->
+  <div class="panel" id="panel-stats">
+    <div class="page-title">
+      <h1>Statistics</h1>
+      <p>Your progress per muscle, sorted by success rate.</p>
+    </div>
+    <div class="stats-summary" id="stats-summary"></div>
+    <div class="card card--flush">
+      <div class="muscle-table-wrap">
+        <table class="muscle-table">
+          <thead><tr>
+            <th>Muscle</th><th>Region</th><th>Seen</th><th>Success rate</th>
+          </tr></thead>
+          <tbody id="stats-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RECALL PANEL ══ -->
+  <div class="panel" id="panel-recall">
+    <div class="page-title">
+      <h1>Recall</h1>
+      <p>Name every muscle you know. Type a name — it lights up when correct.</p>
+    </div>
+
+    <!-- Setup card -->
+    <div id="recall-setup">
+    <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+    <div class="card" id="recall-setup-card">
+      <div class="card-header">
+        <div class="card-header-icon">&#128302;</div>
+        <div><h2>Start a recall session</h2><p>No hints. No order. Just you and your memory.</p></div>
+      </div>
+      <div class="form-field" style="margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label class="form-label">Regions</label>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-sm" onclick="recallSelectAll()">All</button>
+            <button class="btn btn-sm" onclick="recallSelectNone()">None</button>
+          </div>
+        </div>
+        <div class="recall-region-checks" id="recall-region-checks"></div>
+      </div>
+      <div class="form-field" style="margin-bottom:1rem;">
+        <label class="form-label">Timer (optional)</label>
+        <div class="select-wrap" style="max-width:200px;">
+          <select id="recall-timer">
+            <option value="0">No timer</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+            <option value="900">15 minutes</option>
+            <option value="1200">20 minutes</option>
+            <option value="1800">30 minutes</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="startRecall()">Start recall</button>
+    </div><!-- /.recall-setup-card -->
+    </div><!-- /.recall-setup -->
+
+    <!-- Session -->
+    <div id="recall-session" style="display:none;">
+
+      <!-- Top bar: input + score + timer -->
+      <div class="recall-topbar">
+        <div class="recall-input-wrap">
+          <input type="text" id="recall-input"
+            placeholder="Type a muscle name and press Enter..."
+            autocomplete="off" autocapitalize="words"
+            oninput="onRecallInput()" />
+          <div class="recall-input-feedback" id="recall-input-feedback"></div>
+        </div>
+        <div class="recall-hud">
+          <div class="recall-hud-chip">
+            <span class="recall-hud-val" id="recall-found">0</span>
+            <span class="recall-hud-lbl">found</span>
+          </div>
+          <div class="recall-hud-chip">
+            <span class="recall-hud-val" id="recall-total-count">0</span>
+            <span class="recall-hud-lbl">total</span>
+          </div>
+          <div class="recall-hud-chip recall-timer-chip" id="recall-timer-chip" style="display:none;">
+            <span class="recall-hud-val" id="recall-clock">00:00</span>
+            <span class="recall-hud-lbl">remaining</span>
+          </div>
+          <button class="btn btn-sm" onclick="giveUpRecall()">Give up</button>
+          <button class="btn btn-sm btn-danger" onclick="stopRecall()">Stop</button>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="quiz-progress" style="margin-bottom:1.25rem;">
+        <div class="quiz-progress-fill" id="recall-progress" style="width:0%"></div>
+      </div>
+
+      <!-- Grid by region -->
+      <div id="recall-grid"></div>
+    </div>
+
+    <!-- End screen -->
+    <div id="recall-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="recall-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="recall-end-title">Session complete!</div>
+      <div class="quiz-end-sub" id="recall-end-sub"></div>
+      <div class="quiz-end-scores" id="recall-end-scores"></div>
+      <div id="recall-missed-wrap" style="width:100%;max-width:700px;text-align:left;"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startRecall()">Play again</button>
+        <button class="btn" onclick="showRecallSetup()">Change settings</button>
+      </div>
+    </div>
+  </div><!-- /.panel-recall -->
+
+  <!-- ══ CARDS PANEL ══ -->
+  <div class="panel" id="panel-cards">
+    <div class="page-title">
+      <h1>Flashcards</h1>
+      <p>Study muscle anatomy one card at a time. Tap the card to flip it.</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="cards-toolbar">
+      <div class="select-wrap" style="flex:1;max-width:200px">
+        <select id="cards-region-filter" onchange="initCards()">
+          <option value="">All regions</option>
+        </select>
+      </div>
+      <div class="select-wrap" style="flex:1;max-width:160px">
+        <select id="cards-depth-filter" onchange="initCards()">
+          <option value="">All depths</option>
+          <option>Superficial</option>
+          <option>Deep</option>
+          <option>Intermediate</option>
+        </select>
+      </div>
+      <div class="select-wrap" style="flex:1;max-width:160px">
+        <select id="cards-order" onchange="initCards()">
+          <option value="alpha">Alphabetical</option>
+          <option value="region">By region</option>
+          <option value="random">Random</option>
+        </select>
+      </div>
+      <span class="cards-counter" id="cards-counter"></span>
+    </div>
+
+    <!-- Card stage -->
+    <div class="cards-stage" id="cards-stage">
+      <div class="flashcard-wrap" id="flashcard-wrap">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+          <div class="flashcard-front" id="fc-front"></div>
+          <div class="flashcard-back"  id="fc-back"></div>
+        </div>
+      </div>
+
+      <!-- Nav -->
+      <div class="cards-nav">
+        <button class="btn btn-lg cards-nav-btn" id="cards-prev" onclick="prevCard()">&#8592;</button>
+        <div class="cards-nav-center">
+          <button class="btn cards-flip-btn" onclick="flipCard()">Flip card</button>
+          <div class="cards-dots" id="cards-dots"></div>
+        </div>
+        <button class="btn btn-lg cards-nav-btn" id="cards-next" onclick="nextCard()">&#8594;</button>
+      </div>
+
+      <!-- Keyboard hint -->
+      <p class="cards-hint">← → to navigate &nbsp;·&nbsp; Space to flip</p>
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="cards-empty" style="display:none">
+      <div class="empty-icon">&#128218;</div>
+      <div class="empty-title">No muscles found</div>
+      <p class="empty-sub">Add muscles or change the filters.</p>
+    </div>
+  </div>
+
+  <!-- ══ ANATOMY QUIZ PANEL ══ -->
+  <div class="panel" id="panel-anatomy">
+
+    <!-- Setup -->
+    <div id="anatomy-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+      <div class="page-title">
+        <h1>Anatomy Quiz</h1>
+        <p>Fill in the origin, insertion and/or function of each muscle from memory.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm" onclick="anatSelectAll()">All</button>
+              <button class="btn btn-sm" onclick="anatSelectNone()">None</button>
+            </div>
+          </div>
+          <div class="recall-region-checks" id="anatomy-region-checks"></div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="margin-bottom:8px;display:block;">Train on</label>
+          <div class="anat-field-picks" id="anat-field-picks">
+            <label class="recall-region-chip checked" id="pick-origin">
+              <input type="checkbox" value="origin" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>📍</span><span>Origin</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-insertion">
+              <input type="checkbox" value="insertion" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>🎯</span><span>Insertion</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-function">
+              <input type="checkbox" value="function" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>⚡</span><span>Function</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-innervation">
+              <input type="checkbox" value="innervation" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>🧠</span><span>Innervation</span>
+            </label>
+            <label class="recall-region-chip checked" id="pick-blood-supply">
+              <input type="checkbox" value="blood_supply" checked onchange="toggleAnatPick(this)" style="display:none">
+              <span>🩸</span><span>Blood supply</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="quiz-options-row">
+          <div class="form-field">
+            <label class="form-label">Questions</label>
+            <div class="select-wrap">
+              <select id="anat-count">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Order</label>
+            <div class="select-wrap">
+              <select id="anat-order">
+                <option value="random">Random</option>
+                <option value="worst">Weakest first</option>
+                <option value="alpha">Alphabetical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" onclick="startAnatomyQuiz()">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div id="anatomy-session" style="display:none;">
+      <div class="anat-session-header">
+        <div class="anat-progress-label">
+          <span id="anat-q-num">1</span> / <span id="anat-q-total">10</span>
+        </div>
+        <div class="quiz-progress" style="flex:1;margin:0;">
+          <div class="quiz-progress-fill" id="anat-progress" style="width:0%"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="stopAnatomyQuiz()">Stop</button>
+      </div>
+
+      <div class="anat-card" id="anat-card"></div>
+
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:1.25rem;" id="anat-actions">
+        <button class="btn btn-primary btn-lg" onclick="submitAnatAnswer()">Check answer</button>
+        <button class="btn" onclick="skipAnatQuestion()">Skip</button>
+      </div>
+    </div>
+
+    <!-- End -->
+    <div id="anatomy-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="anat-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="anat-end-title">Done!</div>
+      <div class="quiz-end-sub" id="anat-end-sub"></div>
+      <div class="quiz-end-scores" id="anat-end-scores"></div>
+      <div id="anat-review" style="width:100%;max-width:800px;"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startAnatomyQuiz()">Play again</button>
+        <button class="btn" onclick="showAnatomySetup()">Settings</button>
+      </div>
+    </div>
+  </div><!-- /.panel-anatomy -->
+
+  <!-- ══ MCQ ANATOMY PANEL ══ -->
+  <div class="panel" id="panel-mcq">
+
+    <!-- Setup -->
+    <div id="mcq-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+      <div class="page-title">
+        <h1>MCQ — Anatomy</h1>
+        <p>4 choices from the same body region. Pick the correct one.</p>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm" onclick="mcqSelectAll()">All</button>
+              <button class="btn btn-sm" onclick="mcqSelectNone()">None</button>
+            </div>
+          </div>
+          <div class="recall-region-checks" id="mcq-region-checks"></div>
+        </div>
+
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="margin-bottom:8px;display:block;">Train on</label>
+          <div class="anat-field-picks" id="mcq-field-picks">
+            <label class="recall-region-chip checked" id="mcqpick-origin">
+              <input type="checkbox" value="origin" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#128205;</span><span>Origin</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-insertion">
+              <input type="checkbox" value="insertion" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#127919;</span><span>Insertion</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-function">
+              <input type="checkbox" value="function" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#9889;</span><span>Function</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-innervation">
+              <input type="checkbox" value="innervation" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#129504;</span><span>Innervation</span>
+            </label>
+            <label class="recall-region-chip checked" id="mcqpick-blood-supply">
+              <input type="checkbox" value="blood_supply" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+              <span>&#129656;</span><span>Blood supply</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="quiz-options-row">
+          <div class="form-field">
+            <label class="form-label">Questions</label>
+            <div class="select-wrap">
+              <select id="mcq-count">
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+                <option value="30">30</option>
+                <option value="all">All</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Order</label>
+            <div class="select-wrap">
+              <select id="mcq-order">
+                <option value="random">Random</option>
+                <option value="worst">Weakest first</option>
+                <option value="alpha">Alphabetical</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" onclick="startMCQ()">Start</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session -->
+    <div id="mcq-session" style="display:none;">
+      <div class="anat-session-header">
+        <div class="anat-progress-label">
+          <span id="mcq-q-num">1</span> / <span id="mcq-q-total">10</span>
+        </div>
+        <div class="quiz-progress" style="flex:1;margin:0;">
+          <div class="quiz-progress-fill" id="mcq-progress" style="width:0%"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--ok);font-weight:500;" id="mcq-score-ok">0 ✓</span>
+          <span style="font-size:12px;color:var(--err);font-weight:500;" id="mcq-score-err">0 ✗</span>
+          <button class="btn btn-ghost btn-sm" onclick="stopMCQ()">Stop</button>
+        </div>
+      </div>
+      <div class="anat-card" id="mcq-card"></div>
+    </div>
+
+    <!-- End -->
+    <div id="mcq-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="mcq-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="mcq-end-title">Done!</div>
+      <div class="quiz-end-sub" id="mcq-end-sub"></div>
+      <div class="quiz-end-scores" id="mcq-end-scores"></div>
+      <div id="mcq-review" style="width:100%;max-width:800px;"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startMCQ()">Play again</button>
+        <button class="btn" onclick="showMCQSetup()">Settings</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── BOTTOM NAV (mobile) ── -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="bottom-nav-btn active" data-panel="add" onclick="switchPanel('add')">
+      <span class="bnav-icon">+</span>
+      <span class="bnav-label">Add</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="list" onclick="switchPanel('list')">
+      <span class="bnav-icon">&#128203;</span>
+      <span class="bnav-badge" id="nav-count-mobile">0</span>
+      <span class="bnav-label">Muscles</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="quiz" onclick="switchPanel('quiz')">
+      <span class="bnav-icon">&#129504;</span>
+      <span class="bnav-label">Quiz</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="anatomy" onclick="switchPanel('anatomy')">
+      <span class="bnav-icon">&#128203;</span>
+      <span class="bnav-label">Anatomy</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="cards" onclick="switchPanel('cards')">
+      <span class="bnav-icon">&#128218;</span>
+      <span class="bnav-label">Cards</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="recall" onclick="switchPanel('recall')">
+      <span class="bnav-icon">&#128302;</span>
+      <span class="bnav-label">Recall</span>
+    </button>
+    <button class="bottom-nav-btn" data-panel="stats" onclick="switchPanel('stats')">
+      <span class="bnav-icon">&#128202;</span>
+      <span class="bnav-label">Stats</span>
+    </button>
+  </div>
+</nav>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions" id="modal-actions"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+const STORE_KEY = 'musclequiz_v2_muscles';
+const STATS_KEY = 'musclequiz_v2_stats';
+
+function loadMuscles() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
+function saveMuscles(arr) { localStorage.setItem(STORE_KEY, JSON.stringify(arr)); updateNavCount(); }
+function loadStats()   { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || {}; } catch { return {}; } }
+function saveStats(o)  { localStorage.setItem(STATS_KEY, JSON.stringify(o)); }
+
+let muscles = loadMuscles();
+let stats   = loadStats();
+
+const REGION_COLORS = {
+  'Neck':'#c07060','Shoulder':'#5080c0','Arm':'#4098c0','Forearm':'#38a0b0','Hand':'#30b8c0',
+  'Thorax':'#b06898','Abdomen':'#c88040','Back':'#589060','Pelvis & Gluteal':'#8060c0',
+  'Thigh':'#6090a8','Leg':'#60aa78','Foot':'#88a048',
+  'Head & Face':'#d08070',
+  'Tete et cou':'#c07060','Epaule':'#5080c0','Bras':'#4098c0',
+  'Avant-bras et main':'#38a0b0','Dos':'#589060','Bassin et hanche':'#8060c0',
+  'Cuisse':'#6090a8','Jambe':'#60aa78','Pied':'#88a048',
+};
+function rc(r) { return REGION_COLORS[r] || '#999'; }
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('[data-panel]').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('[data-panel="' + name + '"]').forEach(b => b.classList.add('active'));
+  if (name === 'list')   { populateFilters(); renderList(); }
+  if (name === 'stats')  { renderStats(); }
+  if (name === 'quiz')   { populateFilters(); }
+  if (name === 'recall') { populateRecallFilters(); }
+  if (name === 'cards')  { initCards(); }
+  if (name === 'anatomy') { initAnatomyQuiz(); }
+  if (name === 'mcq')     { initMCQ(); }
+}
+
+function updateNavCount() {
+  const n = muscles.length;
+  document.getElementById('nav-count').textContent = n;
+  const m = document.getElementById('nav-count-mobile');
+  if (m) m.textContent = n;
+}
+
+// ── ADD ───────────────────────────────────────────────────────────────────────
+function addMuscle() {
+  const name      = document.getElementById('inp-name').value.trim();
+  const region    = document.getElementById('inp-region').value;
+  const depth     = document.getElementById('inp-depth').value;
+  const synonyms  = document.getElementById('inp-synonyms').value.trim();
+  const origin      = document.getElementById('inp-origin').value.trim();
+  const insertion   = document.getElementById('inp-insertion').value.trim();
+  const func_       = document.getElementById('inp-function').value.trim();
+  const innervation = document.getElementById('inp-innervation').value.trim();
+  const bloodSupply = document.getElementById('inp-blood-supply').value.trim();
+  const notes       = document.getElementById('inp-notes').value.trim();
+  const errEl     = document.getElementById('add-error');
+
+  if (!name)   { errEl.textContent = 'Name is required.'; return; }
+  if (!region) { errEl.textContent = 'Region is required.'; return; }
+  if (muscles.find(m => m.name.toLowerCase() === name.toLowerCase())) {
+    errEl.textContent = 'Already exists.'; return;
+  }
+  errEl.textContent = '';
+
+  muscles.push({
+    id: Date.now() + Math.random(), name, region, depth,
+    synonyms: synonyms ? synonyms.split(',').map(s => s.trim()).filter(Boolean) : [],
+    notes: { origin, insertion, function: func_, innervation, blood_supply: bloodSupply, extra: notes },
+    createdAt: Date.now(),
+  });
+  saveMuscles(muscles);
+  ['inp-name','inp-synonyms','inp-origin','inp-insertion','inp-function','inp-innervation','inp-blood-supply','inp-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('inp-region').value = '';
+  document.getElementById('inp-depth').value = '';
+  document.getElementById('inp-name').focus();
+  toast('Added: ' + name);
+  populateFilters();
+}
+
+// ── FILTERS ───────────────────────────────────────────────────────────────────
+function populateFilters() {
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+  ['filter-region','quiz-region-filter'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">All regions</option>';
+    regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; el.appendChild(o); });
+    el.value = cur;
+  });
+}
+
+function populateRecallFilters() {
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+  const container = document.getElementById('recall-region-checks');
+  if (!container) return;
+
+  // Remember currently checked regions (default: all checked)
+  const existing = new Set(
+    [...container.querySelectorAll('input[type=checkbox]:checked')].map(el => el.value)
+  );
+  const isFirstLoad = container.children.length === 0;
+
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color  = rc(r);
+    const count  = muscles.filter(m => m.region === r).length;
+    const checked = isFirstLoad || existing.has(r);
+    const label  = document.createElement('label');
+    label.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    label.innerHTML = `
+      <input type="checkbox" value="${r}" ${checked ? 'checked' : ''}
+        onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none">
+      <span class="region-dot" style="background:${color}"></span>
+      <span>${r}</span>
+      <span class="recall-chip-count">${count}</span>`;
+    container.appendChild(label);
+  });
+}
+
+function recallSelectAll() {
+  document.querySelectorAll('#recall-region-checks input').forEach(cb => {
+    cb.checked = true;
+    cb.closest('label').classList.add('checked');
+  });
+}
+function recallSelectNone() {
+  document.querySelectorAll('#recall-region-checks input').forEach(cb => {
+    cb.checked = false;
+    cb.closest('label').classList.remove('checked');
+  });
+}
+function getRecallRegions() {
+  return [...document.querySelectorAll('#recall-region-checks input:checked')].map(cb => cb.value);
+}
+
+// ── LIST ──────────────────────────────────────────────────────────────────────
+function renderList() {
+  const search  = (document.getElementById('search-input').value || '').toLowerCase();
+  const fReg    = document.getElementById('filter-region').value;
+  const fDepth  = document.getElementById('filter-depth').value;
+  const sortBy  = document.getElementById('sort-by').value;
+
+  let list = muscles.filter(m => {
+    if (fReg   && m.region !== fReg)   return false;
+    if (fDepth && m.depth  !== fDepth) return false;
+    if (!search) return true;
+    return m.name.toLowerCase().includes(search)
+      || (m.synonyms||[]).some(s => s.toLowerCase().includes(search))
+      || notesFlat(m.notes).toLowerCase().includes(search);
+  });
+
+  if (sortBy === 'name')   list.sort((a,b) => a.name.localeCompare(b.name));
+  if (sortBy === 'region') list.sort((a,b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
+  if (sortBy === 'rate')   list.sort((a,b) => getRate(a.id) - getRate(b.id));
+  if (sortBy === 'date')   list.sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+
+  document.getElementById('list-count').textContent = list.length + (list.length !== 1 ? ' muscles' : ' muscle');
+  const container = document.getElementById('list-container');
+
+  if (!list.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">&#128376;</div>
+      <div class="empty-title">${muscles.length === 0 ? 'No muscles yet' : 'No results'}</div>
+      <p class="empty-sub">${muscles.length === 0 ? 'Add a muscle or import a JSON / CSV file.' : 'Try different filters.'}</p>
+    </div>`;
+    return;
+  }
+
+  if (sortBy === 'region') {
+    const groups = {};
+    list.forEach(m => { if (!groups[m.region]) groups[m.region] = []; groups[m.region].push(m); });
+    container.innerHTML = Object.keys(groups).sort().map(region => {
+      const color = rc(region);
+      return `<div class="region-group-header">
+          <span class="region-dot" style="background:${color}"></span>
+          ${esc(region)} <span class="region-group-count">(${groups[region].length})</span>
+        </div>
+        <table class="muscle-table"><tbody>${groups[region].map(muscleRow).join('')}</tbody></table>`;
+    }).join('');
+  } else {
+    container.innerHTML = `<table class="muscle-table">
+      <thead><tr>
+        <th>Muscle</th><th>Region</th>
+        <th class="col-notes">Origin / Function</th>
+        <th>Rate</th><th></th>
+      </tr></thead>
+      <tbody>${list.map(muscleRow).join('')}</tbody>
+    </table>`;
+  }
+}
+
+function muscleRow(m) {
+  const s    = stats[m.id] || { seen:0, correct:0 };
+  const rate = s.seen > 0 ? Math.round(s.correct / s.seen * 100) : null;
+  const color= rc(m.region);
+  const n    = m.notes || {};
+  const preview = [n.origin, n.function].filter(Boolean).join(' · ').substring(0,110)
+    || (typeof m.notes === 'string' ? m.notes : '');
+
+  return `<tr>
+    <td>
+      <div class="muscle-name">${esc(m.name)}${m.depth ? ` <span style="font-size:10px;color:var(--text3);font-weight:400">${esc(m.depth)}</span>` : ''}</div>
+      ${m.synonyms&&m.synonyms.length ? `<div class="muscle-alt">${m.synonyms.slice(0,3).map(esc).join(', ')}</div>` : ''}
+    </td>
+    <td><span class="badge badge-region" style="background:${color}22;color:${color};border-color:${color}55">${esc(m.region)}</span></td>
+    <td class="col-notes"><div class="muscle-notes-cell"><span title="${esc(preview)}">${esc(preview) || '<span style=color:var(--text4)>—</span>'}</span></div></td>
+    <td>${rate !== null
+      ? `<div class="stat-bar-row"><div class="stat-bar"><div class="stat-bar-fill" style="width:${rate}%"></div></div><span class="stat-pct">${rate}%</span></div>`
+      : '<span style="color:var(--text4);font-size:12px">—</span>'}</td>
+    <td><div class="actions-cell">
+      <button class="btn btn-icon btn-ghost" title="Edit" onclick="editMuscle(${JSON.stringify(m.id)})">&#9998;</button>
+      <button class="btn btn-icon btn-danger btn-ghost" title="Delete" onclick="deleteMuscle(${JSON.stringify(m.id)})">&#10005;</button>
+    </div></td>
+  </tr>`;
+}
+
+function getRate(id) {
+  const s = stats[id];
+  if (!s || s.seen === 0) return 101;
+  return s.correct / s.seen;
+}
+function notesFlat(n) {
+  if (!n) return '';
+  if (typeof n === 'string') return n;
+  return [n.origin, n.insertion, n.function, n.innervation, n.blood_supply, n.extra].filter(Boolean).join(' ');
+}
+
+// ── DELETE / EDIT ─────────────────────────────────────────────────────────────
+function deleteMuscle(id) {
+  const m = muscles.find(x => x.id == id);
+  showModal('Delete ' + m.name + '?', '<p>This cannot be undone.</p>', [
+    { label: 'Delete', cls: 'btn btn-danger', action: () => {
+      muscles = muscles.filter(x => x.id != id);
+      delete stats[id];
+      saveMuscles(muscles); saveStats(stats);
+      renderList(); hideModal(); toast('Deleted.');
+    }},
+    { label: 'Cancel', cls: 'btn', action: hideModal },
+  ]);
+}
+
+function editMuscle(id) {
+  const m = muscles.find(x => x.id == id);
+  const n = m.notes || {};
+  const allRegions = ['Neck','Shoulder','Arm','Forearm','Hand','Thorax','Abdomen','Back','Pelvis & Gluteal','Thigh','Leg','Foot'];
+  if (!allRegions.includes(m.region)) allRegions.push(m.region);
+  showModal('Edit — ' + m.name, `
+    <div style="display:grid;gap:10px;">
+      <div class="form-field"><label class="form-label">Name</label>
+        <input type="text" id="e-name" value="${esc(m.name)}" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-field"><label class="form-label">Region</label>
+          <div class="select-wrap"><select id="e-region">
+            ${allRegions.map(r => `<option${r===m.region?' selected':''}>${esc(r)}</option>`).join('')}
+          </select></div></div>
+        <div class="form-field"><label class="form-label">Depth</label>
+          <div class="select-wrap"><select id="e-depth">
+            <option value="">-</option>
+            ${['Superficial','Deep','Intermediate'].map(d=>`<option${d===m.depth?' selected':''}>${d}</option>`).join('')}
+          </select></div></div>
+      </div>
+      <div class="form-field"><label class="form-label">Synonyms</label>
+        <input type="text" id="e-syn" value="${esc((m.synonyms||[]).join(', '))}" /></div>
+      <div class="form-field"><label class="form-label">Origin</label>
+        <input type="text" id="e-orig" value="${esc(n.origin||'')}" /></div>
+      <div class="form-field"><label class="form-label">Insertion</label>
+        <input type="text" id="e-ins" value="${esc(n.insertion||'')}" /></div>
+      <div class="form-field"><label class="form-label">Function</label>
+        <textarea id="e-func">${esc(n.function||'')}</textarea></div>
+      <div class="form-field"><label class="form-label">Innervation</label>
+        <input type="text" id="e-innervation" value="${esc(n.innervation||'')}" /></div>
+      <div class="form-field"><label class="form-label">Blood supply</label>
+        <input type="text" id="e-blood-supply" value="${esc(n.blood_supply||'')}" /></div>
+      <div class="form-field"><label class="form-label">Extra notes</label>
+        <textarea id="e-notes">${esc(n.extra||'')}</textarea></div>
+    </div>`, [
+    { label: 'Save', cls: 'btn btn-primary', action: () => {
+      m.name = document.getElementById('e-name').value.trim();
+      m.region = document.getElementById('e-region').value;
+      m.depth  = document.getElementById('e-depth').value;
+      m.synonyms = document.getElementById('e-syn').value.split(',').map(s=>s.trim()).filter(Boolean);
+      m.notes = {
+        origin:      document.getElementById('e-orig').value.trim(),
+        insertion:   document.getElementById('e-ins').value.trim(),
+        function:    document.getElementById('e-func').value.trim(),
+        innervation: document.getElementById('e-innervation').value.trim(),
+        blood_supply:document.getElementById('e-blood-supply').value.trim(),
+        extra:       document.getElementById('e-notes').value.trim(),
+      };
+      saveMuscles(muscles); renderList(); hideModal(); toast('Saved!');
+    }},
+    { label: 'Cancel', cls: 'btn', action: hideModal },
+  ]);
+}
+
+function confirmClear() {
+  showModal('Clear everything?', '<p>All muscles and statistics will be deleted.</p>', [
+    { label: 'Clear all', cls: 'btn btn-danger', action: () => {
+      muscles = []; stats = {};
+      saveMuscles(muscles); saveStats(stats);
+      hideModal(); renderList(); toast('Cleared.');
+    }},
+    { label: 'Cancel', cls: 'btn', action: hideModal },
+  ]);
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function showModal(title, bodyHTML, actions) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  const actEl = document.getElementById('modal-actions');
+  actEl.innerHTML = '';
+  actions.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = a.cls; btn.textContent = a.label; btn.onclick = a.action;
+    actEl.appendChild(btn);
+  });
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function hideModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target.id === 'modal-overlay') hideModal();
+});
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let _tt;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ── IMPORT / EXPORT ───────────────────────────────────────────────────────────
+function exportJSON() {
+  dl(new Blob([JSON.stringify(muscles, null, 2)], {type:'application/json'}), 'muscles.json');
+}
+function exportCSV() {
+  const rows = [['Name','Region','Depth','Synonyms','Origin','Insertion','Function','Innervation','Blood supply','Notes']];
+  muscles.forEach(m => {
+    const n = m.notes || {};
+    rows.push([m.name, m.region, m.depth||'', (m.synonyms||[]).join(' | '),
+      n.origin||'', n.insertion||'', n.function||'', n.innervation||'', n.blood_supply||'', n.extra||'']);
+  });
+  dl(new Blob([rows.map(r=>r.map(c=>'"'+String(c||'').replace(/"/g,'""')+'"').join(',')).join('\n')],
+    {type:'text/csv'}), 'muscles.csv');
+}
+function dl(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+}
+
+function importFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      if (file.name.endsWith('.csv')) importCSV(ev.target.result);
+      else importJSON(ev.target.result);
+    } catch(err) { toast('Import error: ' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function importJSON(text) {
+  const raw = JSON.parse(text);
+
+  // Accept: plain array, { muscles:[...] }, or { metadata:{}, muscles:[...] }
+  let arr;
+  if (Array.isArray(raw))             arr = raw;
+  else if (Array.isArray(raw.muscles)) arr = raw.muscles;
+  else throw new Error('Expected an array or { muscles: [...] }');
+
+  let added = 0, skipped = 0;
+  arr.forEach(m => {
+    if (!m.name || !m.region) { skipped++; return; }
+    if (muscles.find(x => x.name.toLowerCase() === m.name.toLowerCase())) { skipped++; return; }
+
+    // Normalise notes object vs string
+    let notes;
+    if (m.notes && typeof m.notes === 'object') {
+      notes = { origin: m.notes.origin||'', insertion: m.notes.insertion||'',
+                function: m.notes.function||'', innervation: m.notes.innervation||'',
+                blood_supply: m.notes.blood_supply||'', extra: m.notes.extra||'' };
+    } else {
+      notes = { origin:'', insertion:'', function:'', innervation:'', blood_supply:'', extra: typeof m.notes === 'string' ? m.notes : '' };
+    }
+
+    muscles.push({
+      id: Date.now() + Math.random(),
+      name: m.name, region: m.region, depth: m.depth||'',
+      synonyms: Array.isArray(m.synonyms) ? m.synonyms : [],
+      notes, createdAt: Date.now(),
+    });
+    added++;
+  });
+
+  saveMuscles(muscles); populateFilters();
+  toast(`${added} muscle${added!==1?'s':''} imported${skipped?` (${skipped} skipped)`:''}.`);
+}
+
+function importCSV(text) {
+  const lines = text.trim().split('\n').slice(1);
+  let added = 0;
+  lines.forEach(line => {
+    const c = line.split(',').map(x => x.replace(/^"|"$/g,'').replace(/""/g,'"'));
+    const [name,region,depth,synonyms,origin,insertion,func_,notes] = c;
+    if (!name||!region) return;
+    if (muscles.find(x => x.name.toLowerCase()===name.toLowerCase())) return;
+    muscles.push({ id:Date.now()+Math.random(), name, region, depth:depth||'',
+      synonyms: synonyms?synonyms.split('|').map(s=>s.trim()).filter(Boolean):[],
+      notes:{origin:origin||'',insertion:insertion||'',function:func_||'',extra:notes||''},
+      createdAt:Date.now() });
+    added++;
+  });
+  saveMuscles(muscles); populateFilters();
+  toast(`${added} muscle${added!==1?'s':''} imported from CSV.`);
+}
+
+// ── QUIZ ──────────────────────────────────────────────────────────────────────
+let quizMode = 'free';
+let quizQueue = [], quizIdx = 0, quizCorrect = 0, quizWrong = 0, quizAnswered = false;
+let _auto = null;
+
+function selectMode(card) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  quizMode = card.dataset.mode;
+}
+
+function startQuiz() {
+  const fReg    = document.getElementById('quiz-region-filter').value;
+  const countSel= document.getElementById('quiz-count').value;
+  const order   = document.getElementById('quiz-order').value;
+
+  let pool = muscles.filter(m => !fReg || m.region === fReg);
+  if (quizMode === 'origin')   pool = pool.filter(m => m.notes && m.notes.origin);
+  if (quizMode === 'function') pool = pool.filter(m => m.notes && m.notes.function);
+  if (!pool.length) { toast('No muscles for this selection!'); return; }
+
+  if (order === 'random') shuffle(pool);
+  else if (order === 'worst') pool.sort((a,b) => getRate(a.id) - getRate(b.id));
+  else pool.sort((a,b) => a.name.localeCompare(b.name));
+
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  quizQueue = pool.slice(0, count);
+  quizIdx = 0; quizCorrect = 0; quizWrong = 0; quizAnswered = false;
+
+  document.getElementById('quiz-setup').style.display   = 'none';
+  document.getElementById('quiz-end').style.display     = 'none';
+  document.getElementById('quiz-session').style.display = 'block';
+  renderQ();
+}
+
+function renderQ() {
+  if (quizIdx >= quizQueue.length) { showEnd(); return; }
+  clearTimeout(_auto); quizAnswered = false;
+
+  const m     = quizQueue[quizIdx];
+  const total = quizQueue.length;
+  document.getElementById('q-correct').textContent   = quizCorrect;
+  document.getElementById('q-wrong').textContent     = quizWrong;
+  document.getElementById('q-remaining').textContent = total - quizIdx;
+  document.getElementById('q-progress').style.width  = (quizIdx / total * 100) + '%';
+
+  const card = document.getElementById('q-card');
+  const next = `<button class="btn" id="q-next-btn" style="display:none" onclick="nextQ()">Next question</button>`;
+
+  if (quizMode === 'free') {
+    card.innerHTML = `
+      <p class="q-prompt-label">What is the body region of this muscle?</p>
+      <p class="q-prompt">${esc(m.name)}</p>
+      ${m.synonyms&&m.synonyms.length?`<p class="q-hint">aka: ${m.synonyms.slice(0,2).map(esc).join(', ')}</p>`:''}
+      <div class="q-input-row">
+        <input type="text" id="q-input" placeholder="Type the region..." autocomplete="off" autocapitalize="words"/>
+        <button class="btn btn-primary" onclick="chkFree()">OK</button>
+      </div>
+      <p class="q-feedback" id="q-feedback"></p>${next}`;
+    fi('q-input', chkFree);
+
+  } else if (quizMode === 'mcq') {
+    const opts = mcqOpts(m,'region',4);
+    card.innerHTML = `
+      <p class="q-prompt-label">Which region does this muscle belong to?</p>
+      <p class="q-prompt">${esc(m.name)}</p>
+      <div class="mcq-grid" id="q-opts">${opts.map((o,i)=>`<button class="mcq-opt" id="mq${i}" onclick="chkMCQ(${i},'${esc(o)}','${esc(m.region)}')">${esc(o)}</button>`).join('')}</div>
+      <p class="q-feedback" id="q-feedback"></p>${next}`;
+
+  } else if (quizMode === 'region') {
+    card.innerHTML = `
+      <p class="q-prompt-label">Name a muscle from this region</p>
+      <p class="q-prompt"><em>${esc(m.region)}</em></p>
+      <p class="q-hint">Hint: ${m.name.length} letters</p>
+      <div class="q-input-row">
+        <input type="text" id="q-input" placeholder="Muscle name..." autocomplete="off" autocapitalize="words"/>
+        <button class="btn btn-primary" onclick="chkRegion()">OK</button>
+      </div>
+      <p class="q-feedback" id="q-feedback"></p>
+      <p class="q-hint" id="q-reveal" style="display:none"></p>${next}`;
+    fi('q-input', chkRegion);
+
+  } else if (quizMode === 'muscle') {
+    const opts = mcqOpts(m,'muscle',4);
+    card.innerHTML = `
+      <p class="q-prompt-label">Which muscle belongs to this region?</p>
+      <p class="q-prompt"><em>${esc(m.region)}</em></p>
+      <div class="mcq-grid" id="q-opts">${opts.map((o,i)=>`<button class="mcq-opt" id="mq${i}" onclick="chkMusMCQ(${i},'${esc(o)}','${esc(m.name)}')">${esc(o)}</button>`).join('')}</div>
+      <p class="q-feedback" id="q-feedback"></p>${next}`;
+
+  } else if (quizMode === 'origin') {
+    const correct = (m.notes && m.notes.origin) || '';
+    card.innerHTML = `
+      <p class="q-prompt-label">What is the anatomical origin of this muscle?</p>
+      <p class="q-prompt">${esc(m.name)}</p>
+      <div class="q-input-row" style="flex-direction:column;max-width:500px;gap:6px">
+        <textarea id="q-input" placeholder="Describe the origin..." style="width:100%;min-height:70px;text-align:left"></textarea>
+        <div style="display:flex;gap:8px;width:100%">
+          <button class="btn btn-primary" style="flex:1" onclick="revealAns('${esc(correct)}')">Reveal answer</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="markOk()">I got it right</button>
+        </div>
+      </div>
+      <p class="q-feedback" id="q-feedback" style="max-width:500px;text-align:left;font-size:13px"></p>${next}`;
+
+  } else if (quizMode === 'function') {
+    const correct = (m.notes && m.notes.function) || '';
+    card.innerHTML = `
+      <p class="q-prompt-label">What is the main function of this muscle?</p>
+      <p class="q-prompt">${esc(m.name)}</p>
+      <div class="q-input-row" style="flex-direction:column;max-width:500px;gap:6px">
+        <textarea id="q-input" placeholder="Describe the function..." style="width:100%;min-height:70px;text-align:left"></textarea>
+        <div style="display:flex;gap:8px;width:100%">
+          <button class="btn btn-primary" style="flex:1" onclick="revealAns('${esc(correct)}')">Reveal answer</button>
+          <button class="btn btn-ghost" style="flex:1" onclick="markOk()">I got it right</button>
+        </div>
+      </div>
+      <p class="q-feedback" id="q-feedback" style="max-width:500px;text-align:left;font-size:13px"></p>${next}`;
+  }
+}
+
+function fi(id, handler) {
+  const el = document.getElementById(id);
+  if (el) { el.focus(); el.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey) handler(); }); }
+}
+
+function chkFree() {
+  if (quizAnswered) return;
+  const m = quizQueue[quizIdx];
+  const a = document.getElementById('q-input').value.trim().toLowerCase();
+  const c = m.region.toLowerCase();
+  resolve(a === c || lev(a,c) <= 2, m.region);
+}
+
+function chkMCQ(i, chosen, correct) {
+  if (quizAnswered) return;
+  const ok = chosen === correct;
+  document.querySelectorAll('.mcq-opt').forEach(b => b.disabled = true);
+  document.getElementById('mq'+i).classList.add(ok?'correct':'wrong');
+  if (!ok) document.querySelectorAll('.mcq-opt').forEach(b => { if(b.textContent.trim()===correct) b.classList.add('correct'); });
+  resolve(ok, correct);
+}
+
+function chkRegion() {
+  if (quizAnswered) return;
+  const m = quizQueue[quizIdx];
+  const a = document.getElementById('q-input').value.trim().toLowerCase();
+  const valid = muscles.filter(x => x.region === m.region).map(x => x.name.toLowerCase());
+  const ok = valid.some(v => v===a || lev(a,v)<=2);
+  const rev = document.getElementById('q-reveal');
+  if (!ok && rev) { rev.style.display='block'; rev.textContent='Expected: ' + m.name; }
+  resolve(ok, m.name);
+}
+
+function chkMusMCQ(i, chosen, correct) {
+  if (quizAnswered) return;
+  const ok = chosen === correct;
+  document.querySelectorAll('.mcq-opt').forEach(b => b.disabled = true);
+  document.getElementById('mq'+i).classList.add(ok?'correct':'wrong');
+  if (!ok) document.querySelectorAll('.mcq-opt').forEach(b => { if(b.textContent.trim()===correct) b.classList.add('correct'); });
+  resolve(ok, correct);
+}
+
+function revealAns(correct) {
+  if (quizAnswered) return;
+  const fb = document.getElementById('q-feedback');
+  if (fb) { fb.textContent = correct; fb.className = 'q-feedback wrong'; }
+  resolve(false, correct, true);
+}
+
+function markOk() {
+  if (quizAnswered) return;
+  resolve(true, '', true);
+}
+
+function resolve(ok, label, skipAuto) {
+  quizAnswered = true;
+  const m = quizQueue[quizIdx];
+  if (!stats[m.id]) stats[m.id] = { seen:0, correct:0 };
+  stats[m.id].seen++;
+  if (ok) { stats[m.id].correct++; quizCorrect++; } else { quizWrong++; }
+  saveStats(stats);
+
+  document.getElementById('q-correct').textContent   = quizCorrect;
+  document.getElementById('q-wrong').textContent     = quizWrong;
+  document.getElementById('q-remaining').textContent = quizQueue.length - quizIdx - 1;
+
+  const fb = document.getElementById('q-feedback');
+  if (fb && !fb.textContent) { fb.textContent = ok ? 'Correct!' : 'Wrong — ' + label; fb.className = 'q-feedback ' + (ok?'correct':'wrong'); }
+  if (fb) fb.classList.add('pop');
+
+  const nb = document.getElementById('q-next-btn');
+  if (nb) nb.style.display = 'inline-flex';
+
+  if (!skipAuto && ok) _auto = setTimeout(() => { if (quizAnswered) nextQ(); }, 1400);
+}
+
+function nextQ() { clearTimeout(_auto); quizIdx++; renderQ(); }
+
+function showEnd() {
+  document.getElementById('quiz-session').style.display = 'none';
+  document.getElementById('quiz-end').style.display = 'flex';
+  const pct   = quizQueue.length ? Math.round(quizCorrect / quizQueue.length * 100) : 0;
+  const emoji = pct>=80?'🎉':pct>=60?'💪':pct>=40?'📚':'🔁';
+  document.getElementById('end-emoji').textContent = emoji;
+  document.getElementById('end-title').textContent = pct>=80?'Excellent work!':pct>=60?'Good effort!':'Keep practicing!';
+  document.getElementById('end-sub').textContent   = pct + '% success over ' + quizQueue.length + ' questions';
+  document.getElementById('end-scores').innerHTML  = `
+    <div class="end-score-box ok"><div class="val">${quizCorrect}</div><div class="lbl">Correct</div></div>
+    <div class="end-score-box err"><div class="val">${quizWrong}</div><div class="lbl">Wrong</div></div>
+    <div class="end-score-box"><div class="val">${pct}%</div><div class="lbl">Rate</div></div>`;
+}
+
+function endQuiz() {
+  clearTimeout(_auto);
+  showModal('Stop quiz?', '<p>Current progress will be lost.</p>', [
+    { label: 'Stop', cls: 'btn btn-danger', action: () => { hideModal(); showQuizSetup(); }},
+    { label: 'Continue', cls: 'btn btn-primary', action: hideModal },
+  ]);
+}
+
+function showQuizSetup() {
+  document.getElementById('quiz-session').style.display = 'none';
+  document.getElementById('quiz-end').style.display     = 'none';
+  document.getElementById('quiz-setup').style.display   = 'block';
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const total     = muscles.length;
+  const seen      = muscles.filter(m => stats[m.id]?.seen > 0).length;
+  const totalAns  = Object.values(stats).reduce((a,s)=>a+s.seen,0);
+  const totalCorr = Object.values(stats).reduce((a,s)=>a+s.correct,0);
+  const rate      = totalAns > 0 ? Math.round(totalCorr/totalAns*100) : 0;
+
+  document.getElementById('stats-summary').innerHTML = `
+    <div class="stat-card accent"><div class="val">${total}</div><div class="lbl">Muscles</div></div>
+    <div class="stat-card"><div class="val">${seen}</div><div class="lbl">Practiced</div></div>
+    <div class="stat-card"><div class="val">${totalAns}</div><div class="lbl">Answers</div></div>
+    <div class="stat-card"><div class="val">${rate}%</div><div class="lbl">Global rate</div></div>`;
+
+  document.getElementById('stats-body').innerHTML =
+    [...muscles].sort((a,b)=>getRate(a.id)-getRate(b.id)).map(m => {
+      const s = stats[m.id]||{seen:0,correct:0};
+      const r = s.seen>0 ? Math.round(s.correct/s.seen*100) : null;
+      const c = rc(m.region);
+      return `<tr>
+        <td>${esc(m.name)}</td>
+        <td><span class="badge badge-region" style="background:${c}22;color:${c};border-color:${c}55">${esc(m.region)}</span></td>
+        <td>${s.seen}</td>
+        <td>${r!==null?`<div class="stat-bar-row"><div class="stat-bar"><div class="stat-bar-fill" style="width:${r}%"></div></div><span class="stat-pct">${r}%</span></div>`:'—'}</td>
+      </tr>`;
+    }).join('');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function esc(s) {
+  if (s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function shuffle(a) {
+  for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function mcqOpts(m, type, n) {
+  let correct, pool;
+  if (type==='region') { correct=m.region; pool=shuffle([...new Set(muscles.map(x=>x.region))].filter(r=>r!==correct)); }
+  else { correct=m.name; pool=shuffle(muscles.map(x=>x.name).filter(nm=>nm!==correct)); }
+  return shuffle([correct,...pool.slice(0,n-1)]);
+}
+function lev(a,b) {
+  // Damerau-Levenshtein: transpositions (ab→ba) count as 1 op, not 2
+  const m=a.length, n=b.length;
+  const d={};
+  for(let i=-1;i<=m;i++) d[i+','+(-1)]=i+1;
+  for(let j=-1;j<=n;j++) d[(-1)+','+j]=j+1;
+  for(let i=0;i<m;i++) for(let j=0;j<n;j++){
+    const cost=a[i]===b[j]?0:1;
+    d[i+','+j]=Math.min(d[(i-1)+','+j]+1, d[i+','+(j-1)]+1, d[(i-1)+','+(j-1)]+cost);
+    if(i>0&&j>0&&a[i]===b[j-1]&&a[i-1]===b[j])
+      d[i+','+j]=Math.min(d[i+','+j], d[(i-2)+','+(j-2)]+cost);
+  }
+  return d[(m-1)+','+(n-1)];
+}
+
+// ── RECALL MODE ───────────────────────────────────────────────────────────────
+let recallPool       = [];   // all muscles in session
+let recallCellMap    = new Map(); // id → pool index, built in buildRecallGrid
+let recallFound      = new Set(); // ids of found muscles
+let recallTimerSec   = 0;
+let recallTimerLeft  = 0;
+let recallTimerIntvl = null;
+let recallStartTime  = null;
+let recallTypingTimer= null;
+
+function startRecall() {
+  const selectedRegions = getRecallRegions();
+  const timerVal = parseInt(document.getElementById('recall-timer').value);
+
+  if (selectedRegions.length === 0) { toast('Select at least one region!'); return; }
+  recallPool = muscles.filter(m => selectedRegions.includes(m.region));
+  if (!recallPool.length) { toast('No muscles in selection!'); return; }
+
+  recallFound     = new Set();
+  recallTimerSec  = timerVal;
+  recallTimerLeft = timerVal;
+  recallStartTime = Date.now();
+
+  document.getElementById('recall-setup').style.display   = 'none';
+  document.getElementById('recall-end').style.display     = 'none';
+  document.getElementById('recall-session').style.display = 'block';
+
+  document.getElementById('recall-total-count').textContent = recallPool.length;
+  document.getElementById('recall-found').textContent       = 0;
+  document.getElementById('recall-progress').style.width    = '0%';
+
+  // Timer
+  const chip = document.getElementById('recall-timer-chip');
+  if (timerVal > 0) {
+    chip.style.display = 'flex';
+    updateRecallClock();
+    recallTimerIntvl = setInterval(() => {
+      recallTimerLeft--;
+      updateRecallClock();
+      if (recallTimerLeft <= 0) { clearInterval(recallTimerIntvl); endRecall(true); }
+    }, 1000);
+  } else {
+    chip.style.display = 'none';
+  }
+
+  buildRecallGrid();
+
+  const inp = document.getElementById('recall-input');
+  inp.value = '';
+  inp.focus();
+}
+
+function updateRecallClock() {
+  const m = String(Math.floor(recallTimerLeft / 60)).padStart(2,'0');
+  const s = String(recallTimerLeft % 60).padStart(2,'0');
+  const el = document.getElementById('recall-clock');
+  el.textContent = m + ':' + s;
+  // Turn red when under 60s
+  el.style.color = recallTimerLeft <= 60 ? 'var(--err)' : '';
+}
+
+function buildRecallGrid() {
+  // Group by region, sorted alphabetically within each group
+  const groups = {};
+  recallPool.forEach(m => {
+    if (!groups[m.region]) groups[m.region] = [];
+    groups[m.region].push(m);
+  });
+  const regionKeys = Object.keys(groups).sort();
+  regionKeys.forEach(r => groups[r].sort((a,b) => a.name.localeCompare(b.name)));
+
+  const container = document.getElementById('recall-grid');
+  container.innerHTML = '';
+
+  // Build one <table> with one column per region
+  // Each column: header row + one row per muscle (padded to max length)
+  const maxLen = Math.max(...regionKeys.map(r => groups[r].length));
+
+  const table = document.createElement('table');
+  table.className = 'recall-table';
+
+  // Header row
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  regionKeys.forEach(region => {
+    const color = rc(region);
+    const th = document.createElement('th');
+    th.className = 'recall-col-header';
+    th.style.setProperty('--rc', color);
+    th.innerHTML = `<span class="recall-col-title">${esc(region)}</span><span class="recall-region-count" id="rcount-${CSS.escape(region)}">0 / ${groups[region].length}</span>`;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Build module-level id→index map so revealRecallCell can find cells fast
+  recallCellMap.clear();
+  recallPool.forEach((m, idx) => recallCellMap.set(m.id, idx));
+
+  // Body rows
+  const tbody = document.createElement('tbody');
+  for (let i = 0; i < maxLen; i++) {
+    const tr = document.createElement('tr');
+    regionKeys.forEach(region => {
+      const td = document.createElement('td');
+      const m = groups[region][i];
+      if (m) {
+        const pidx = recallCellMap.get(m.id);
+        td.className = 'recall-cell';
+        td.id = 'rcell-' + pidx;
+        td.innerHTML = (() => {
+          const normLen = normalizeRecall(m.name).length;
+          const baseLen = recallBaseName(m.name).length;
+          const hint = baseLen < normLen ? `${baseLen}–${normLen}` : String(normLen);
+          return `<span class="recall-cell-blank"><span class="recall-cell-len">${hint}</span></span><span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
+        })();
+      } else {
+        td.className = 'recall-cell recall-cell--empty';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function onRecallInput() {
+  clearTimeout(recallTypingTimer);
+  const inp = document.getElementById('recall-input');
+  const raw = inp.value.trim();
+  if (!raw) { setRecallFeedback('', ''); return; }
+
+  // Check immediately on each keystroke
+  checkRecallAnswer(raw, inp);
+}
+
+function normalizeRecall(s) {
+  // Lowercase, strip everything non-alphanumeric to space, collapse spaces.
+  return s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function recallBaseName(name) {
+  // Returns the "base" form of a name: everything before the first parenthetical.
+  // "Abductor Digiti Minimi (Hand)" → "abductor digiti minimi"
+  // "Gastrocnemius (Medial & Lateral Head)" → "gastrocnemius"
+  // "Biceps Brachii" → "biceps brachii"
+  const stripped = name.replace(/\s*\(.*?\).*$/g, '').trim();
+  return normalizeRecall(stripped);
+}
+
+function recallMatchesOne(answer, canonical) {
+  // Core matching: answer vs a single normalized canonical string.
+  if (answer === canonical) return true;
+  const t = canonical.length <= 8  ? 0
+          : canonical.length <= 11 ? 1
+          : canonical.length <= 18 ? 2 : 3;
+  if (t === 0) return false;
+  if (answer.length < canonical.length) return false;
+  return lev(answer, canonical) <= t;
+}
+
+function recallMatchesMuscle(answer, m) {
+  // Try matching against:
+  //  1. Full normalized name   ("abductor digiti minimi hand")
+  //  2. Base name (no parens)  ("abductor digiti minimi")  — only if different
+  //  3. Each synonym
+  const full = normalizeRecall(m.name);
+  const base = recallBaseName(m.name);
+  if (recallMatchesOne(answer, full)) return true;
+  if (base !== full && recallMatchesOne(answer, base)) return true;
+  if (m.synonyms) {
+    for (const s of m.synonyms) {
+      const sf = normalizeRecall(s);
+      const sb = recallBaseName(s);
+      if (recallMatchesOne(answer, sf)) return true;
+      if (sb !== sf && recallMatchesOne(answer, sb)) return true;
+    }
+  }
+  return false;
+}
+
+function checkRecallAnswer(raw, inp) {
+  const answer = normalizeRecall(raw);
+  if (answer.length < 3) return;
+
+  // Pass 1: exact match on full name or base name (no fuzzy — prevents collisions)
+  let matched = null;
+  for (const m of recallPool) {
+    if (recallFound.has(m.id)) continue;
+    const full = normalizeRecall(m.name);
+    const base = recallBaseName(m.name);
+    if (answer === full || answer === base) { matched = m; break; }
+    if (m.synonyms && m.synonyms.some(s => {
+      const sf = normalizeRecall(s); const sb = recallBaseName(s);
+      return answer === sf || answer === sb;
+    })) { matched = m; break; }
+  }
+
+  // Pass 2: fuzzy (only if no exact found)
+  if (!matched) {
+    for (const m of recallPool) {
+      if (recallFound.has(m.id)) continue;
+      if (recallMatchesMuscle(answer, m)) { matched = m; break; }
+    }
+  }
+
+  if (matched) {
+    // Found!
+    recallFound.add(matched.id);
+    revealRecallCell(matched);
+    inp.value = '';
+    setRecallFeedback('correct', '✓ ' + matched.name);
+    clearTimeout(recallTypingTimer);
+    recallTypingTimer = setTimeout(() => setRecallFeedback('', ''), 1800);
+
+    // Update counters
+    document.getElementById('recall-found').textContent = recallFound.size;
+    document.getElementById('recall-progress').style.width = (recallFound.size / recallPool.length * 100) + '%';
+
+    // Update region counter
+    updateRegionCount(matched.region);
+
+    // All found?
+    if (recallFound.size === recallPool.length) {
+      setTimeout(() => endRecall(false), 600);
+    }
+  } else {
+    // Show subtle "not found yet" only if user paused typing
+    clearTimeout(recallTypingTimer);
+    recallTypingTimer = setTimeout(() => {
+      if (document.getElementById('recall-input').value.trim()) {
+        setRecallFeedback('pending', '');
+      }
+    }, 600);
+  }
+}
+
+function setRecallFeedback(type, msg) {
+  const el = document.getElementById('recall-input-feedback');
+  const inp = document.getElementById('recall-input');
+  el.textContent = msg;
+  el.className = 'recall-input-feedback ' + type;
+  inp.className = type === 'correct' ? 'recall-correct-flash' : '';
+  if (type === 'correct') setTimeout(() => { if(inp) inp.className = ''; }, 400);
+}
+
+function revealRecallCell(m) {
+  const idx  = recallCellMap.get(m.id);
+  if (idx === undefined) { console.warn('rcell not found for', m.name, m.id); return; }
+  const cell = document.getElementById('rcell-' + idx);
+  if (!cell) { console.warn('DOM cell missing: rcell-' + idx); return; }
+  cell.classList.add('found');
+  const blank = cell.querySelector('.recall-cell-blank');
+  const name  = cell.querySelector('.recall-cell-name');
+  if (blank) blank.style.display = 'none';
+  if (name)  name.style.display  = '';
+}
+
+function updateRegionCount(region) {
+  const regionMuscles = recallPool.filter(m => m.region === region);
+  const found = regionMuscles.filter(m => recallFound.has(m.id)).length;
+  const el = document.getElementById('rcount-' + CSS.escape(region));
+  if (el) {
+    el.textContent = found + ' / ' + regionMuscles.length;
+    if (found === regionMuscles.length) el.classList.add('complete');
+  }
+}
+
+function giveUpRecall() {
+  recallPool.forEach((m) => {
+    if (!recallFound.has(m.id)) {
+      const idx  = recallCellMap.get(m.id);
+      const cell = document.getElementById('rcell-' + idx);
+      if (!cell) return;
+      cell.classList.add('missed');
+      const blank = cell.querySelector('.recall-cell-blank');
+      const name  = cell.querySelector('.recall-cell-name');
+      if (blank) blank.style.display = 'none';
+      if (name)  name.style.display  = '';
+    }
+  });
+  clearInterval(recallTimerIntvl);
+  setTimeout(() => endRecall(false, true), 1200);
+}
+
+function stopRecall() {
+  clearInterval(recallTimerIntvl);
+  showRecallSetup();
+}
+
+function showRecallSetup() {
+  clearInterval(recallTimerIntvl);
+  document.getElementById('recall-session').style.display = 'none';
+  document.getElementById('recall-end').style.display     = 'none';
+  document.getElementById('recall-setup').style.display   = 'block';
+}
+
+function endRecall(timedOut, gaveUp) {
+  clearInterval(recallTimerIntvl);
+  document.getElementById('recall-session').style.display = 'none';
+  document.getElementById('recall-end').style.display     = 'flex';
+
+  const found = recallFound.size;
+  const total = recallPool.length;
+  const pct   = Math.round(found / total * 100);
+  const elapsed = Math.round((Date.now() - recallStartTime) / 1000);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2,'0');
+  const ss = String(elapsed % 60).padStart(2,'0');
+
+  const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  document.getElementById('recall-end-emoji').textContent = emoji;
+
+  let title = pct === 100 ? 'Perfect recall!' : timedOut ? "Time's up!" : gaveUp ? 'Session ended' : 'Session complete!';
+  document.getElementById('recall-end-title').textContent = title;
+  document.getElementById('recall-end-sub').textContent   = `${found} / ${total} muscles recalled (${pct}%) in ${mm}:${ss}`;
+
+  document.getElementById('recall-end-scores').innerHTML = `
+    <div class="end-score-box ok"><div class="val">${found}</div><div class="lbl">Found</div></div>
+    <div class="end-score-box err"><div class="val">${total - found}</div><div class="lbl">Missed</div></div>
+    <div class="end-score-box"><div class="val">${pct}%</div><div class="lbl">Rate</div></div>`;
+
+  // List missed muscles
+  const missed = recallPool.filter(m => !recallFound.has(m.id));
+  const wrap = document.getElementById('recall-missed-wrap');
+  if (missed.length > 0) {
+    // Group missed by region
+    const groups = {};
+    missed.forEach(m => { if (!groups[m.region]) groups[m.region] = []; groups[m.region].push(m.name); });
+    let html = `<div class="card" style="margin-top:1rem;">
+      <div class="card-header"><div class="card-header-icon">&#10007;</div><div><h2>Missed (${missed.length})</h2></div></div>`;
+    Object.keys(groups).sort().forEach(region => {
+      const color = rc(region);
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+          <span class="region-dot" style="background:${color}"></span>${esc(region)}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${groups[region].map(name => `<span class="badge" style="background:var(--err-bg);color:var(--err);border:1px solid var(--err-border)">${esc(name)}</span>`).join('')}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+  } else {
+    wrap.innerHTML = '';
+  }
+}
+
+
+
+
+// ── MCQ ANATOMY QUIZ ──────────────────────────────────────────────────────────
+let mcqPool      = [];
+let mcqIdx       = 0;
+let mcqCorrect   = 0;
+let mcqWrong     = 0;
+let mcqAnswered  = false;
+let mcqReview    = [];
+
+const MCQ_FIELDS = {
+  origin:      { label: 'Origin',       icon: '📍' },
+  insertion:   { label: 'Insertion',    icon: '🎯' },
+  function:    { label: 'Function',     icon: '⚡' },
+  innervation: { label: 'Innervation',  icon: '🧠' },
+  blood_supply:{ label: 'Blood supply', icon: '🩸' },
+};
+
+function initMCQ() {
+  const regions   = [...new Set(muscles.map(m => m.region))].sort();
+  const container = document.getElementById('mcq-region-checks');
+  if (!container) return;
+  const existing = new Set([...container.querySelectorAll('input:checked')].map(el => el.value));
+  const first    = container.children.length === 0;
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color   = rc(r);
+    const count   = muscles.filter(m => m.region === r).length;
+    const checked = first || existing.has(r);
+    const lbl     = document.createElement('label');
+    lbl.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    lbl.innerHTML = `<input type="checkbox" value="${r}" ${checked?'checked':''} onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span class="region-dot" style="background:${color}"></span><span>${r}</span><span class="recall-chip-count">${count}</span>`;
+    container.appendChild(lbl);
+  });
+}
+function mcqSelectAll()  { document.querySelectorAll('#mcq-region-checks input').forEach(cb => { cb.checked=true;  cb.closest('label').classList.add('checked'); }); }
+function mcqSelectNone() { document.querySelectorAll('#mcq-region-checks input').forEach(cb => { cb.checked=false; cb.closest('label').classList.remove('checked'); }); }
+function getMCQRegions() { return [...document.querySelectorAll('#mcq-region-checks input:checked')].map(cb => cb.value); }
+function getMCQFields()  { return [...document.querySelectorAll('#mcq-field-picks input:checked')].map(cb => cb.value); }
+
+function startMCQ() {
+  const selRegions = getMCQRegions();
+  const selFields  = getMCQFields();
+  const countSel   = document.getElementById('mcq-count').value;
+  const order      = document.getElementById('mcq-order').value;
+
+  if (!selRegions.length) { toast('Select at least one region!'); return; }
+  if (!selFields.length)  { toast('Select at least one field!'); return; }
+
+  // Build candidate list: muscle + field pairs where the field is non-empty
+  let pairs = [];
+  muscles.forEach(m => {
+    if (!selRegions.includes(m.region)) return;
+    const n = m.notes || {};
+    selFields.forEach(f => {
+      if (n[f] && n[f].trim()) pairs.push({ muscle: m, field: f });
+    });
+  });
+
+  if (pairs.length < 4) { toast('Need at least 4 muscles with data for MCQ!'); return; }
+
+  if (order === 'random') shuffle(pairs);
+  else if (order === 'alpha') pairs.sort((a,b) => a.muscle.name.localeCompare(b.muscle.name));
+  else pairs.sort((a,b) => getRate(a.muscle.id) - getRate(b.muscle.id));
+
+  const count = countSel === 'all' ? pairs.length : Math.min(parseInt(countSel), pairs.length);
+  mcqPool     = pairs.slice(0, count);
+  mcqIdx      = 0; mcqCorrect = 0; mcqWrong = 0; mcqAnswered = false; mcqReview = [];
+
+  document.getElementById('mcq-setup').style.display   = 'none';
+  document.getElementById('mcq-end').style.display     = 'none';
+  document.getElementById('mcq-session').style.display = 'block';
+  document.getElementById('mcq-q-total').textContent   = mcqPool.length;
+
+  renderMCQQuestion();
+}
+
+// ── Distractor generation ─────────────────────────────────────────────────────
+// Strategy: prefer distractors from the SAME region, then neighbour regions,
+// then any region as last resort. Never repeat the correct answer text.
+const REGION_NEIGHBOURS = {
+  'Arm':              ['Shoulder','Forearm'],
+  'Forearm':          ['Arm','Hand'],
+  'Hand':             ['Forearm'],
+  'Shoulder':         ['Arm','Back','Thorax','Neck'],
+  'Thorax':           ['Shoulder','Abdomen','Back'],
+  'Abdomen':          ['Thorax','Back','Pelvis & Gluteal'],
+  'Back':             ['Shoulder','Neck','Thorax','Abdomen','Pelvis & Gluteal'],
+  'Neck':             ['Back','Shoulder'],
+  'Pelvis & Gluteal': ['Abdomen','Back','Thigh'],
+  'Thigh':            ['Pelvis & Gluteal','Leg'],
+  'Leg':              ['Thigh','Foot'],
+  'Foot':             ['Leg'],
+  'Head & Face':      ['Neck'],
+};
+
+function getMCQDistractors(correctMuscle, field, n) {
+  const correctText = (correctMuscle.notes || {})[field] || '';
+  const region      = correctMuscle.region;
+  const neighbours  = REGION_NEIGHBOURS[region] || [];
+
+  // Build candidate pool ordered by proximity
+  const tiers = [
+    muscles.filter(m => m.id !== correctMuscle.id && m.region === region),
+    muscles.filter(m => m.id !== correctMuscle.id && neighbours.includes(m.region)),
+    muscles.filter(m => m.id !== correctMuscle.id && !neighbours.includes(m.region) && m.region !== region),
+  ];
+
+  const seen  = new Set([correctText.trim().toLowerCase()]);
+  const picks = [];
+
+  for (const tier of tiers) {
+    if (picks.length >= n) break;
+    shuffle(tier);
+    for (const m of tier) {
+      if (picks.length >= n) break;
+      const val = ((m.notes || {})[field] || '').trim();
+      if (!val) continue;
+      // Avoid near-duplicates: skip if text is very similar to already-picked options
+      const valLow = val.toLowerCase();
+      if (seen.has(valLow)) continue;
+      // Simple dedup: skip if levenshtein distance < 10 from any existing pick
+      let tooSimilar = false;
+      for (const s of seen) {
+        if (Math.abs(val.length - s.length) < 8 && lev(valLow.slice(0,30), s.slice(0,30)) < 8) {
+          tooSimilar = true; break;
+        }
+      }
+      if (tooSimilar) continue;
+      seen.add(valLow);
+      picks.push({ muscle: m, val });
+    }
+  }
+
+  return picks.slice(0, n);
+}
+
+function renderMCQQuestion() {
+  if (mcqIdx >= mcqPool.length) { showMCQEnd(); return; }
+  mcqAnswered = false;
+  const { muscle: m, field } = mcqPool[mcqIdx];
+  const color   = rc(m.region);
+  const correct = ((m.notes || {})[field] || '').trim();
+  const fInfo   = MCQ_FIELDS[field];
+
+  document.getElementById('mcq-q-num').textContent    = mcqIdx + 1;
+  document.getElementById('mcq-progress').style.width = (mcqIdx / mcqPool.length * 100) + '%';
+  document.getElementById('mcq-score-ok').textContent  = mcqCorrect + ' ✓';
+  document.getElementById('mcq-score-err').textContent = mcqWrong + ' ✗';
+
+  // Build 4 options: 1 correct + 3 distractors
+  const distractors = getMCQDistractors(m, field, 3);
+  if (distractors.length < 3) {
+    // Not enough distractors — skip this question silently
+    mcqIdx++;
+    renderMCQQuestion();
+    return;
+  }
+  const options = shuffle([
+    { val: correct, isCorrect: true },
+    ...distractors.map(d => ({ val: d.val, isCorrect: false, source: d.muscle.name })),
+  ]);
+
+  const card = document.getElementById('mcq-card');
+  card.innerHTML = `
+    <div class="anat-muscle-header">
+      <div class="fc-region-bar" style="background:${color};border-radius:var(--r-lg) var(--r-lg) 0 0;margin:-1px -1px 0;"></div>
+      <div class="anat-muscle-inner">
+        <span class="fc-region-label" style="color:${color}">
+          <span class="region-dot" style="background:${color}"></span>${esc(m.region)}
+          ${m.depth?`<span style="opacity:.6;font-weight:400;margin-left:4px;">· ${esc(m.depth)}</span>`:''}
+        </span>
+        <h2 class="fc-muscle-name" style="font-size:clamp(18px,3vw,26px)">${esc(m.name)}</h2>
+        ${m.synonyms&&m.synonyms.length?`<p class="fc-synonyms">${m.synonyms.slice(0,2).map(esc).join(' · ')}</p>`:''}
+        <div class="mcq-question-label">
+          <span>${fInfo.icon}</span>
+          <span>What is the <strong>${fInfo.label.toLowerCase()}</strong> of this muscle?</span>
+        </div>
+      </div>
+    </div>
+    <div class="mcq-options-grid" id="mcq-opts">
+      ${options.map((o, i) => `
+        <button class="mcq-anat-opt" id="mcqopt-${i}" data-correct="${o.isCorrect}"
+          onclick="checkMCQAnat(${i}, ${o.isCorrect})">
+          <span class="mcq-opt-letter">${'ABCD'[i]}</span>
+          <span class="mcq-opt-text">${esc(o.val)}</span>
+        </button>`).join('')}
+    </div>
+    <div class="mcq-anat-feedback" id="mcq-anat-feedback" style="display:none"></div>`;
+}
+
+function checkMCQAnat(idx, isCorrect) {
+  if (mcqAnswered) return;
+  mcqAnswered = true;
+
+  const opts = document.querySelectorAll('.mcq-anat-opt');
+  opts.forEach(b => b.disabled = true);
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) {
+    // Highlight the correct button (stored as data-correct on each button)
+    opts.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
+    mcqWrong++;
+  } else {
+    mcqCorrect++;
+  }
+
+  // Update score display
+  document.getElementById('mcq-score-ok').textContent  = mcqCorrect + ' ✓';
+  document.getElementById('mcq-score-err').textContent = mcqWrong + ' ✗';
+
+  // Show feedback + next button
+  const fb = document.getElementById('mcq-anat-feedback');
+  fb.style.display = 'block';
+  fb.innerHTML = `
+    <div class="mcq-fb-row">
+      <span class="mcq-fb-icon ${isCorrect?'ok':'err'}">${isCorrect?'✓':'✗'}</span>
+      <span class="mcq-fb-text">${isCorrect ? 'Correct!' : 'Wrong.'}</span>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="nextMCQQuestion()">
+        ${mcqIdx + 1 < mcqPool.length ? 'Next →' : 'Results'}
+      </button>
+    </div>`;
+
+  // Store for review
+  const { muscle: m, field } = mcqPool[mcqIdx];
+  mcqReview.push({
+    muscle: m, field,
+    correct: isCorrect,
+    chosen: document.getElementById(`mcqopt-${idx}`).querySelector('.mcq-opt-text').textContent,
+    answer: ((m.notes||{})[field]||'').trim(),
+  });
+
+  if (isCorrect) setTimeout(() => { if (mcqAnswered) nextMCQQuestion(); }, 1200);
+}
+
+function nextMCQQuestion() {
+  mcqIdx++;
+  renderMCQQuestion();
+}
+
+function showMCQEnd() {
+  document.getElementById('mcq-session').style.display = 'none';
+  document.getElementById('mcq-end').style.display     = 'flex';
+
+  const total = mcqReview.length;
+  const pct   = total ? Math.round(mcqCorrect / total * 100) : 0;
+  document.getElementById('mcq-end-emoji').textContent = pct>=80?'🎉':pct>=60?'💪':'📚';
+  document.getElementById('mcq-end-title').textContent  = pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practicing!';
+  document.getElementById('mcq-end-sub').textContent    = `${pct}% correct over ${total} questions`;
+  document.getElementById('mcq-end-scores').innerHTML   = `
+    <div class="end-score-box ok"><div class="val">${mcqCorrect}</div><div class="lbl">Correct</div></div>
+    <div class="end-score-box err"><div class="val">${mcqWrong}</div><div class="lbl">Wrong</div></div>
+    <div class="end-score-box"><div class="val">${pct}%</div><div class="lbl">Rate</div></div>`;
+
+  // Review
+  const review = document.getElementById('mcq-review');
+  const wrong  = mcqReview.filter(r => !r.correct);
+  if (!wrong.length) { review.innerHTML = '<p style="text-align:center;color:var(--ok);font-weight:500;margin-top:1rem;">Perfect score — all correct!</p>'; return; }
+  review.innerHTML = `
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 10px;">
+      Missed (${wrong.length})
+    </div>
+    <div class="anat-review-list">
+      ${wrong.map(r => {
+        const color = rc(r.muscle.region);
+        const fInfo = MCQ_FIELDS[r.field];
+        return `<div class="anat-review-item">
+          <div class="anat-review-muscle">
+            <span class="region-dot" style="background:${color}"></span>
+            <strong>${esc(r.muscle.name)}</strong>
+            <span class="badge badge-region" style="background:${color}22;color:${color};border-color:${color}55;font-size:10px">${esc(r.muscle.region)}</span>
+            <span style="font-size:11px;color:var(--text3)">${fInfo.icon} ${fInfo.label}</span>
+          </div>
+          <div class="anat-review-field">
+            <div class="anat-review-your"><span style="font-size:10px;color:var(--err)">✗ Your answer:</span> ${esc(r.chosen)}</div>
+            <div class="anat-review-correct"><span style="font-size:10px;color:var(--ok)">✓ Correct:</span> ${esc(r.answer)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function stopMCQ() {
+  showModal('Stop?', '<p>Progress will be lost.</p>', [
+    { label: 'Stop', cls: 'btn btn-danger', action: () => { hideModal(); showMCQSetup(); }},
+    { label: 'Continue', cls: 'btn btn-primary', action: hideModal },
+  ]);
+}
+function showMCQSetup() {
+  document.getElementById('mcq-session').style.display = 'none';
+  document.getElementById('mcq-end').style.display     = 'none';
+  document.getElementById('mcq-setup').style.display   = 'block';
+}
+
+// ── ANATOMY QUIZ ──────────────────────────────────────────────────────────────
+let anatPool    = [];
+let anatIdx     = 0;
+let anatResults = []; // { muscle, fields, answers }
+const ANAT_FIELDS = {
+  origin:      { label: 'Origin',       icon: '📍' },
+  insertion:   { label: 'Insertion',    icon: '🎯' },
+  function:    { label: 'Function',     icon: '⚡' },
+  innervation: { label: 'Innervation',  icon: '🧠' },
+  blood_supply:{ label: 'Blood supply', icon: '🩸' },
+};
+
+function initAnatomyQuiz() {
+  // Populate region chips
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+  const container = document.getElementById('anatomy-region-checks');
+  if (!container) return;
+  const existing = new Set(
+    [...container.querySelectorAll('input:checked')].map(el => el.value)
+  );
+  const first = container.children.length === 0;
+  container.innerHTML = '';
+  regions.forEach(r => {
+    const color = rc(r);
+    const count = muscles.filter(m => m.region === r).length;
+    const checked = first || existing.has(r);
+    const lbl = document.createElement('label');
+    lbl.className = 'recall-region-chip' + (checked ? ' checked' : '');
+    lbl.innerHTML = `<input type="checkbox" value="${r}" ${checked?'checked':''} onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span class="region-dot" style="background:${color}"></span><span>${r}</span><span class="recall-chip-count">${count}</span>`;
+    container.appendChild(lbl);
+  });
+}
+
+function anatSelectAll() {
+  document.querySelectorAll('#anatomy-region-checks input').forEach(cb => {
+    cb.checked = true; cb.closest('label').classList.add('checked');
+  });
+}
+function anatSelectNone() {
+  document.querySelectorAll('#anatomy-region-checks input').forEach(cb => {
+    cb.checked = false; cb.closest('label').classList.remove('checked');
+  });
+}
+function toggleAnatPick(cb) {
+  cb.closest('label').classList.toggle('checked', cb.checked);
+}
+function getAnatRegions() {
+  return [...document.querySelectorAll('#anatomy-region-checks input:checked')].map(cb => cb.value);
+}
+function getAnatFields() {
+  return [...document.querySelectorAll('#anat-field-picks input:checked')].map(cb => cb.value);
+}
+
+function startAnatomyQuiz() {
+  const selectedRegions = getAnatRegions();
+  const selectedFields  = getAnatFields();
+  const countSel = document.getElementById('anat-count').value;
+  const order    = document.getElementById('anat-order').value;
+
+  if (!selectedRegions.length) { toast('Select at least one region!'); return; }
+  if (!selectedFields.length)  { toast('Select at least one field!'); return; }
+
+  // Only include muscles that have at least one of the selected fields filled
+  let pool = muscles.filter(m => {
+    if (!selectedRegions.includes(m.region)) return false;
+    const n = m.notes || {};
+    return selectedFields.some(f => n[f] && n[f].trim());
+  });
+
+  if (!pool.length) { toast('No muscles with that data in this selection!'); return; }
+
+  if (order === 'random') shuffle(pool);
+  else if (order === 'alpha') pool.sort((a,b) => a.name.localeCompare(b.name));
+  else pool.sort((a,b) => getRate(a.id) - getRate(b.id));
+
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  anatPool    = pool.slice(0, count);
+  anatIdx     = 0;
+  anatResults = [];
+
+  document.getElementById('anatomy-setup').style.display   = 'none';
+  document.getElementById('anatomy-end').style.display     = 'none';
+  document.getElementById('anatomy-session').style.display = 'block';
+  document.getElementById('anat-q-total').textContent = anatPool.length;
+
+  renderAnatQuestion();
+}
+
+function renderAnatQuestion() {
+  if (anatIdx >= anatPool.length) { showAnatomyEnd(); return; }
+  const m      = anatPool[anatIdx];
+  const fields = getAnatFields().filter(f => m.notes && m.notes[f] && m.notes[f].trim());
+  const color  = rc(m.region);
+
+  document.getElementById('anat-q-num').textContent    = anatIdx + 1;
+  document.getElementById('anat-progress').style.width = (anatIdx / anatPool.length * 100) + '%';
+  // Always restore the action buttons (submitAnatAnswer replaces innerHTML with "Next →")
+  document.getElementById('anat-actions').style.display = 'flex';
+  document.getElementById('anat-actions').innerHTML = `
+    <button class="btn btn-primary btn-lg" onclick="submitAnatAnswer()">Check answer</button>
+    <button class="btn" onclick="skipAnatQuestion()">Skip</button>`;
+
+  const card = document.getElementById('anat-card');
+  card.innerHTML = `
+    <div class="anat-muscle-header">
+      <div class="fc-region-bar" style="background:${color};border-radius:var(--r-lg) var(--r-lg) 0 0;margin:-1px -1px 0;"></div>
+      <div class="anat-muscle-inner">
+        <span class="fc-region-label" style="color:${color}">
+          <span class="region-dot" style="background:${color}"></span>${esc(m.region)}
+          ${m.depth ? `<span style="opacity:.6;font-weight:400;margin-left:4px;">· ${esc(m.depth)}</span>` : ''}
+        </span>
+        <h2 class="fc-muscle-name" style="font-size:clamp(20px,3vw,28px)">${esc(m.name)}</h2>
+        ${m.synonyms&&m.synonyms.length ? `<p class="fc-synonyms">${m.synonyms.slice(0,2).map(esc).join(' · ')}</p>` : ''}
+      </div>
+    </div>
+    <div class="anat-fields-form" id="anat-fields-form">
+      ${fields.map(f => `
+        <div class="anat-field-row" id="anat-row-${f}">
+          <div class="anat-field-head">
+            <span class="fc-field-icon">${ANAT_FIELDS[f].icon}</span>
+            <span class="fc-field-label" style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">${ANAT_FIELDS[f].label}</span>
+          </div>
+          <textarea class="anat-textarea" id="anat-inp-${f}" placeholder="Your answer…" rows="2"
+            onkeydown="if(event.key==='Enter'&&event.ctrlKey)submitAnatAnswer()"></textarea>
+          <div class="anat-field-feedback" id="anat-fb-${f}" style="display:none"></div>
+        </div>`).join('')}
+    </div>`;
+
+  // Focus first textarea
+  const first = card.querySelector('textarea');
+  if (first) setTimeout(() => first.focus(), 50);
+}
+
+function submitAnatAnswer() {
+  const m      = anatPool[anatIdx];
+  const fields = getAnatFields().filter(f => m.notes && m.notes[f] && m.notes[f].trim());
+  const n      = m.notes || {};
+
+  let allAnswered = true;
+  const result = { muscle: m, fields: {} };
+
+  fields.forEach(f => {
+    const inp = document.getElementById('anat-inp-' + f);
+    const fb  = document.getElementById('anat-fb-' + f);
+    const row = document.getElementById('anat-row-' + f);
+    if (!inp) return;
+
+    const answer   = inp.value.trim();
+    const correct  = (n[f] || '').trim();
+
+    if (!answer) { allAnswered = false; inp.classList.add('shake'); setTimeout(()=>inp.classList.remove('shake'),400); return; }
+
+    // Reveal: show correct answer for comparison
+    inp.disabled = true;
+    fb.style.display = 'block';
+    fb.innerHTML = `<div class="anat-correct-answer"><span class="anat-fb-label">Correct answer:</span>${esc(correct)}</div>`;
+    row.classList.add('revealed');
+    result.fields[f] = { answer, correct };
+  });
+
+  if (!allAnswered) return;
+
+  anatResults.push(result);
+  document.getElementById('anat-actions').innerHTML = `
+    <button class="btn btn-primary btn-lg" onclick="nextAnatQuestion()">
+      ${anatIdx + 1 < anatPool.length ? 'Next →' : 'See results'}
+    </button>`;
+}
+
+function skipAnatQuestion() {
+  const m      = anatPool[anatIdx];
+  const fields = getAnatFields().filter(f => m.notes && m.notes[f] && m.notes[f].trim());
+  const n      = m.notes || {};
+  const result = { muscle: m, fields: {}, skipped: true };
+  fields.forEach(f => { result.fields[f] = { answer: '', correct: (n[f]||'').trim() }; });
+  anatResults.push(result);
+  nextAnatQuestion();
+}
+
+function nextAnatQuestion() {
+  anatIdx++;
+  renderAnatQuestion();
+}
+
+function showAnatomyEnd() {
+  document.getElementById('anatomy-session').style.display = 'none';
+  document.getElementById('anatomy-end').style.display     = 'flex';
+
+  const total   = anatResults.length;
+  const skipped = anatResults.filter(r => r.skipped).length;
+
+  document.getElementById('anat-end-emoji').textContent = skipped === 0 ? '🎉' : skipped < total/2 ? '💪' : '📚';
+  document.getElementById('anat-end-title').textContent  = 'Session complete!';
+  document.getElementById('anat-end-sub').textContent    = `${total} muscle${total!==1?'s':''} reviewed · ${skipped} skipped`;
+  document.getElementById('anat-end-scores').innerHTML   = `
+    <div class="end-score-box"><div class="val">${total}</div><div class="lbl">Reviewed</div></div>
+    <div class="end-score-box err"><div class="val">${skipped}</div><div class="lbl">Skipped</div></div>`;
+
+  // Review — show all results
+  const review = document.getElementById('anat-review');
+  review.innerHTML = `<div class="anat-review-list">` +
+    anatResults.map(r => {
+      const color = rc(r.muscle.region);
+      const fieldRows = Object.entries(r.fields).map(([f, d]) => `
+        <div class="anat-review-field">
+          <div class="anat-field-head" style="margin-bottom:4px;">
+            <span class="fc-field-icon">${ANAT_FIELDS[f]?.icon||''}</span>
+            <span style="font-size:10.5px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${ANAT_FIELDS[f]?.label||f}</span>
+          </div>
+          ${d.answer ? `<div class="anat-review-your"><span style="font-size:10px;color:var(--text3)">Your answer:</span> ${esc(d.answer)}</div>` : `<div style="font-size:12px;color:var(--text3);font-style:italic">Skipped</div>`}
+          <div class="anat-review-correct"><span style="font-size:10px;color:var(--ok)">✓</span> ${esc(d.correct)}</div>
+        </div>`).join('');
+      return `<div class="anat-review-item">
+        <div class="anat-review-muscle">
+          <span class="region-dot" style="background:${color}"></span>
+          <strong>${esc(r.muscle.name)}</strong>
+          <span class="badge badge-region" style="background:${color}22;color:${color};border-color:${color}55;font-size:10px">${esc(r.muscle.region)}</span>
+        </div>
+        ${fieldRows}
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+function showAnatomySetup() {
+  document.getElementById('anatomy-session').style.display = 'none';
+  document.getElementById('anatomy-end').style.display     = 'none';
+  document.getElementById('anatomy-setup').style.display   = 'block';
+}
+function stopAnatomyQuiz() {
+  showModal('Stop?', '<p>Progress will be lost.</p>', [
+    { label: 'Stop', cls: 'btn btn-danger', action: () => { hideModal(); showAnatomySetup(); }},
+    { label: 'Continue', cls: 'btn btn-primary', action: hideModal },
+  ]);
+}
+
+// ── FLASHCARDS ────────────────────────────────────────────────────────────────
+let cardDeck  = [];
+let cardIdx   = 0;
+let cardFlipped = false;
+
+function initCards() {
+  const fReg   = document.getElementById('cards-region-filter').value;
+  const fDepth = document.getElementById('cards-depth-filter').value;
+  const order  = document.getElementById('cards-order').value;
+
+  let pool = muscles.filter(m => {
+    if (fReg   && m.region !== fReg)   return false;
+    if (fDepth && m.depth  !== fDepth) return false;
+    return true;
+  });
+
+  if (order === 'alpha')  pool.sort((a,b) => a.name.localeCompare(b.name));
+  if (order === 'region') pool.sort((a,b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
+  if (order === 'random') shuffle(pool);
+
+  cardDeck   = pool;
+  cardIdx    = 0;
+  cardFlipped = false;
+
+  // Populate region filter
+  const rfEl = document.getElementById('cards-region-filter');
+  const curReg = rfEl.value;
+  rfEl.innerHTML = '<option value="">All regions</option>';
+  [...new Set(muscles.map(m => m.region))].sort().forEach(r => {
+    const o = document.createElement('option');
+    o.value = r; o.textContent = r;
+    rfEl.appendChild(o);
+  });
+  rfEl.value = curReg;
+
+  if (!cardDeck.length) {
+    document.getElementById('cards-stage').style.display = 'none';
+    document.getElementById('cards-empty').style.display = '';
+    return;
+  }
+  document.getElementById('cards-stage').style.display = '';
+  document.getElementById('cards-empty').style.display = 'none';
+
+  renderCard();
+}
+
+function renderCard() {
+  if (!cardDeck.length) return;
+  const m   = cardDeck[cardIdx];
+  const n   = m.notes || {};
+  const color = rc(m.region);
+  cardFlipped = false;
+
+  // Update counter
+  document.getElementById('cards-counter').textContent = (cardIdx + 1) + ' / ' + cardDeck.length;
+
+  // Remove flip class
+  const fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+
+  // ── FRONT ──────────────────────────────────────────────────────
+  const depthBadge = m.depth
+    ? `<span class="fc-depth-badge">${esc(m.depth)}</span>` : '';
+
+  document.getElementById('fc-front').innerHTML = `
+    <div class="fc-region-bar" style="background:${color}"></div>
+    <div class="fc-front-body">
+      <span class="fc-region-label" style="color:${color}">
+        <span class="region-dot" style="background:${color}"></span>
+        ${esc(m.region)}
+      </span>
+      <h2 class="fc-muscle-name">${esc(m.name)}</h2>
+      ${depthBadge}
+      ${m.synonyms && m.synonyms.length
+        ? `<p class="fc-synonyms">${m.synonyms.map(esc).join(' &middot; ')}</p>` : ''}
+      <p class="fc-tap-hint">Tap to reveal anatomy</p>
+    </div>
+  `;
+
+  // ── BACK ───────────────────────────────────────────────────────
+  const fields = [
+    { icon: '📍', label: 'Origin',      val: n.origin      },
+    { icon: '🎯', label: 'Insertion',   val: n.insertion   },
+    { icon: '⚡', label: 'Function',    val: n.function    },
+    { icon: '🧠', label: 'Innervation', val: n.innervation },
+    { icon: '🩸', label: 'Blood supply',val: n.blood_supply},
+    { icon: '📝', label: 'Notes',       val: n.extra       },
+  ].filter(f => f.val && f.val.trim());
+
+  const fieldsHTML = fields.length
+    ? fields.map(f => `
+      <div class="fc-field">
+        <div class="fc-field-label"><span class="fc-field-icon">${f.icon}</span>${f.label}</div>
+        <div class="fc-field-val">${esc(f.val)}</div>
+      </div>`).join('')
+    : '<p class="fc-no-data">No anatomy data for this muscle yet.<br>Edit it in the Muscles tab.</p>';
+
+  document.getElementById('fc-back').innerHTML = `
+    <div class="fc-region-bar" style="background:${color}"></div>
+    <div class="fc-back-header">
+      <span class="fc-region-label" style="color:${color}">
+        <span class="region-dot" style="background:${color}"></span>
+        ${esc(m.region)}
+      </span>
+      <h2 class="fc-muscle-name">${esc(m.name)}</h2>
+    </div>
+    <div class="fc-back-fields">${fieldsHTML}</div>
+  `;
+
+  // Dots
+  renderCardDots();
+  updateCardNav();
+}
+
+function flipCard() {
+  cardFlipped = !cardFlipped;
+  const fc = document.getElementById('flashcard');
+  fc.classList.toggle('flipped', cardFlipped);
+}
+
+function nextCard() {
+  if (cardIdx >= cardDeck.length - 1) return;
+  cardIdx++;
+  renderCard();
+}
+
+function prevCard() {
+  if (cardIdx <= 0) return;
+  cardIdx--;
+  renderCard();
+}
+
+function renderCardDots() {
+  const dotsEl = document.getElementById('cards-dots');
+  const total  = cardDeck.length;
+  // Show at most 9 dots; if more, show position indicator instead
+  if (total <= 15) {
+    dotsEl.innerHTML = Array.from({length: total}, (_,i) =>
+      `<span class="cdot ${i === cardIdx ? 'active' : ''}"></span>`
+    ).join('');
+  } else {
+    // Sliding window of 9 dots around current
+    dotsEl.innerHTML = '';
+  }
+}
+
+function updateCardNav() {
+  document.getElementById('cards-prev').disabled = cardIdx === 0;
+  document.getElementById('cards-next').disabled = cardIdx === cardDeck.length - 1;
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  const panel = document.querySelector('.panel.active');
+  if (!panel || panel.id !== 'panel-cards') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  { e.preventDefault(); nextCard(); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    { e.preventDefault(); prevCard(); }
+  if (e.key === ' ')                                      { e.preventDefault(); flipCard(); }
+});
+
+// Swipe support
+(function() {
+  let startX = 0;
+  const wrap = document.getElementById('flashcard-wrap');
+  if (!wrap) return;
+  wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+  wrap.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) { dx < 0 ? nextCard() : prevCard(); }
+  }, {passive:true});
+})();
+
+// ── BUNDLED MUSCLE DATA ──────────────────────────────────────────────────────
+// Auto-seeded on first load if localStorage is empty.
+const BUNDLED_MUSCLES = [{"id":"manual_2","name":"Occipitofrontalis","region":"Head & Face","depth":"Superficial","synonyms":["Epicranius","Frontalis (anterior belly)","Occipitalis (posterior belly)"],"notes":{"origin":"Occipital belly: superior nuchal line and mastoid process. Frontal belly: epicranial aponeurosis (galea aponeurotica)","insertion":"Occipital belly: galea aponeurotica. Frontal belly: skin of the forehead and eyebrows","function":"Occipital belly: retracts scalp posteriorly. Frontal belly: raises eyebrows, wrinkles forehead (surprise/worry expression). Together they move the scalp.","extra":"Bipartite muscle connected via the galea aponeurotica. Facial nerve (CN VII) innervation.","innervation":"Frontal belly: temporal branch of facial nerve (CN VII); Occipital belly: posterior auricular branch of CN VII","blood_supply":"Superficial temporal artery; occipital artery"},"createdAt":1777679372157},{"id":"manual_3","name":"Pubococcygeus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["PC muscle","Pubococcygeal muscle"],"notes":{"origin":"Posterior surface of pubic body and anterior part of arcus tendineus","insertion":"Coccyx and anococcygeal ligament","function":"Supports pelvic viscera, maintains continence of urine and feces, supports vaginal walls in females, contributes to orgasm response. Part of levator ani.","extra":"Innervated by pudendal nerve (S3-S4) and direct branches from S3-S4","innervation":"Pudendal nerve (S3–S4); direct branches from S3–S4","blood_supply":"Internal pudendal artery"},"createdAt":1777679372157},{"id":"manual_4","name":"Puborectalis","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Puborectal muscle"],"notes":{"origin":"Posterior surface of pubic symphysis","insertion":"Loops around the anorectal junction forming a sling (no bony insertion)","function":"Maintains anorectal angle (puborectal sling), essential for fecal continence. Relaxes during defecation to straighten the anorectal canal.","extra":"Part of levator ani complex. Innervated by pudendal nerve and direct branches from S3-S4.","innervation":"Pudendal nerve (S3–S4); direct branches from S3–S4","blood_supply":"Internal pudendal artery"},"createdAt":1777679372157},{"id":"manual_5","name":"Iliococcygeus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Iliococcygeal muscle"],"notes":{"origin":"Arcus tendineus levatoris ani (ischial spine to pubic body)","insertion":"Coccyx and anococcygeal raphe","function":"Supports pelvic floor, elevates and retracts the coccyx after defecation. Part of levator ani.","extra":"Thinnest component of levator ani. Innervated by pudendal nerve (S3-S4).","innervation":"Pudendal nerve (S3–S4)","blood_supply":"Internal pudendal artery"},"createdAt":1777679372157},{"id":"1777679372650","name":"Occipitalis","region":"Head & Face","depth":"Superficial","synonyms":["Occipital belly of occipitofrontalis","Venter occipitalis"],"notes":{"origin":"Lateral two-thirds of superior nuchal line, mastoid process","insertion":"Epicranial aponeurosis","function":"Pulls scalp posteriorly, works with frontalis to wrinkle forehead","extra":"","innervation":"Temporal branch (frontal belly) or posterior auricular branch (occipital belly) of facial nerve (CN VII)","blood_supply":"Superficial temporal artery (frontal belly); occipital artery (occipital belly)"},"createdAt":1777679372157},{"id":"1777679372827","name":"Frontalis","region":"Head & Face","depth":"Superficial","synonyms":["Frontal belly of occipitofrontalis","Venter frontalis"],"notes":{"origin":"Epicranial aponeurosis (galea aponeurotica)","insertion":"Skin of the forehead and eyebrow region","function":"Raises the eyebrows, wrinkles the forehead (expression of surprise or worry)","extra":"","innervation":"Temporal branch (frontal belly) or posterior auricular branch (occipital belly) of facial nerve (CN VII)","blood_supply":"Superficial temporal artery (frontal belly); occipital artery (occipital belly)"},"createdAt":1777679372157},{"id":"1777679372489","name":"Temporoparietalis","region":"Head & Face","depth":"Superficial","synonyms":["Temporal parietal muscle"],"notes":{"origin":"Temporal fascia above ear","insertion":"Lateral border of epicranial aponeurosis","function":"Tenses the scalp, raises the ear slightly","extra":"","innervation":"Temporal branch of facial nerve (CN VII)","blood_supply":"Superficial temporal artery"},"createdAt":1777679372157},{"id":"1777679372762","name":"Orbicularis Oculi","region":"Head & Face","depth":"Superficial","synonyms":["Orbital muscle of eye","Sphincter oculi"],"notes":{"origin":"Medial orbital margin, medial palpebral ligament, lacrimal bone","insertion":"Skin around orbit, tarsal plates, lateral palpebral raphe","function":"Closes the eyelids (blinking, squinting, forced closure); compresses lacrimal sac","extra":"","innervation":"Temporal and zygomatic branches of facial nerve (CN VII)","blood_supply":"Ophthalmic artery, facial artery, superficial temporal artery"},"createdAt":1777679372157},{"id":"1777679372322","name":"Corrugator Supercilii","region":"Head & Face","depth":"Deep","synonyms":["Superciliary corrugator","Corrugator muscle"],"notes":{"origin":"Medial superciliary arch of frontal bone","insertion":"Skin of medial eyebrow","function":"Draws eyebrow medially and inferiorly, produces vertical wrinkles of forehead (frowning)","extra":"","innervation":"Temporal branch of facial nerve (CN VII)","blood_supply":"Supratrochlear artery, supraorbital artery"},"createdAt":1777679372157},{"id":"1777679372409","name":"Procerus","region":"Head & Face","depth":"Superficial","synonyms":["Pyramidalis nasi","Depressor glabellae"],"notes":{"origin":"Fascia of nasal bone and upper lateral nasal cartilage","insertion":"Skin between eyebrows (glabella)","function":"Pulls medial angle of eyebrow downward, creates transverse wrinkles over nose bridge","extra":"","innervation":"Temporal branch of facial nerve (CN VII)","blood_supply":"Angular artery, dorsal nasal artery"},"createdAt":1777679372157},{"id":"1777679372782","name":"Nasalis","region":"Head & Face","depth":"Superficial","synonyms":["Compressor naris","Dilator naris"],"notes":{"origin":"Maxilla lateral to nasal notch","insertion":"Alar cartilage and skin of nose (two parts: transverse and alar)","function":"Transverse part compresses nostril; alar part dilates nostril","extra":"","innervation":"Buccal branch of facial nerve (CN VII)","blood_supply":"Facial artery, ophthalmic artery"},"createdAt":1777679372157},{"id":"1777679372729","name":"Levator Labii Superioris Alaeque Nasi","region":"Head & Face","depth":"Superficial","synonyms":["Angular head of quadratus labii superioris","Caput angulare"],"notes":{"origin":"Frontal process of maxilla","insertion":"Alar cartilage, skin of nose, upper lip","function":"Elevates upper lip and dilates nostril; the muscle that causes a 'sneering' expression","extra":"","innervation":"Buccal branch of facial nerve (CN VII)","blood_supply":"Facial artery, infraorbital artery"},"createdAt":1777679372157},{"id":"1777679372683","name":"Orbicularis Oris","region":"Head & Face","depth":"Superficial","synonyms":["Sphincter oris","Oral sphincter muscle"],"notes":{"origin":"Modiolus (lateral to angle of mouth), maxilla (incisor region), mandible","insertion":"Skin and mucosa of lips","function":"Closes and protrudes lips, compresses lips against teeth; essential for speech, kissing, drinking","extra":"","innervation":"Buccal and marginal mandibular branches of facial nerve (CN VII)","blood_supply":"Superior and inferior labial arteries (facial artery)"},"createdAt":1777679372157},{"id":"1777679372772","name":"Buccinator","region":"Head & Face","depth":"Deep","synonyms":["Trumpeter's muscle","Cheek muscle"],"notes":{"origin":"Alveolar processes of maxilla and mandible, pterygomandibular raphe","insertion":"Orbicularis oris at angle of mouth","function":"Compresses cheeks against teeth (chewing), blowing; assists mastication by keeping food between teeth","extra":"","innervation":"Buccal branch of facial nerve (CN VII)","blood_supply":"Buccal artery (maxillary artery), facial artery"},"createdAt":1777679372157},{"id":"1777679372992","name":"Zygomaticus Major","region":"Head & Face","depth":"Superficial","synonyms":["Zygomatic major muscle","Smiling muscle"],"notes":{"origin":"Zygomatic bone (temporal process)","insertion":"Modiolus and angle of mouth","function":"Draws angle of mouth superiorly and laterally; principal muscle of smiling","extra":"","innervation":"Buccal and zygomatic branches of facial nerve (CN VII)","blood_supply":"Facial artery, transverse facial artery"},"createdAt":1777679372157},{"id":"fix_1777715111192_101","name":"Zygomaticus Minor","region":"Head & Face","depth":"Superficial","synonyms":["Zygomatic minor muscle"],"notes":{"origin":"Malar surface of zygomatic bone","insertion":"Orbicularis oris, upper lip skin","function":"Draws upper lip upward and outward (expression of sadness or disdain)","extra":"","innervation":"Buccal and zygomatic branches of facial nerve (CN VII)","blood_supply":"Facial artery, transverse facial artery"},"createdAt":1777679372157},{"id":"1777679373114","name":"Risorius","region":"Head & Face","depth":"Superficial","synonyms":["Laughing muscle"],"notes":{"origin":"Parotid fascia and masseter fascia","insertion":"Skin at angle of mouth","function":"Retracts angle of mouth laterally; produces a 'grinning' expression","extra":"","innervation":"Buccal branch of facial nerve (CN VII)","blood_supply":"Facial artery, transverse facial artery"},"createdAt":1777679372157},{"id":"1777679372676","name":"Levator Labii Superioris","region":"Head & Face","depth":"Superficial","synonyms":["Quadratus labii superioris (medial part)"],"notes":{"origin":"Infraorbital margin of maxilla and zygomatic bone","insertion":"Skin and muscle of upper lip","function":"Elevates and everts upper lip; deepens nasolabial fold","extra":"","innervation":"Buccal branch of facial nerve (CN VII)","blood_supply":"Infraorbital artery, facial artery"},"createdAt":1777679372157},{"id":"1777679372715","name":"Levator Anguli Oris","region":"Head & Face","depth":"Deep","synonyms":["Caninus muscle","Canine muscle"],"notes":{"origin":"Canine fossa of maxilla","insertion":"Angle of mouth, orbicularis oris","function":"Raises angle of mouth; assists in smiling","extra":"","innervation":"Buccal branch of facial nerve (CN VII)","blood_supply":"Infraorbital artery, facial artery"},"createdAt":1777679372157},{"id":"1777679372615","name":"Depressor Anguli Oris","region":"Head & Face","depth":"Superficial","synonyms":["Triangularis","Triangular muscle of lip"],"notes":{"origin":"Oblique line of mandible","insertion":"Angle of mouth, modiolus","function":"Depresses angle of mouth; expression of sadness","extra":"","innervation":"Marginal mandibular branch of facial nerve (CN VII)","blood_supply":"Facial artery, mental artery"},"createdAt":1777679372157},{"id":"1777679372215","name":"Depressor Labii Inferioris","region":"Head & Face","depth":"Superficial","synonyms":["Quadratus labii inferioris"],"notes":{"origin":"Anterior mandible between symphysis and mental foramen","insertion":"Skin of lower lip","function":"Depresses and everts lower lip","extra":"","innervation":"Marginal mandibular branch of facial nerve (CN VII)","blood_supply":"Inferior labial artery (facial artery)"},"createdAt":1777679372157},{"id":"1777679372344","name":"Mentalis","region":"Head & Face","depth":"Superficial","synonyms":["Chin muscle","Levator menti"],"notes":{"origin":"Incisive fossa of mandible","insertion":"Skin of chin","function":"Raises and protrudes lower lip; wrinkles skin of chin (pouting expression)","extra":"","innervation":"Marginal mandibular branch of facial nerve (CN VII)","blood_supply":"Mental artery (inferior alveolar artery)"},"createdAt":1777679372157},{"id":"1777679372807","name":"Platysma","region":"Head & Face","depth":"Superficial","synonyms":["Neck platysma","Cutaneous muscle of neck (facial portion)"],"notes":{"origin":"Fascia over pectoralis major and deltoid below clavicle","insertion":"Inferior mandible, skin of cheek and lower face","function":"Tenses neck skin, depresses mandible and lower lip; draws lower face downward","extra":"","innervation":"Cervical branch of facial nerve (CN VII)","blood_supply":"Submental artery, suprascapular artery"},"createdAt":1777679372157},{"id":"1777679373040","name":"Masseter","region":"Head & Face","depth":"Superficial","synonyms":["Chewing muscle","Masseteric muscle"],"notes":{"origin":"Superficial part: zygomatic arch and zygomatic process of maxilla; Deep part: medial surface of zygomatic arch","insertion":"Lateral surface of ramus and angle of mandible","function":"Elevates mandible (closes mouth), protracts mandible; most powerful jaw-closing muscle","extra":"","innervation":"Masseteric nerve (mandibular nerve CN V3)","blood_supply":"Masseteric artery (maxillary artery), facial artery"},"createdAt":1777679372157},{"id":"fix_1777715111192_189","name":"Temporalis","region":"Head & Face","depth":"Superficial","synonyms":["Temporal muscle"],"notes":{"origin":"Temporal fossa and temporal fascia","insertion":"Coronoid process and anterior ramus of mandible","function":"Elevates mandible (closes mouth); posterior fibres retract mandible","extra":"","innervation":"Deep temporal nerves (anterior and posterior, CN V3)","blood_supply":"Deep temporal arteries (maxillary artery)"},"createdAt":1777679372157},{"id":"1777679372264","name":"Lateral Pterygoid","region":"Head & Face","depth":"Deep","synonyms":["External pterygoid","Pterygoideus lateralis"],"notes":{"origin":"Upper head: greater wing of sphenoid; Lower head: lateral pterygoid plate","insertion":"Condyloid process of mandible, articular disc of TMJ","function":"Protrudes mandible, opens mouth, moves mandible side to side","extra":"","innervation":"Lateral pterygoid nerve (mandibular nerve CN V3)","blood_supply":"Pterygoid branches of maxillary artery"},"createdAt":1777679372157},{"id":"1777679372219","name":"Medial Pterygoid","region":"Head & Face","depth":"Deep","synonyms":["Internal pterygoid","Pterygoideus medialis"],"notes":{"origin":"Medial surface of lateral pterygoid plate, pyramidal process of palatine bone","insertion":"Medial surface of ramus and angle of mandible","function":"Elevates mandible, protrudes mandible, side-to-side movements (grinding)","extra":"","innervation":"Medial pterygoid nerve (mandibular nerve CN V3)","blood_supply":"Pterygoid branches of maxillary artery"},"createdAt":1777679372157},{"id":"1777679372678","name":"Sternohyoid","region":"Neck","depth":"Superficial","synonyms":[],"notes":{"origin":"Posterior surface of manubrium and medial clavicle","insertion":"Lower border of body of hyoid bone","function":"Depresses hyoid bone after swallowing","extra":"","innervation":"Ansa cervicalis (C1–C3)","blood_supply":"Superior thyroid artery, inferior thyroid artery"},"createdAt":1777679372157},{"id":"fix_1777715111192_553","name":"Omohyoid","region":"Neck","depth":"Superficial","synonyms":["Omo-hyoideus"],"notes":{"origin":"Superior border of scapula medial to suprascapular notch","insertion":"Lower border of hyoid bone (two bellies joined by intermediate tendon)","function":"Depresses, retracts, and steadies hyoid; tenses inferior cervical fascia","extra":"","innervation":"Ansa cervicalis (C1–C3)","blood_supply":"Lingual artery, superior thyroid artery"},"createdAt":1777679372157},{"id":"1777679372453","name":"Sternothyroid","region":"Neck","depth":"Deep","synonyms":[],"notes":{"origin":"Posterior surface of manubrium, 1st costal cartilage","insertion":"Oblique line of thyroid cartilage","function":"Depresses thyroid cartilage and larynx after swallowing","extra":"","innervation":"Ansa cervicalis (C1–C3)","blood_supply":"Superior thyroid artery, inferior thyroid artery"},"createdAt":1777679372157},{"id":"1777679372824","name":"Thyrohyoid","region":"Neck","depth":"Deep","synonyms":["Thyreohyoideus"],"notes":{"origin":"Oblique line of thyroid cartilage","insertion":"Lower border of body and greater horn of hyoid bone","function":"Depresses hyoid or elevates larynx during swallowing/speaking","extra":"","innervation":"C1 via hypoglossal nerve (CN XII)","blood_supply":"Superior thyroid artery"},"createdAt":1777679372157},{"id":"1777679373080","name":"Sternocleidomastoid","region":"Neck","depth":"Superficial","synonyms":["SCM","Sternomastoid","Sterno-cleido-mastoideus"],"notes":{"origin":"Sternal head: anterior manubrium; Clavicular head: medial clavicle","insertion":"Mastoid process and lateral superior nuchal line","function":"Unilateral: lateral flexion and contralateral rotation of head; Bilateral: flexion of cervical spine, raises sternum (accessory breathing)","extra":"","innervation":"Accessory nerve (CN XI) for motor; C2–C3 for proprioception","blood_supply":"Occipital artery, posterior auricular artery, superior thyroid artery"},"createdAt":1777679372157},{"id":"1777679372884","name":"Trapezius","region":"Back","depth":"Superficial","synonyms":["Traps","Trapezoid muscle"],"notes":{"origin":"External occipital protuberance, medial nuchal line, nuchal ligament, spinous processes C7–T12","insertion":"Lateral 1/3 of clavicle, acromion, scapular spine","function":"Upper: elevates and upwardly rotates scapula; Middle: retracts scapula; Lower: depresses scapula; overall: holds scapula against thorax","extra":"","innervation":"Accessory nerve (CN XI) for motor; C3–C4 for sensation","blood_supply":"Transverse cervical artery, dorsal scapular artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372716","name":"Latissimus Dorsi","region":"Back","depth":"Superficial","synonyms":["Lats","Broadest muscle of back","Latissimus"],"notes":{"origin":"Spinous processes T7–L5, sacrum, iliac crest, ribs 9–12, inferior angle of scapula (via thoracolumbar fascia)","insertion":"Intertubercular sulcus of humerus (floor)","function":"Extension, adduction, and medial rotation of arm; depresses and retracts scapula","extra":"","innervation":"Thoracodorsal nerve (C6–C8)","blood_supply":"Thoracodorsal artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372759","name":"Rhomboid Major","region":"Back","depth":"Deep","synonyms":["Greater rhomboid"],"notes":{"origin":"Spinous processes T2–T5","insertion":"Medial border of scapula (below scapular spine)","function":"Retracts and elevates scapula; rotates glenoid inferiorly","extra":"","innervation":"Dorsal scapular nerve (C4–C5)","blood_supply":"Dorsal scapular artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679373048","name":"Rhomboid Minor","region":"Back","depth":"Deep","synonyms":["Lesser rhomboid"],"notes":{"origin":"Lower nuchal ligament, spinous processes C7–T1","insertion":"Medial border of scapula at level of scapular spine","function":"Retracts and elevates scapula; rotates glenoid inferiorly","extra":"","innervation":"Dorsal scapular nerve (C4–C5)","blood_supply":"Dorsal scapular artery"},"createdAt":1777679372157},{"id":"1777679372904","name":"Levator Scapulae","region":"Back","depth":"Deep","synonyms":["Levator scapulae muscle","Angular muscle"],"notes":{"origin":"Posterior tubercles of transverse processes C1–C4","insertion":"Superior angle and medial border of scapula above scapular spine","function":"Elevates scapula; tilts glenoid inferiorly; assists ipsilateral neck rotation","extra":"","innervation":"Dorsal scapular nerve (C4–C5); C3–C4 directly","blood_supply":"Dorsal scapular artery, ascending cervical artery"},"createdAt":1777679372157},{"id":"1777679372792","name":"Serratus Posterior Superior","region":"Back","depth":"Deep","synonyms":[],"notes":{"origin":"Lower nuchal ligament, spinous processes C7–T3","insertion":"Ribs 2–5 (just beyond their angles)","function":"Elevates ribs 2–5; assists forced inspiration","extra":"","innervation":"Intercostal nerves T1–T4","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372878","name":"Serratus Posterior Inferior","region":"Back","depth":"Deep","synonyms":[],"notes":{"origin":"Spinous processes T11–L2, thoracolumbar fascia","insertion":"Ribs 9–12 (inferior border)","function":"Depresses ribs 9–12; counteracts diaphragm pull; stabilizes lower ribs during expiration","extra":"","innervation":"Anterior rami T9–T12","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372982","name":"Splenius Capitis","region":"Back","depth":"Deep","synonyms":["Splenius muscle of head"],"notes":{"origin":"Lower half of nuchal ligament, spinous processes C7–T4","insertion":"Mastoid process and lateral superior nuchal line","function":"Unilateral: ipsilateral rotation and lateral flexion of head; Bilateral: extension of head and neck","extra":"","innervation":"Dorsal rami of C3–C4 (lateral branches)","blood_supply":"Occipital artery, transverse cervical artery"},"createdAt":1777679372157},{"id":"1777679372290","name":"Splenius Cervicis","region":"Back","depth":"Deep","synonyms":["Splenius muscle of neck"],"notes":{"origin":"Spinous processes T3–T6","insertion":"Posterior tubercles of transverse processes C1–C3","function":"Unilateral: ipsilateral rotation and lateral flexion of neck; Bilateral: extension of cervical spine","extra":"","innervation":"Dorsal rami of C4–C8 (lateral branches)","blood_supply":"Transverse cervical artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372180","name":"Iliocostalis Lumborum","region":"Back","depth":"Deep","synonyms":["Iliocostal muscle of lumbar region"],"notes":{"origin":"Sacrum, iliac crest, thoracolumbar fascia","insertion":"Inferior borders of ribs 6–12","function":"Extension and lateral flexion of lumbar spine","extra":"","innervation":"Dorsal rami of spinal nerves L1–L3","blood_supply":"Lateral sacral artery, lumbar arteries"},"createdAt":1777679372157},{"id":"1777679372866","name":"Iliocostalis Thoracis","region":"Back","depth":"Deep","synonyms":["Iliocostal muscle of thorax"],"notes":{"origin":"Angles of lower ribs 6–12","insertion":"Angles of upper ribs 1–6 and transverse process C7","function":"Extension and lateral flexion of thoracic spine","extra":"","innervation":"Dorsal rami of spinal nerves T1–T12","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372869","name":"Iliocostalis Cervicis","region":"Back","depth":"Deep","synonyms":["Iliocostal muscle of neck"],"notes":{"origin":"Angles of ribs 3–6","insertion":"Posterior tubercles of transverse processes C4–C6","function":"Extension and lateral flexion of cervical spine","extra":"","innervation":"Dorsal rami of spinal nerves C6–C8","blood_supply":"Transverse cervical artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372289","name":"Longissimus Cervicis","region":"Back","depth":"Deep","synonyms":["Longest muscle of neck"],"notes":{"origin":"Transverse processes T1–T6","insertion":"Posterior tubercles of transverse processes C2–C6","function":"Extension and lateral flexion of cervical spine","extra":"","innervation":"Dorsal rami of cervical and thoracic spinal nerves","blood_supply":"Transverse cervical artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372777","name":"Longissimus Thoracis","region":"Back","depth":"Deep","synonyms":["Longest muscle of thorax"],"notes":{"origin":"Thoracolumbar fascia, transverse and articular processes of lumbar vertebrae","insertion":"Transverse processes of all thoracic vertebrae, ribs 2–12","function":"Extension and lateral flexion of thoracic spine; depression of ribs","extra":"","innervation":"Dorsal rami of thoracic spinal nerves","blood_supply":"Posterior intercostal arteries, lumbar arteries"},"createdAt":1777679372157},{"id":"1777679372658","name":"Longissimus Capitis","region":"Back","depth":"Deep","synonyms":["Trachelomastoid muscle","Longest muscle of head"],"notes":{"origin":"Articular processes C4–C7 and transverse processes T1–T5","insertion":"Posterior margin of mastoid process","function":"Extension, lateral flexion, and ipsilateral rotation of head","extra":"","innervation":"Dorsal rami of C4–T4","blood_supply":"Occipital artery, transverse cervical artery"},"createdAt":1777679372157},{"id":"1777679372338","name":"Spinalis Thoracis","region":"Back","depth":"Deep","synonyms":["Spinal muscle of thorax"],"notes":{"origin":"Spinous processes T10–L2","insertion":"Spinous processes T2–T8","function":"Extension of thoracic spine","extra":"","innervation":"Dorsal rami of thoracic spinal nerves","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372579","name":"Spinalis Cervicis","region":"Back","depth":"Deep","synonyms":["Spinal muscle of neck"],"notes":{"origin":"Nuchal ligament, spinous process of C7","insertion":"Spinous process of axis (C2)","function":"Extension of cervical spine","extra":"","innervation":"Dorsal rami of lower cervical spinal nerves","blood_supply":"Transverse cervical artery"},"createdAt":1777679372157},{"id":"1777679372952","name":"Spinalis Capitis","region":"Back","depth":"Deep","synonyms":["Biventer cervicis"],"notes":{"origin":"Transverse processes C7–T7","insertion":"Between superior and inferior nuchal lines of occipital bone","function":"Extension and lateral flexion of head","extra":"","innervation":"Dorsal rami of cervical and upper thoracic spinal nerves","blood_supply":"Occipital artery"},"createdAt":1777679372157},{"id":"1777679373115","name":"Semispinalis Thoracis","region":"Back","depth":"Deep","synonyms":["Semispinal muscle of thorax"],"notes":{"origin":"Transverse processes T6–T10","insertion":"Spinous processes C6–T4","function":"Extension and contralateral rotation of thoracic vertebrae","extra":"","innervation":"Dorsal rami of thoracic spinal nerves","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372295","name":"Semispinalis Cervicis","region":"Back","depth":"Deep","synonyms":["Semispinal muscle of neck"],"notes":{"origin":"Transverse processes T1–T6","insertion":"Spinous processes C2–C5","function":"Extension and contralateral rotation of cervical vertebrae","extra":"","innervation":"Dorsal rami of C2–C8","blood_supply":"Transverse cervical artery, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679373042","name":"Semispinalis Capitis","region":"Back","depth":"Deep","synonyms":["Complexus","Semispinal muscle of head"],"notes":{"origin":"Transverse processes C7–T7","insertion":"Between superior and inferior nuchal lines of occipital bone","function":"Extension and contralateral rotation of head and cervical spine","extra":"","innervation":"Dorsal rami of C1–T6","blood_supply":"Occipital artery, transverse cervical artery"},"createdAt":1777679372157},{"id":"1777679372662","name":"Multifidus","region":"Back","depth":"Deep","synonyms":["Multifidus spinae","Multifidus muscle"],"notes":{"origin":"Sacrum, erector spinae aponeurosis, iliac crest, transverse processes T1–T3, articular processes C4–C7","insertion":"Spinous processes 2–4 levels above origin","function":"Stabilizes and extends vertebral column; contralateral rotation; most important deep stabilizer of lumbar spine","extra":"","innervation":"Dorsal rami of spinal nerves at each level","blood_supply":"Posterior intercostal arteries, lumbar arteries, lateral sacral artery"},"createdAt":1777679372157},{"id":"fix_1777715111192_118","name":"Rotatores","region":"Back","depth":"Deep","synonyms":["Rotatores spinae","Rotator muscles"],"notes":{"origin":"Transverse process of each vertebra","insertion":"Spinous process 1–2 levels above","function":"Rotation and stabilization of vertebral column; proprioception","extra":"","innervation":"Dorsal rami of spinal nerves (each level)","blood_supply":"Posterior intercostal arteries, lumbar arteries"},"createdAt":1777679372157},{"id":"1777679372616","name":"Interspinales","region":"Back","depth":"Deep","synonyms":["Interspinal muscles"],"notes":{"origin":"Spinous process of each vertebra","insertion":"Spinous process of vertebra above","function":"Extension of vertebral column; stabilization between adjacent vertebrae","extra":"","innervation":"Dorsal rami of spinal nerves (each level)","blood_supply":"Posterior intercostal arteries, lumbar arteries"},"createdAt":1777679372157},{"id":"1777679372535","name":"Intertransversarii","region":"Back","depth":"Deep","synonyms":["Intertransverse muscles"],"notes":{"origin":"Transverse process of each vertebra","insertion":"Transverse process of adjacent vertebra","function":"Lateral flexion of vertebral column; bilateral: stabilization","extra":"","innervation":"Ventral and dorsal rami of adjacent spinal nerves","blood_supply":"Posterior intercostal arteries, lumbar arteries"},"createdAt":1777679372157},{"id":"1777679372855","name":"Levatores Costarum","region":"Thorax","depth":"Deep","synonyms":["Rib elevators"],"notes":{"origin":"Transverse processes of C7–T11","insertion":"Outer surface of rib immediately below (or 2 ribs below for longi)","function":"Elevate ribs (inspiration); lateral flexion of vertebral column","extra":"","innervation":"Dorsal rami of thoracic spinal nerves T1–T11","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372582","name":"Rectus Capitis Posterior Major","region":"Neck","depth":"Deep","synonyms":["Greater posterior rectus capitis"],"notes":{"origin":"Spinous process of axis (C2)","insertion":"Lateral part of inferior nuchal line","function":"Extension and ipsilateral rotation of head at atlanto-axial joint","extra":"","innervation":"Suboccipital nerve (dorsal ramus of C1)","blood_supply":"Vertebral artery, occipital artery"},"createdAt":1777679372157},{"id":"1777679372441","name":"Rectus Capitis Posterior Minor","region":"Neck","depth":"Deep","synonyms":["Lesser posterior rectus capitis"],"notes":{"origin":"Posterior tubercle of atlas (C1)","insertion":"Medial part of inferior nuchal line","function":"Extension of head at atlanto-occipital joint","extra":"","innervation":"Suboccipital nerve (dorsal ramus of C1)","blood_supply":"Vertebral artery, occipital artery"},"createdAt":1777679372157},{"id":"1777679373095","name":"Obliquus Capitis Superior","region":"Neck","depth":"Deep","synonyms":["Superior oblique capitis"],"notes":{"origin":"Transverse process of atlas","insertion":"Occipital bone between superior and inferior nuchal lines","function":"Extends and laterally flexes head","extra":"","innervation":"Suboccipital nerve (dorsal ramus of C1)","blood_supply":"Vertebral artery, occipital artery"},"createdAt":1777679372157},{"id":"1777679372552","name":"Obliquus Capitis Inferior","region":"Neck","depth":"Deep","synonyms":["Inferior oblique capitis"],"notes":{"origin":"Spinous process of axis (C2)","insertion":"Transverse process of atlas (C1)","function":"Rotates atlas (and head) ipsilaterally","extra":"","innervation":"Suboccipital nerve (dorsal ramus of C1)","blood_supply":"Vertebral artery, occipital artery"},"createdAt":1777679372157},{"id":"1777717653345","name":"Anterior Scalene","region":"Neck","depth":"Deep","synonyms":["Scalenus anterior","Scalenus anticus"],"notes":{"origin":"Anterior tubercles of transverse processes C3–C6","insertion":"Scalene tubercle on inner border of 1st rib","function":"Elevates 1st rib (inspiration), flexes cervical spine, lateral flexion of neck","innervation":"Anterior rami of C4–C6","blood_supply":"Ascending cervical artery, transverse cervical artery"},"createdAt":1777717653345},{"id":"1777717653346","name":"Middle Scalene","region":"Neck","depth":"Deep","synonyms":["Scalenus medius"],"notes":{"origin":"Posterior tubercles of transverse processes C2–C7","insertion":"Upper surface of 1st rib posterior to subclavian groove","function":"Elevates 1st rib, lateral flexion of neck; largest of the scalene muscles","innervation":"Anterior rami of C3–C8","blood_supply":"Ascending cervical artery, transverse cervical artery"},"createdAt":1777717653345},{"id":"1777717653347","name":"Posterior Scalene","region":"Neck","depth":"Deep","synonyms":["Scalenus posterior","Scalenus posticus"],"notes":{"origin":"Posterior tubercles of transverse processes C4–C6","insertion":"Outer surface of 2nd rib","function":"Elevates 2nd rib, lateral flexion of neck","innervation":"Anterior rami of C6–C8","blood_supply":"Ascending cervical artery, transverse cervical artery"},"createdAt":1777717653345},{"id":"1777679372553","name":"External Intercostals","region":"Thorax","depth":"Superficial","synonyms":["External intercostal muscles"],"notes":{"origin":"Inferior border of each rib (11 pairs)","insertion":"Superior border of next rib below","function":"Elevate ribs during inspiration; stabilize chest wall","extra":"","innervation":"Intercostal nerves T1–T11","blood_supply":"Posterior and anterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372991","name":"Internal Intercostals","region":"Thorax","depth":"Deep","synonyms":["Internal intercostal muscles"],"notes":{"origin":"Ridge on inner surface of each rib","insertion":"Superior border of next rib below","function":"Draw ribs together during forced expiration; stabilize chest wall","extra":"","innervation":"Intercostal nerves T1–T11","blood_supply":"Posterior and anterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372205","name":"Subcostales","region":"Thorax","depth":"Deep","synonyms":["Subcostal muscles"],"notes":{"origin":"Inner surface of lower ribs near their angles","insertion":"Inner surface of 2nd or 3rd rib below","function":"Depress ribs; assist forced expiration","extra":"","innervation":"Intercostal nerves T1–T11","blood_supply":"Posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372374","name":"Transversus Thoracis","region":"Thorax","depth":"Deep","synonyms":["Sternocostalis","Triangularis sterni"],"notes":{"origin":"Posterior surface of lower sternum and xiphoid process","insertion":"Costal cartilages 2–6 (inner surface)","function":"Depresses costal cartilages; assists forced expiration","extra":"","innervation":"Intercostal nerves T2–T6","blood_supply":"Internal thoracic artery"},"createdAt":1777679372157},{"id":"1777679372984","name":"External Oblique","region":"Abdomen","depth":"Superficial","synonyms":["External abdominal oblique","Obliquus externus abdominis"],"notes":{"origin":"External surfaces of ribs 5–12 (by digitations)","insertion":"Iliac crest, pubic tubercle, anterior superior iliac spine, linea alba via aponeurosis","function":"Compresses abdomen, flexes trunk, contralateral rotation of trunk; supports abdominal viscera","extra":"","innervation":"Intercostal nerves T7–T12, iliohypogastric and ilioinguinal nerves","blood_supply":"Lower posterior intercostal arteries, subcostal artery, deep circumflex iliac artery"},"createdAt":1777679372157},{"id":"1777679372251","name":"Internal Oblique","region":"Abdomen","depth":"Deep","synonyms":["Internal abdominal oblique","Obliquus internus abdominis"],"notes":{"origin":"Inguinal ligament, iliac crest, thoracolumbar fascia","insertion":"Inferior ribs 10–12, linea alba, pubic crest via aponeurosis","function":"Compresses abdomen, flexes trunk, ipsilateral rotation of trunk","extra":"","innervation":"Intercostal nerves T7–T12, iliohypogastric and ilioinguinal nerves","blood_supply":"Lower posterior intercostal arteries, subcostal artery, deep circumflex iliac artery"},"createdAt":1777679372157},{"id":"1777679372627","name":"Transversus Abdominis","region":"Abdomen","depth":"Deep","synonyms":["Transverse abdominis","TVA","Transversalis abdominis"],"notes":{"origin":"Inguinal ligament, iliac crest, thoracolumbar fascia, inner surfaces of costal cartilages 7–12","insertion":"Linea alba, pubic crest, pubic symphysis via aponeurosis","function":"Compresses and supports abdominal viscera; stabilizes lumbar spine; increases intra-abdominal pressure","extra":"","innervation":"Intercostal nerves T7–T12, iliohypogastric and ilioinguinal nerves","blood_supply":"Lower posterior intercostal arteries, inferior epigastric artery, deep circumflex iliac artery"},"createdAt":1777679372157},{"id":"1777679372639","name":"Quadratus Lumborum","region":"Back","depth":"Deep","synonyms":["QL","Square muscle of loins"],"notes":{"origin":"Posterior iliac crest and iliolumbar ligament","insertion":"Medial border of 12th rib and transverse processes L1–L4","function":"Lateral flexion of lumbar spine; fixes 12th rib during inspiration; elevates pelvis","extra":"","innervation":"Anterior rami of T12, L1–L4","blood_supply":"Lumbar arteries, iliolumbar artery"},"createdAt":1777679372157},{"id":"1777679372651","name":"Psoas Major","region":"Thigh","depth":"Deep","synonyms":["Great psoas muscle"],"notes":{"origin":"Transverse processes L1–L5 and bodies of T12–L5 with intervening discs","insertion":"Lesser trochanter of femur (with iliacus)","function":"Hip flexion; lateral rotation of hip; lateral flexion and flexion of lumbar spine","extra":"","innervation":"Anterior rami of L1–L3 (lumbar plexus)","blood_supply":"Lumbar arteries, iliolumbar artery"},"createdAt":1777679372157},{"id":"1777679372617","name":"Rectus Abdominis","region":"Abdomen","depth":"Superficial","synonyms":["Abs","Six-pack muscle","Rectus muscle of abdomen"],"notes":{"origin":"Pubic symphysis and pubic crest","insertion":"Costal cartilages of ribs 5–7 and xiphoid process","function":"Flexes lumbar vertebral column; compresses abdomen; depresses thorax; stabilizes pelvis","extra":"","innervation":"Intercostal nerves T7–T12","blood_supply":"Superior and inferior epigastric arteries, posterior intercostal arteries"},"createdAt":1777679372157},{"id":"1777679372493","name":"Pyramidalis","region":"Abdomen","depth":"Superficial","synonyms":["Pyramidal muscle"],"notes":{"origin":"Pubic symphysis and pubic crest","insertion":"Linea alba","function":"Tenses linea alba; absent in ~20% of people","extra":"","innervation":"Subcostal nerve (T12)","blood_supply":"Inferior epigastric artery"},"createdAt":1777679372157},{"id":"fix_1777715111192_290","name":"Psoas Minor","region":"Thigh","depth":"Deep","synonyms":["Small psoas"],"notes":{"origin":"Lateral bodies of T12 and L1","insertion":"Iliopubic eminence and iliac fascia","function":"Weak flexion of lumbar vertebral column; absent in ~40% of people","extra":"","innervation":"Anterior ramus of L1","blood_supply":"Lumbar arteries"},"createdAt":1777679372157},{"id":"1777679372214","name":"Diaphragm","region":"Thorax","depth":"Deep","synonyms":["Thoracic diaphragm","Midriff"],"notes":{"origin":"Sternal part: posterior xiphoid process; Costal part: inner surfaces of ribs 7–12; Lumbar part: aortic arch, L1–L3 vertebral bodies (crura)","insertion":"Central tendon of diaphragm","function":"Primary muscle of inspiration: flattens during contraction, increasing thoracic volume; assists in defecation, urination, parturition, vomiting","extra":"","innervation":"Phrenic nerve (C3–C5); peripheral portions by intercostal nerves T5–T11","blood_supply":"Pericardiacophrenic artery, musculophrenic artery, inferior phrenic arteries"},"createdAt":1777679372157},{"id":"1777679372510","name":"Supraspinatus","region":"Shoulder","depth":"Deep","synonyms":["Supraspinous muscle"],"notes":{"origin":"Supraspinous fossa of scapula","insertion":"Superior facet of greater tubercle of humerus","function":"Initiates and assists deltoid in abduction of arm; stabilizes glenohumeral joint (rotator cuff)","extra":"","innervation":"Suprascapular nerve (C4–C6)","blood_supply":"Suprascapular artery, dorsal scapular artery"},"createdAt":1777679372157},{"id":"1777679372631","name":"Infraspinatus","region":"Shoulder","depth":"Deep","synonyms":["Infraspinous muscle"],"notes":{"origin":"Infraspinous fossa of scapula","insertion":"Middle facet of greater tubercle of humerus","function":"Lateral rotation of arm; stabilizes glenohumeral joint (rotator cuff)","extra":"","innervation":"Suprascapular nerve (C5–C6)","blood_supply":"Suprascapular artery, circumflex scapular artery"},"createdAt":1777679372157},{"id":"1777679372837","name":"Teres Minor","region":"Shoulder","depth":"Deep","synonyms":["Minor teres"],"notes":{"origin":"Upper lateral border of scapula","insertion":"Inferior facet of greater tubercle of humerus","function":"Lateral rotation of arm; assists adduction; stabilizes glenohumeral joint (rotator cuff)","extra":"","innervation":"Axillary nerve (C5–C6)","blood_supply":"Posterior circumflex humeral artery, circumflex scapular artery"},"createdAt":1777679372157},{"id":"1777679372474","name":"Deltoid","region":"Shoulder","depth":"Superficial","synonyms":["Deltoideus","Common deltoid"],"notes":{"origin":"Anterior: clavicle (lateral 1/3); Middle: acromion; Posterior: scapular spine","insertion":"Deltoid tuberosity of humerus","function":"Anterior: flexion and medial rotation of arm; Middle: abduction of arm; Posterior: extension and lateral rotation of arm","extra":"","innervation":"Axillary nerve (C5–C6)","blood_supply":"Posterior circumflex humeral artery, thoracoacromial artery (deltoid branch)"},"createdAt":1777679372157},{"id":"1777679372445","name":"Subscapularis","region":"Shoulder","depth":"Deep","synonyms":["Subscapular muscle"],"notes":{"origin":"Subscapular fossa (costal surface of scapula)","insertion":"Lesser tubercle of humerus","function":"Medial rotation of arm; stabilizes glenohumeral joint (rotator cuff); adducts the arm","extra":"","innervation":"Upper and lower subscapular nerves (C5–C7)","blood_supply":"Subscapular artery, lateral thoracic artery"},"createdAt":1777679372157},{"id":"1777679372181","name":"Teres Major","region":"Shoulder","depth":"Superficial","synonyms":["Major teres","Little lat"],"notes":{"origin":"Dorsal surface of inferior angle of scapula","insertion":"Medial lip of intertubercular sulcus of humerus","function":"Adducts and medially rotates humerus; extends arm","extra":"","innervation":"Lower subscapular nerve (C5–C7)","blood_supply":"Circumflex scapular artery, thoracodorsal artery"},"createdAt":1777679372158},{"id":"1777679372411","name":"Coracobrachialis","region":"Shoulder","depth":"Deep","synonyms":["Coracohumeral muscle"],"notes":{"origin":"Coracoid process of scapula (with short head of biceps)","insertion":"Medial surface of humerus (middle third)","function":"Flexion and adduction of arm at shoulder","extra":"","innervation":"Musculocutaneous nerve (C6–C7)","blood_supply":"Brachial artery, anterior circumflex humeral artery"},"createdAt":1777679372158},{"id":"1777679373021","name":"Pectoralis Minor","region":"Thorax","depth":"Deep","synonyms":["Lesser pectoral muscle"],"notes":{"origin":"Ribs 3–5 (near costal cartilage)","insertion":"Coracoid process of scapula","function":"Protracts and depresses scapula; tilts scapula anteriorly; raises ribs (forced inspiration)","extra":"","innervation":"Medial pectoral nerve (C8–T1)","blood_supply":"Pectoral branch of thoracoacromial artery, lateral thoracic artery"},"createdAt":1777679372158},{"id":"1777679372749","name":"Pectoralis Major","region":"Thorax","depth":"Superficial","synonyms":["Pecs","Greater pectoral muscle"],"notes":{"origin":"Clavicular head: medial clavicle; Sternocostal head: sternum and costal cartilages 1–6; Abdominal head: aponeurosis of external oblique","insertion":"Lateral lip of intertubercular sulcus of humerus","function":"Adduction, medial rotation of arm; Clavicular head: flexion; Sternocostal head: extension; accessory breathing muscle","extra":"","innervation":"Lateral pectoral nerve (C5–C7); medial pectoral nerve (C8–T1)","blood_supply":"Thoracoacromial artery (pectoral branch), lateral thoracic artery, anterior intercostal arteries"},"createdAt":1777679372158},{"id":"1777679372926","name":"Serratus Anterior","region":"Thorax","depth":"Deep","synonyms":["Serratus magnus","Big saw muscle"],"notes":{"origin":"Outer surfaces of ribs 1–8 (or 9) by digitations","insertion":"Costal surface of medial border of scapula","function":"Protracts scapula; rotates glenoid superiorly (arm elevation above 90°); stabilizes scapula against thorax","extra":"","innervation":"Long thoracic nerve (C5–C7)","blood_supply":"Lateral thoracic artery, thoracodorsal artery, superior thoracic artery"},"createdAt":1777679372158},{"id":"1777679372547","name":"Subclavius","region":"Thorax","depth":"Deep","synonyms":["Subclavicular muscle"],"notes":{"origin":"1st rib and costal cartilage junction","insertion":"Inferior surface of middle third of clavicle","function":"Depresses and protracts clavicle; stabilizes sternoclavicular joint","extra":"","innervation":"Nerve to subclavius (C5–C6)","blood_supply":"Clavicular branch of thoracoacromial artery, suprascapular artery"},"createdAt":1777679372158},{"id":"1777679372333","name":"Triceps Brachii","region":"Arm","depth":"Superficial","synonyms":["Triceps","Three-headed muscle of arm"],"notes":{"origin":"Long head: infraglenoid tubercle of scapula; Lateral head: posterior humerus above radial groove; Medial head: posterior humerus below radial groove","insertion":"Olecranon process of ulna","function":"Extension of elbow; long head assists adduction and extension of arm at shoulder","extra":"","innervation":"Radial nerve (C6–C8)","blood_supply":"Deep brachial artery (profunda brachii), posterior circumflex humeral artery"},"createdAt":1777679372158},{"id":"1777679373099","name":"Anconeus","region":"Arm","depth":"Superficial","synonyms":["Anconaeus"],"notes":{"origin":"Lateral epicondyle of humerus (posterior surface)","insertion":"Lateral surface of olecranon and posterior ulna","function":"Assists triceps in extending elbow; abducts ulna during pronation","extra":"","innervation":"Radial nerve (C7–C8)","blood_supply":"Posterior interosseous recurrent artery"},"createdAt":1777679372158},{"id":"1777679373144","name":"Brachialis","region":"Arm","depth":"Deep","synonyms":["Brachialis anticus","Workhorse of elbow flexion"],"notes":{"origin":"Anterior surface of distal half of humerus","insertion":"Coronoid process and tuberosity of ulna","function":"Flexion of elbow (purest elbow flexor, active in all forearm positions)","extra":"","innervation":"Musculocutaneous nerve (C5–C6); small lateral portion by radial nerve","blood_supply":"Brachial artery, anterior circumflex humeral artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_532","name":"Biceps Brachii","region":"Arm","depth":"Superficial","synonyms":["Biceps","Two-headed muscle of the arm"],"notes":{"origin":"Long head: supraglenoid tubercle; Short head: coracoid process","insertion":"Radial tuberosity and bicipital aponeurosis (lacertus fibrosus)","function":"Flexion of elbow and shoulder; supination of forearm; most powerful supinator","extra":"","innervation":"Musculocutaneous nerve (C5–C6)","blood_supply":"Brachial artery, anterior circumflex humeral artery"},"createdAt":1777679372158},{"id":"1777679372590","name":"Pronator Teres","region":"Forearm","depth":"Superficial","synonyms":["Round pronator"],"notes":{"origin":"Humeral head: medial epicondyle; Ulnar head: coronoid process","insertion":"Middle of lateral radius (pronator tuberosity)","function":"Pronation of forearm; assists elbow flexion","extra":"","innervation":"Median nerve (C6–C7)","blood_supply":"Ulnar artery, radial artery"},"createdAt":1777679372158},{"id":"1777679372463","name":"Flexor Digitorum Superficialis","region":"Forearm","depth":"Deep","synonyms":["FDS","Flexor digitorum sublimis","Superficial digital flexor"],"notes":{"origin":"Humeroulnar head: medial epicondyle, coronoid process; Radial head: oblique line of radius","insertion":"Middle phalanges of fingers 2–5 (divides to allow FDP passage)","function":"Flexes middle phalanges (PIP joints); assists flexion of MCP joints and wrist","extra":"","innervation":"Median nerve (C7–T1)","blood_supply":"Ulnar artery, radial artery, anterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679372632","name":"Flexor Carpi Radialis","region":"Forearm","depth":"Superficial","synonyms":["FCR","Radial wrist flexor"],"notes":{"origin":"Medial epicondyle via common flexor tendon","insertion":"Base of 2nd and 3rd metacarpal bones","function":"Flexion and abduction (radial deviation) of wrist","extra":"","innervation":"Median nerve (C6–C7)","blood_supply":"Radial artery"},"createdAt":1777679372158},{"id":"1777679372536","name":"Palmaris Longus","region":"Forearm","depth":"Superficial","synonyms":["PL","Long palmar muscle"],"notes":{"origin":"Medial epicondyle via common flexor tendon","insertion":"Palmar aponeurosis and flexor retinaculum","function":"Tenses palmar fascia, flexes wrist; absent in ~14% of people","extra":"","innervation":"Median nerve (C7–T1)","blood_supply":"Ulnar artery"},"createdAt":1777679372158},{"id":"1777679372533","name":"Flexor Carpi Ulnaris","region":"Forearm","depth":"Superficial","synonyms":["FCU","Ulnar wrist flexor"],"notes":{"origin":"Humeral head: medial epicondyle; Ulnar head: olecranon and posterior ulna","insertion":"Pisiform, hamate hook, and base of 5th metacarpal","function":"Flexion and adduction (ulnar deviation) of wrist","extra":"","innervation":"Ulnar nerve (C7–C8)","blood_supply":"Ulnar artery, posterior ulnar recurrent artery"},"createdAt":1777679372158},{"id":"1777679373098","name":"Pronator Quadratus","region":"Forearm","depth":"Deep","synonyms":["Square pronator","PQ"],"notes":{"origin":"Distal anterior surface of ulna","insertion":"Distal anterior surface of radius","function":"Pronation of forearm; stabilizes distal radioulnar joint","extra":"","innervation":"Anterior interosseous nerve (median nerve, C8–T1)","blood_supply":"Anterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679373090","name":"Flexor Digitorum Profundus","region":"Forearm","depth":"Deep","synonyms":["FDP","Deep digital flexor"],"notes":{"origin":"Proximal 3/4 of anterior and medial ulna, interosseous membrane","insertion":"Bases of distal phalanges of fingers 2–5","function":"Flexes distal phalanges (DIP joints); assists flexion of PIP, MCP joints and wrist","extra":"","innervation":"Medial half: ulnar nerve (C8–T1); Lateral half: anterior interosseous nerve (C8–T1)","blood_supply":"Anterior interosseous artery, ulnar artery"},"createdAt":1777679372158},{"id":"1777679372875","name":"Flexor Pollicis Longus","region":"Forearm","depth":"Deep","synonyms":["FPL","Long flexor of thumb"],"notes":{"origin":"Anterior radius (middle 2/3) and adjacent interosseous membrane","insertion":"Base of distal phalanx of thumb","function":"Flexes the IP joint of thumb; assists flexion of MCP and CMC joints of thumb","extra":"","innervation":"Anterior interosseous nerve (median nerve, C8–T1)","blood_supply":"Anterior interosseous artery, radial artery"},"createdAt":1777679372158},{"id":"1777679372500","name":"Extensor Carpi Radialis Brevis","region":"Forearm","depth":"Superficial","synonyms":["ECRB","Short radial wrist extensor"],"notes":{"origin":"Lateral epicondyle via common extensor tendon","insertion":"Base of 3rd metacarpal (dorsal surface)","function":"Extension of wrist; steadies wrist during finger flexion","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Radial artery, radial recurrent artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_137","name":"Extensor Carpi Radialis Longus","region":"Forearm","depth":"Superficial","synonyms":["ECRL","Long radial wrist extensor"],"notes":{"origin":"Lateral supracondylar ridge of humerus","insertion":"Base of 2nd metacarpal (dorsal surface)","function":"Extension and abduction (radial deviation) of wrist","extra":"","innervation":"Radial nerve (C6–C7)","blood_supply":"Radial artery, radial recurrent artery"},"createdAt":1777679372158},{"id":"1777679372859","name":"Brachioradialis","region":"Forearm","depth":"Superficial","synonyms":["BR","Radialis muscle"],"notes":{"origin":"Lateral supracondylar ridge of humerus","insertion":"Styloid process of radius","function":"Flexion of elbow (especially in midprone position); stabilizes elbow during rapid movement","extra":"","innervation":"Radial nerve (C5–C6)","blood_supply":"Radial recurrent artery, radial artery"},"createdAt":1777679372158},{"id":"1777679372300","name":"Extensor Digitorum","region":"Forearm","depth":"Superficial","synonyms":["ED","Common extensor of fingers","Extensor digitorum communis"],"notes":{"origin":"Lateral epicondyle via common extensor tendon","insertion":"Extensor hoods of fingers 2–5 (middle and distal phalanges)","function":"Extension of fingers at MCP, PIP, DIP joints; assists wrist extension","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679372261","name":"Extensor Digiti Minimi","region":"Forearm","depth":"Superficial","synonyms":["EDM","Extensor of little finger"],"notes":{"origin":"Lateral epicondyle via common extensor tendon","insertion":"Extensor hood of little finger","function":"Extension of little finger at all joints; assists wrist extension","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679372698","name":"Extensor Carpi Ulnaris","region":"Forearm","depth":"Superficial","synonyms":["ECU","Ulnar wrist extensor"],"notes":{"origin":"Lateral epicondyle and posterior border of ulna","insertion":"Base of 5th metacarpal (dorsal surface)","function":"Extension and adduction (ulnar deviation) of wrist","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery, ulnar artery"},"createdAt":1777679372158},{"id":"1777679372945","name":"Supinator","region":"Forearm","depth":"Deep","synonyms":["Supinator brevis","Short supinator"],"notes":{"origin":"Lateral epicondyle, radial collateral ligament, annular ligament, supinator crest of ulna","insertion":"Lateral, anterior, and posterior surfaces of proximal radius","function":"Supination of forearm (when elbow extended or relaxed)","extra":"","innervation":"Posterior interosseous nerve (C6–C7)","blood_supply":"Radial recurrent artery, posterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679372199","name":"Abductor Pollicis Longus","region":"Forearm","depth":"Deep","synonyms":["APL","Long abductor of thumb"],"notes":{"origin":"Posterior radius, ulna, and interosseous membrane","insertion":"Base of 1st metacarpal","function":"Abducts and extends thumb at CMC joint; radial deviation of wrist","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery, anterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679372563","name":"Extensor Pollicis Brevis","region":"Forearm","depth":"Deep","synonyms":["EPB","Short extensor of thumb"],"notes":{"origin":"Posterior radius and interosseous membrane","insertion":"Base of proximal phalanx of thumb","function":"Extension of thumb at MCP joint; assists abduction of thumb","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679373024","name":"Extensor Pollicis Longus","region":"Forearm","depth":"Deep","synonyms":["EPL","Long extensor of thumb"],"notes":{"origin":"Middle third of posterior ulna and interosseous membrane","insertion":"Base of distal phalanx of thumb","function":"Extension of IP joint of thumb; assists extension and adduction of CMC joint","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_325","name":"Extensor Indicis","region":"Forearm","depth":"Deep","synonyms":["EI","Extensor of index finger","Extensor indicis proprius"],"notes":{"origin":"Posterior distal ulna and interosseous membrane","insertion":"Extensor hood of index finger","function":"Extension of index finger (independent of other fingers)","extra":"","innervation":"Posterior interosseous nerve (C7–C8)","blood_supply":"Posterior interosseous artery"},"createdAt":1777679372158},{"id":"1777679372450","name":"Palmar Interossei (Hand)","region":"Hand","depth":"Deep","synonyms":["PAD muscles","Palmar interosseous muscles of hand"],"notes":{"origin":"Palmar surface of metacarpals 2, 4, and 5; 3 muscles","insertion":"Extensor hoods and proximal phalanges of index (ulnar), ring (radial), little (radial)","function":"ADduct fingers toward middle finger axis; flex MCP joints; extend IP joints","extra":"","innervation":"Deep branch of ulnar nerve (C8–T1)","blood_supply":"Palmar digital arteries, deep palmar arch"},"createdAt":1777679372158},{"id":"1777679372853","name":"Dorsal Interossei (Hand)","region":"Hand","depth":"Deep","synonyms":["DAB muscles","Dorsal interosseous muscles of hand"],"notes":{"origin":"Adjacent sides of two metacarpals (bipennate); 4 muscles","insertion":"Extensor hoods and proximal phalanges of index (both), middle (both), ring (radial side)","function":"ABduct fingers from middle finger axis; flex MCP joints; extend IP joints","extra":"","innervation":"Deep branch of ulnar nerve (C8–T1)","blood_supply":"Dorsal metacarpal arteries, deep palmar arch"},"createdAt":1777679372158},{"id":"1777679372468","name":"Abductor Pollicis Brevis","region":"Hand","depth":"Superficial","synonyms":["APB","Short abductor of thumb"],"notes":{"origin":"Flexor retinaculum, scaphoid tubercle, trapezium","insertion":"Lateral base of proximal phalanx of thumb","function":"Abducts thumb; assists opposition","extra":"","innervation":"Recurrent branch of median nerve (C8–T1)","blood_supply":"Superficial palmar branch of radial artery"},"createdAt":1777679372158},{"id":"1777679372223","name":"Flexor Pollicis Brevis","region":"Hand","depth":"Superficial","synonyms":["FPB","Short flexor of thumb"],"notes":{"origin":"Superficial head: flexor retinaculum, trapezium; Deep head: capitate and trapezoid","insertion":"Base of proximal phalanx of thumb (radial side via lateral sesamoid)","function":"Flexes thumb at MCP joint; assists opposition","extra":"","innervation":"Superficial head: recurrent branch of median nerve; Deep head: deep branch of ulnar nerve (C8–T1)","blood_supply":"Superficial palmar arch"},"createdAt":1777679372158},{"id":"1777679372922","name":"Adductor Pollicis","region":"Hand","depth":"Deep","synonyms":["Adductor of thumb"],"notes":{"origin":"Oblique head: capitate, 2nd and 3rd metacarpal bases; Transverse head: 3rd metacarpal shaft","insertion":"Medial base of proximal phalanx of thumb via medial sesamoid","function":"Adducts thumb; assists flexion of thumb MCP joint","extra":"","innervation":"Deep branch of ulnar nerve (C8–T1)","blood_supply":"Deep palmar arch"},"createdAt":1777679372158},{"id":"1777679372329","name":"Opponens Pollicis","region":"Hand","depth":"Deep","synonyms":["Opponens muscle of thumb"],"notes":{"origin":"Flexor retinaculum and trapezium tubercle","insertion":"Lateral border of 1st metacarpal","function":"Opposition of thumb (rotates metacarpal to face palm)","extra":"","innervation":"Recurrent branch of median nerve (C8–T1)","blood_supply":"Superficial palmar branch of radial artery"},"createdAt":1777679372158},{"id":"1777679372558","name":"Abductor Digiti Minimi (Hand)","region":"Hand","depth":"Superficial","synonyms":["ADM hand","Abductor of little finger"],"notes":{"origin":"Pisiform and pisohamate ligament","insertion":"Medial base of proximal phalanx of little finger","function":"Abducts little finger; assists flexion at MCP joint","extra":"","innervation":"Deep branch of ulnar nerve (C8–T1)","blood_supply":"Ulnar artery"},"createdAt":1777679372158},{"id":"1777679372457","name":"Flexor Digiti Minimi Brevis (Hand)","region":"Hand","depth":"Superficial","synonyms":["FDMB hand"],"notes":{"origin":"Hook of hamate and flexor retinaculum","insertion":"Medial base of proximal phalanx of little finger","function":"Flexes little finger at MCP joint","extra":"","innervation":"Deep branch of ulnar nerve (C8–T1)","blood_supply":"Ulnar artery, deep palmar arch"},"createdAt":1777679372158},{"id":"1777679372330","name":"Opponens Digiti Minimi","region":"Hand","depth":"Deep","synonyms":["ODM","Opponens of little finger"],"notes":{"origin":"Hook of hamate and flexor retinaculum","insertion":"Medial border of 5th metacarpal","function":"Draws 5th metacarpal anteriorly and rotates it (opposition of little finger)","extra":"","innervation":"Deep branch of ulnar nerve (C8–T1)","blood_supply":"Ulnar artery"},"createdAt":1777679372158},{"id":"1777679372334","name":"Gluteus Minimus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Glute min","Least gluteal muscle"],"notes":{"origin":"Outer surface of ilium between anterior and inferior gluteal lines","insertion":"Anterior surface of greater trochanter of femur","function":"Abduction and medial rotation of hip; stabilizes pelvis","extra":"","innervation":"Superior gluteal nerve (L4–S1)","blood_supply":"Superior gluteal artery"},"createdAt":1777679372158},{"id":"1777679372933","name":"Gluteus Medius","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Glute med","Middle gluteal muscle"],"notes":{"origin":"Outer surface of ilium between anterior and posterior gluteal lines","insertion":"Lateral surface of greater trochanter of femur","function":"Abduction of hip; stabilizes pelvis during gait; anterior fibres: medial rotation; posterior fibres: lateral rotation","extra":"","innervation":"Superior gluteal nerve (L4–S1)","blood_supply":"Superior gluteal artery"},"createdAt":1777679372158},{"id":"1777679372427","name":"Gluteus Maximus","region":"Pelvis & Gluteal","depth":"Superficial","synonyms":["Glute max","Greatest gluteal muscle"],"notes":{"origin":"Posterior ilium, sacrum, coccyx, sacrotuberous ligament","insertion":"Iliotibial band (IT band) and gluteal tuberosity of femur","function":"Extension and lateral rotation of hip; upper fibres assist abduction; essential for climbing, running, and rising from seated","extra":"","innervation":"Inferior gluteal nerve (L5–S2)","blood_supply":"Inferior gluteal artery, superior gluteal artery, first perforating artery"},"createdAt":1777679372158},{"id":"1777679372822","name":"Tensor Fasciae Latae","region":"Pelvis & Gluteal","depth":"Superficial","synonyms":["TFL","Tensor of fascia lata"],"notes":{"origin":"Anterior superior iliac spine (ASIS) and anterior iliac crest","insertion":"Iliotibial band (IT band) at junction of upper and middle thirds of thigh","function":"Flexion, abduction, and medial rotation of hip; tenses fascia lata; stabilizes knee via IT band","extra":"","innervation":"Superior gluteal nerve (L4–S1)","blood_supply":"Superior gluteal artery, lateral circumflex femoral artery"},"createdAt":1777679372158},{"id":"1777679372397","name":"Piriformis","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Piriform muscle","Pear-shaped muscle"],"notes":{"origin":"Anterior sacrum between sacral foramina S2–S4","insertion":"Superior border of greater trochanter of femur","function":"Lateral rotation of extended hip; abduction of flexed hip; important landmark for sciatic nerve","extra":"","innervation":"Nerve to piriformis (S1–S2)","blood_supply":"Superior gluteal artery, inferior gluteal artery"},"createdAt":1777679372158},{"id":"1777679372917","name":"Obturator Internus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Internal obturator"],"notes":{"origin":"Inner surface of obturator membrane and surrounding bone","insertion":"Medial surface of greater trochanter of femur","function":"Lateral rotation of extended hip; abduction of flexed hip; stabilizes hip joint","extra":"","innervation":"Nerve to obturator internus (L5–S2)","blood_supply":"Internal pudendal artery, inferior gluteal artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_210","name":"Superior Gemellus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Upper gemellus"],"notes":{"origin":"Ischial spine","insertion":"Medial surface of greater trochanter (with obturator internus tendon)","function":"Lateral rotation of hip; stabilizes hip joint","extra":"","innervation":"Nerve to obturator internus (L5–S2)","blood_supply":"Inferior gluteal artery"},"createdAt":1777679372158},{"id":"1777679372233","name":"Inferior Gemellus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Lower gemellus"],"notes":{"origin":"Ischial tuberosity","insertion":"Medial surface of greater trochanter (with obturator internus tendon)","function":"Lateral rotation of hip; stabilizes hip joint","extra":"","innervation":"Nerve to quadratus femoris (L4–S1)","blood_supply":"Inferior gluteal artery"},"createdAt":1777679372158},{"id":"1777679372882","name":"Quadratus Femoris","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["Square muscle of thigh"],"notes":{"origin":"Ischial tuberosity (lateral border)","insertion":"Quadrate tubercle on intertrochanteric crest of femur","function":"Lateral rotation and adduction of hip; stabilizes hip joint","extra":"","innervation":"Nerve to quadratus femoris (L4–S1)","blood_supply":"Inferior gluteal artery, medial circumflex femoral artery"},"createdAt":1777679372158},{"id":"1777679372717","name":"Iliacus","region":"Thigh","depth":"Deep","synonyms":["Iliac muscle"],"notes":{"origin":"Iliac fossa, ala of sacrum","insertion":"Lesser trochanter of femur (with psoas major tendon)","function":"Flexion and lateral rotation of hip; tilts pelvis anteriorly","extra":"","innervation":"Femoral nerve (L2–L4)","blood_supply":"Iliac branches of iliolumbar artery, medial circumflex femoral artery"},"createdAt":1777679372158},{"id":"1777679373084","name":"Sartorius","region":"Thigh","depth":"Superficial","synonyms":["Tailor's muscle","Longest muscle of the body"],"notes":{"origin":"Anterior superior iliac spine (ASIS)","insertion":"Medial surface of proximal tibia (pes anserinus)","function":"Flexion, abduction, and lateral rotation of hip; flexion and medial rotation of knee","extra":"","innervation":"Femoral nerve (L2–L3)","blood_supply":"Femoral artery, lateral circumflex femoral artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_468","name":"Rectus Femoris","region":"Thigh","depth":"Superficial","synonyms":["Straight head of quadriceps"],"notes":{"origin":"Anterior inferior iliac spine (AIIS); reflected head: groove above acetabulum","insertion":"Quadriceps tendon → patella → patellar tendon → tibial tuberosity","function":"Extension of knee; flexion of hip (only quadriceps muscle to cross hip joint)","extra":"","innervation":"Femoral nerve (L2–L4)","blood_supply":"Lateral circumflex femoral artery (descending branch)"},"createdAt":1777679372158},{"id":"1777679372612","name":"Vastus Intermedius","region":"Thigh","depth":"Deep","synonyms":["Cruraeus","Middle vastus"],"notes":{"origin":"Anterior and lateral surfaces of femur (upper 2/3)","insertion":"Deep surface of quadriceps tendon, tibial tuberosity","function":"Extension of knee","extra":"","innervation":"Femoral nerve (L2–L4)","blood_supply":"Lateral circumflex femoral artery, perforating arteries"},"createdAt":1777679372158},{"id":"1777679372198","name":"Vastus Lateralis","region":"Thigh","depth":"Superficial","synonyms":["Lateral vastus","Outer quad"],"notes":{"origin":"Greater trochanter, intertrochanteric line, linea aspera of femur","insertion":"Quadriceps tendon and tibial tuberosity","function":"Extension of knee; stabilizes patella laterally","extra":"","innervation":"Femoral nerve (L2–L4)","blood_supply":"Lateral circumflex femoral artery, perforating arteries"},"createdAt":1777679372158},{"id":"1777679372857","name":"Vastus Medialis","region":"Thigh","depth":"Superficial","synonyms":["Medial vastus","Inner quad","VMO (oblique portion)"],"notes":{"origin":"Intertrochanteric line, medial lip of linea aspera, medial supracondylar ridge","insertion":"Medial border of patella, quadriceps tendon","function":"Extension of knee; terminal extension (VMO); stabilizes patella medially","extra":"","innervation":"Femoral nerve (L2–L4)","blood_supply":"Femoral artery, descending genicular artery"},"createdAt":1777679372158},{"id":"1777679372464","name":"Biceps Femoris","region":"Thigh","depth":"Superficial","synonyms":["Biceps of thigh","Outer hamstring"],"notes":{"origin":"Long head: ischial tuberosity; Short head: linea aspera and lateral supracondylar ridge","insertion":"Head of fibula; lateral condyle of tibia","function":"Flexion of knee; extension of hip (long head); lateral rotation of flexed knee","extra":"","innervation":"Long head: tibial division of sciatic nerve (L5–S2); Short head: common fibular division (L5–S2)","blood_supply":"Perforating arteries, popliteal artery"},"createdAt":1777679372158},{"id":"1777679372962","name":"Semitendinosus","region":"Thigh","depth":"Superficial","synonyms":["ST","Inner hamstring (superficial)"],"notes":{"origin":"Ischial tuberosity (with long head of biceps femoris)","insertion":"Medial surface of proximal tibia (pes anserinus)","function":"Flexion of knee; extension of hip; medial rotation of flexed knee","extra":"","innervation":"Tibial division of sciatic nerve (L5–S2)","blood_supply":"Perforating arteries, popliteal artery"},"createdAt":1777679372158},{"id":"1777679372206","name":"Semimembranosus","region":"Thigh","depth":"Deep","synonyms":["SM","Inner hamstring (deep)"],"notes":{"origin":"Ischial tuberosity (superior and lateral impression)","insertion":"Posterior medial tibial condyle; forms oblique popliteal ligament","function":"Flexion of knee; extension of hip; medial rotation of flexed knee","extra":"","innervation":"Tibial division of sciatic nerve (L5–S2)","blood_supply":"Perforating arteries, popliteal artery"},"createdAt":1777679372158},{"id":"1777679372406","name":"Gracilis","region":"Thigh","depth":"Superficial","synonyms":["Slender muscle of thigh"],"notes":{"origin":"Body and inferior ramus of pubis","insertion":"Medial surface of proximal tibia (pes anserinus)","function":"Adduction of hip; flexion and medial rotation of knee","extra":"","innervation":"Obturator nerve (L2–L3)","blood_supply":"Medial circumflex femoral artery, obturator artery"},"createdAt":1777679372158},{"id":"1777679372703","name":"Pectineus","region":"Thigh","depth":"Superficial","synonyms":["Comb-like muscle"],"notes":{"origin":"Pectineal line of pubis","insertion":"Pectineal line of femur below lesser trochanter","function":"Adduction and flexion of hip","extra":"","innervation":"Femoral nerve (L2–L3); sometimes obturator nerve","blood_supply":"Medial circumflex femoral artery, obturator artery"},"createdAt":1777679372158},{"id":"1777679372696","name":"Adductor Longus","region":"Thigh","depth":"Superficial","synonyms":["Long adductor of thigh"],"notes":{"origin":"Body of pubis below pubic crest","insertion":"Middle third of linea aspera of femur","function":"Adduction and flexion of hip","extra":"","innervation":"Obturator nerve, anterior division (L2–L4)","blood_supply":"Deep femoral artery, medial circumflex femoral artery"},"createdAt":1777679372158},{"id":"1777679372532","name":"Adductor Brevis","region":"Thigh","depth":"Deep","synonyms":["Short adductor of thigh"],"notes":{"origin":"Body and inferior ramus of pubis","insertion":"Pectineal line and upper linea aspera of femur","function":"Adduction and flexion of hip","extra":"","innervation":"Obturator nerve, anterior division (L2–L4)","blood_supply":"Deep femoral artery, medial circumflex femoral artery"},"createdAt":1777679372158},{"id":"1777679373096","name":"Adductor Magnus","region":"Thigh","depth":"Deep","synonyms":["Great adductor","Largest adductor"],"notes":{"origin":"Adductor part: ischiopubic ramus; Hamstring part: ischial tuberosity","insertion":"Adductor part: linea aspera, medial supracondylar ridge; Hamstring part: adductor tubercle of femur","function":"Adductor part: adduction and flexion of hip; Hamstring part: extension of hip","extra":"","innervation":"Adductor part: obturator nerve (L2–L4); Hamstring part: tibial division of sciatic nerve (L4)","blood_supply":"Deep femoral artery, perforating arteries"},"createdAt":1777679372158},{"id":"1777679372305","name":"Obturator Externus","region":"Pelvis & Gluteal","depth":"Deep","synonyms":["External obturator"],"notes":{"origin":"Outer surface of obturator membrane and surrounding ischiopubic rami","insertion":"Trochanteric fossa of femur","function":"Lateral rotation of hip; stabilizes hip joint","extra":"","innervation":"Obturator nerve, posterior division (L3–L4)","blood_supply":"Obturator artery, medial circumflex femoral artery"},"createdAt":1777679372158},{"id":"1777679372733","name":"Tibialis Anterior","region":"Leg","depth":"Superficial","synonyms":["Anterior tibial muscle","TA"],"notes":{"origin":"Lateral condyle and upper 2/3 of lateral tibial surface, interosseous membrane","insertion":"Medial cuneiform and base of 1st metatarsal","function":"Dorsiflexion and inversion of foot; maintains medial arch","extra":"","innervation":"Deep fibular (peroneal) nerve (L4–L5)","blood_supply":"Anterior tibial artery"},"createdAt":1777679372158},{"id":"1777679372268","name":"Extensor Hallucis Longus","region":"Leg","depth":"Deep","synonyms":["EHL","Long extensor of big toe"],"notes":{"origin":"Middle 2/3 of medial fibula and interosseous membrane","insertion":"Base of distal phalanx of hallux (great toe)","function":"Extension of hallux; dorsiflexion and inversion of foot","extra":"","innervation":"Deep fibular (peroneal) nerve (L5–S1)","blood_supply":"Anterior tibial artery"},"createdAt":1777679372158},{"id":"1777679372725","name":"Extensor Digitorum Longus","region":"Leg","depth":"Superficial","synonyms":["EDL","Long extensor of toes"],"notes":{"origin":"Lateral condyle of tibia, anterior fibula, interosseous membrane","insertion":"Middle and distal phalanges of toes 2–5 (dorsal digital expansions)","function":"Extension of toes 2–5; dorsiflexion and eversion of foot","extra":"","innervation":"Deep fibular (peroneal) nerve (L5–S1)","blood_supply":"Anterior tibial artery"},"createdAt":1777679372158},{"id":"1777679372546","name":"Fibularis Tertius","region":"Leg","depth":"Superficial","synonyms":["Peroneus tertius","Third fibular muscle"],"notes":{"origin":"Inferior 1/3 of medial fibula (continuous with EDL)","insertion":"Dorsal surface of base of 5th metatarsal","function":"Dorsiflexion and eversion of foot; absent in ~8% of people","extra":"","innervation":"Deep fibular (peroneal) nerve (L5–S1)","blood_supply":"Anterior tibial artery, perforating branch of fibular artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_948","name":"Fibularis Longus","region":"Leg","depth":"Superficial","synonyms":["Peroneus longus","Long fibular muscle"],"notes":{"origin":"Head and upper 2/3 of lateral fibula","insertion":"Medial cuneiform and base of 1st metatarsal (via groove under cuboid)","function":"Eversion of foot; plantarflexion; supports transverse and lateral arches","extra":"","innervation":"Superficial fibular (peroneal) nerve (L5–S1)","blood_supply":"Fibular (peroneal) artery, anterior tibial artery"},"createdAt":1777679372158},{"id":"1777679372556","name":"Fibularis Brevis","region":"Leg","depth":"Deep","synonyms":["Peroneus brevis","Short fibular muscle"],"notes":{"origin":"Lower 2/3 of lateral fibula","insertion":"Styloid process of base of 5th metatarsal","function":"Eversion of foot; assists plantarflexion; stabilizes lateral ankle","extra":"","innervation":"Superficial fibular (peroneal) nerve (L5–S1)","blood_supply":"Fibular (peroneal) artery"},"createdAt":1777679372158},{"id":"1777679372865","name":"Gastrocnemius (Medial & Lateral Head)","region":"Leg","depth":"Superficial","synonyms":["Gastrocnemius medialis","Gastrocnemius lateralis","Calf muscle"],"notes":{"origin":"Medial head: posterior medial femoral condyle; Lateral head: posterior lateral femoral condyle","insertion":"Posterior calcaneus via Achilles (calcaneal) tendon","function":"Plantarflexion of foot; flexion of knee; propulsion in walking/running","extra":"Medial head: larger, arises higher on femur. Lateral head: smaller. Both heads join soleus to form triceps surae, inserting via Achilles tendon.","innervation":"Tibial nerve (S1–S2)","blood_supply":"Sural arteries (branches of popliteal artery)"},"createdAt":1777679372158},{"id":"1777679372702","name":"Soleus","region":"Leg","depth":"Deep","synonyms":["Soleus muscle","Sole of leg"],"notes":{"origin":"Posterior head and upper shaft of fibula, soleal line and medial border of tibia","insertion":"Posterior calcaneus via Achilles tendon","function":"Plantarflexion of foot (especially when knee is flexed); important postural muscle; 'peripheral heart' pumping venous return","extra":"","innervation":"Tibial nerve (S1–S2)","blood_supply":"Posterior tibial artery, fibular (peroneal) artery"},"createdAt":1777679372158},{"id":"1777679372356","name":"Plantaris","region":"Leg","depth":"Superficial","synonyms":["Plantaris muscle"],"notes":{"origin":"Lateral supracondylar ridge of femur above lateral head of gastrocnemius","insertion":"Posterior calcaneus medial to Achilles tendon","function":"Weak plantarflexion of foot and flexion of knee; vestigial muscle; absent in ~7% of people","extra":"","innervation":"Tibial nerve (S1–S2)","blood_supply":"Sural arteries (popliteal artery)"},"createdAt":1777679372158},{"id":"fix_1777715111192_838","name":"Popliteus","region":"Leg","depth":"Deep","synonyms":["Popliteal muscle","'Unlocking muscle of the knee'"],"notes":{"origin":"Lateral condyle of femur and lateral meniscus","insertion":"Posterior surface of proximal tibia above soleal line","function":"Medially rotates tibia to 'unlock' knee from full extension; flexes knee; retracts lateral meniscus","extra":"","innervation":"Tibial nerve (L4–S1)","blood_supply":"Popliteal artery, inferior genicular arteries"},"createdAt":1777679372158},{"id":"1777679372881","name":"Tibialis Posterior","region":"Leg","depth":"Deep","synonyms":["TP","Posterior tibial muscle"],"notes":{"origin":"Posterior tibia lateral to vertical line, posterior fibula, interosseous membrane","insertion":"Navicular tuberosity; cuneiforms; cuboid; bases of metatarsals 2–4","function":"Plantarflexion and inversion of foot; main supporter of medial longitudinal arch","extra":"","innervation":"Tibial nerve (L4–L5)","blood_supply":"Posterior tibial artery, fibular (peroneal) artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_599","name":"Flexor Digitorum Longus","region":"Leg","depth":"Deep","synonyms":["FDL","Long flexor of toes"],"notes":{"origin":"Middle 1/3 of posterior tibial surface","insertion":"Bases of distal phalanges of toes 2–5","function":"Flexion of toes 2–5; plantarflexion and inversion of foot; support of medial arch","extra":"","innervation":"Tibial nerve (L5–S1)","blood_supply":"Posterior tibial artery"},"createdAt":1777679372158},{"id":"1777679372436","name":"Flexor Hallucis Longus","region":"Leg","depth":"Deep","synonyms":["FHL","Long flexor of big toe"],"notes":{"origin":"Posterior 2/3 of fibula and interosseous membrane","insertion":"Base of distal phalanx of hallux","function":"Flexion of hallux; plantarflexion and inversion of foot; pushes off during walking/running; essential for ballet en pointe","extra":"","innervation":"Tibial nerve (L5–S2)","blood_supply":"Fibular (peroneal) artery, posterior tibial artery"},"createdAt":1777679372158},{"id":"1777679372784","name":"Abductor Hallucis","region":"Foot","depth":"Superficial","synonyms":["Abductor of big toe"],"notes":{"origin":"Medial process of calcaneal tuberosity, flexor retinaculum","insertion":"Medial side of base of proximal phalanx of hallux (with medial sesamoid)","function":"Abducts and flexes hallux at MTP joint; supports medial longitudinal arch","extra":"","innervation":"Medial plantar nerve (L5–S1)","blood_supply":"Medial plantar artery"},"createdAt":1777679372158},{"id":"1777679372700","name":"Flexor Digitorum Brevis","region":"Foot","depth":"Superficial","synonyms":["FDB","Short flexor of toes"],"notes":{"origin":"Medial process of calcaneal tuberosity, plantar aponeurosis","insertion":"Middle phalanges of toes 2–5 (splits to allow FDL passage)","function":"Flexes middle phalanges (PIP joints) of toes 2–5; supports arches","extra":"","innervation":"Medial plantar nerve (L5–S1)","blood_supply":"Medial plantar artery"},"createdAt":1777679372158},{"id":"1777679372277","name":"Abductor Digiti Minimi (Foot)","region":"Foot","depth":"Superficial","synonyms":["Abductor of little toe"],"notes":{"origin":"Medial and lateral processes of calcaneal tuberosity","insertion":"Lateral side of base of proximal phalanx of little toe","function":"Abducts and flexes little toe; supports lateral longitudinal arch","extra":"","innervation":"Lateral plantar nerve (S1–S3)","blood_supply":"Lateral plantar artery"},"createdAt":1777679372158},{"id":"1777679372674","name":"Quadratus Plantae","region":"Foot","depth":"Deep","synonyms":["Flexor accessorius","Square muscle of sole"],"notes":{"origin":"Medial and lateral plantar surfaces of calcaneus","insertion":"Posterolateral margin of FDL tendon","function":"Modifies direction of FDL pull; assists flexion of toes 2–5","extra":"","innervation":"Lateral plantar nerve (S1–S3)","blood_supply":"Lateral plantar artery"},"createdAt":1777679372158},{"id":"1777679372839","name":"Lumbricals (Foot)","region":"Foot","depth":"Deep","synonyms":["Lumbrical muscles of foot"],"notes":{"origin":"Tendons of FDL (4 muscles from adjacent tendons)","insertion":"Medial sides of extensor hoods of toes 2–5","function":"Flex MTP joints; extend PIP and DIP joints of toes 2–5","extra":"","innervation":"1st lumbrical: medial plantar nerve; 2nd–4th: lateral plantar nerve (S2–S3)","blood_supply":"Plantar metatarsal arteries"},"createdAt":1777679372158},{"id":"1777679372883","name":"Flexor Hallucis Brevis","region":"Foot","depth":"Deep","synonyms":["FHB","Short flexor of big toe"],"notes":{"origin":"Plantar surface of cuboid and lateral cuneiforms","insertion":"Both sides of base of proximal phalanx of hallux (via sesamoids)","function":"Flexes hallux at MTP joint; supports medial longitudinal arch","extra":"","innervation":"Medial plantar nerve (S1–S2)","blood_supply":"Medial plantar artery, plantar arch"},"createdAt":1777679372158},{"id":"1777679372684","name":"Adductor Hallucis","region":"Foot","depth":"Deep","synonyms":["Adductor of big toe"],"notes":{"origin":"Oblique head: bases of metatarsals 2–4; Transverse head: plantar ligaments of MTP joints 3–5","insertion":"Lateral side of base of proximal phalanx of hallux (via lateral sesamoid)","function":"Adducts hallux; supports transverse arch","extra":"","innervation":"Deep branch of lateral plantar nerve (S2–S3)","blood_supply":"Lateral plantar artery, plantar arch"},"createdAt":1777679372158},{"id":"1777679373000","name":"Flexor Digiti Minimi Brevis (Foot)","region":"Foot","depth":"Deep","synonyms":["Short flexor of little toe"],"notes":{"origin":"Base of 5th metatarsal","insertion":"Base of proximal phalanx of little toe","function":"Flexes little toe at MTP joint","extra":"","innervation":"Lateral plantar nerve (S2–S3)","blood_supply":"Lateral plantar artery"},"createdAt":1777679372158},{"id":"1777679372404","name":"Dorsal Interossei (Foot)","region":"Foot","depth":"Deep","synonyms":["DAB muscles of foot"],"notes":{"origin":"Adjacent sides of metatarsals (bipennate; 4 muscles)","insertion":"Bases of proximal phalanges and extensor hoods of toes 2–4","function":"Abduct toes 2–4 from 2nd digit axis; flex MTP joints; extend IP joints","extra":"","innervation":"Lateral plantar nerve (S2–S3)","blood_supply":"Dorsal metatarsal arteries, plantar arch"},"createdAt":1777679372158},{"id":"1777679372957","name":"Ischiocavernosus","region":"Pelvis & Gluteal","depth":"Superficial","synonyms":["Compressor of crus"],"notes":{"origin":"Ischial tuberosity and ischiopubic ramus","insertion":"Crus and corpus cavernosum of penis/clitoris","function":"Compresses crus to maintain erection by preventing venous drainage","extra":"","innervation":"Perineal branch of pudendal nerve (S2–S4)","blood_supply":"Internal pudendal artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_829","name":"Bulbospongiosus","region":"Pelvis & Gluteal","depth":"Superficial","synonyms":["Bulbocavernosus"],"notes":{"origin":"Males: perineal body, median raphe of bulb; Females: perineal body","insertion":"Males: corpus cavernosum and corpus spongiosum; Females: clitoral body","function":"Males: compresses bulb and urethra (ejaculation, urination); Females: sphincter of vagina","extra":"","innervation":"Perineal branch of pudendal nerve (S2–S4)","blood_supply":"Internal pudendal artery"},"createdAt":1777679372158},{"id":"fix_1777715111192_936","name":"Superficial Transverse Perineal","region":"Pelvis & Gluteal","depth":"Superficial","synonyms":["Transversus perinei superficialis"],"notes":{"origin":"Ischial tuberosity","insertion":"Perineal body","function":"Stabilizes perineal body","extra":"","innervation":"Perineal branch of pudendal nerve (S2–S4)","blood_supply":"Perineal artery (internal pudendal artery)"},"createdAt":1777679372158},{"id":"lumb_hand","name":"Lumbricales (Hand)","region":"Hand","depth":"Deep","synonyms":["Lumbrical muscles of the hand","Lumbrical 1-4"],"notes":{"origin":"Lateral aspects of the flexor digitorum profundus tendons (1-4)","insertion":"Lateral (radial) side of the extensor expansions of fingers 2-5","function":"Flex the metacarpophalangeal joints; extend the interphalangeal joints of fingers 2-5. Unique: origin and insertion are both tendons.","extra":"Lumbricals 1 & 2 innervated by median nerve; 3 & 4 by ulnar nerve.","innervation":"1st & 2nd: median nerve; 3rd & 4th: deep branch of ulnar nerve (C8–T1)","blood_supply":"Superficial palmar arch, common palmar digital arteries"},"createdAt":1777679372158},{"id":"palmar_apo","name":"Palmar Aponeurosis","region":"Hand","depth":"Superficial","synonyms":["Palmar fascia"],"notes":{"origin":"Flexor retinaculum and palmaris longus tendon","insertion":"Bases of proximal phalanges, palmar plates and skin of palm","function":"Protects underlying tendons and neurovascular structures; provides grip stability; plays a role in Dupuytren's contracture when diseased.","extra":"Technically a fascial structure (not a contractile muscle), but clinically and anatomically important.","innervation":"N/A (fascial structure)","blood_supply":"Palmar digital arteries"},"createdAt":1777679372158}];
+
+function seedBundledData() {
+  if (muscles.length > 0) return; // already has data
+  let added = 0;
+  BUNDLED_MUSCLES.forEach(m => {
+    if (!m.name || !m.region) return;
+    const n = m.notes || {};
+    muscles.push({
+      id: Date.now() + Math.random(),
+      name:      m.name,
+      region:    m.region,
+      depth:     m.depth || '',
+      synonyms:  Array.isArray(m.synonyms) ? m.synonyms : [],
+      notes: {
+        origin:       n.origin       || '',
+        insertion:    n.insertion    || '',
+        function:     n.function     || '',
+        innervation:  n.innervation  || '',
+        blood_supply: n.blood_supply || '',
+        extra:        n.extra        || '',
+      },
+      createdAt: Date.now(),
+    });
+    added++;
+  });
+  saveMuscles(muscles);
+  console.log('[MuscleQuiz] Seeded', added, 'muscles from bundled data.');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+seedBundledData();
+updateNavCount();
+populateFilters();
+renderList();
+</script>
+</body>
+</html>
