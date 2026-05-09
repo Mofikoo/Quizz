@@ -17,8 +17,8 @@
       <span class="logo-sub">— anatomy</span>
     </div>
     <nav class="header-nav">
-      <button class="nav-btn active" data-panel="add"   onclick="switchPanel('add')">+ Add</button>
-      <button class="nav-btn"        data-panel="list"  onclick="switchPanel('list')">
+      <button class="nav-btn" data-panel="add"   onclick="switchPanel('add')">+ Add</button>
+      <button class="nav-btn active" data-panel="list"  onclick="switchPanel('list')">
         Muscles <span class="nav-badge" id="nav-count">0</span>
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
@@ -32,7 +32,7 @@
 <main>
 
   <!-- ══ ADD PANEL ══ -->
-  <div class="panel active" id="panel-add">
+  <div class="panel" id="panel-add">
     <div class="page-title">
       <h1>Add a muscle</h1>
       <p>Fill in the official name and body region — other fields are optional.</p>
@@ -138,7 +138,7 @@
   </div>
 
   <!-- ══ LIST PANEL ══ -->
-  <div class="panel" id="panel-list">
+  <div class="panel active" id="panel-list">
     <div class="list-toolbar">
       <div class="search-wrap">
         <input type="search" id="search-input" placeholder="Search muscles..." oninput="renderList()" />
@@ -752,11 +752,11 @@
 <!-- ── BOTTOM NAV (mobile) ── -->
 <nav class="bottom-nav">
   <div class="bottom-nav-inner">
-    <button class="bottom-nav-btn active" data-panel="add" onclick="switchPanel('add')">
+    <button class="bottom-nav-btn" data-panel="add" onclick="switchPanel('add')">
       <span class="bnav-icon">+</span>
       <span class="bnav-label">Add</span>
     </button>
-    <button class="bottom-nav-btn" data-panel="list" onclick="switchPanel('list')">
+    <button class="bottom-nav-btn active" data-panel="list" onclick="switchPanel('list')">
       <span class="bnav-icon">&#128203;</span>
       <span class="bnav-badge" id="nav-count-mobile">0</span>
       <span class="bnav-label">Muscles</span>
