@@ -22,10 +22,7 @@
         Muscles <span class="nav-badge" id="nav-count">0</span>
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
-      <button class="nav-btn" data-panel="anatomy" onclick="switchPanel('anatomy')">Anatomy</button>
-      <button class="nav-btn" data-panel="mcq"     onclick="switchPanel('mcq')">MCQ</button>
       <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
-      <button class="nav-btn" data-panel="recall" onclick="switchPanel('recall')">Recall</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
     </nav>
   </div>
@@ -181,6 +178,36 @@
         <h1>Quiz</h1>
         <p>Choose a mode and start. Results are tracked per muscle.</p>
       </div>
+
+      <!-- ── Priority launchers ── -->
+      <div class="quiz-launchers">
+        <div class="quiz-launcher-card" onclick="switchPanel('recall')">
+          <div class="ql-icon">&#128302;</div>
+          <div class="ql-body">
+            <div class="ql-title">Recall — Muscle names</div>
+            <div class="ql-sub">Name every muscle from memory. Cells light up when correct.</div>
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" onclick="switchPanel('anatomy')">
+          <div class="ql-icon">&#9997;</div>
+          <div class="ql-body">
+            <div class="ql-title">Anatomy — Free input</div>
+            <div class="ql-sub">Write origins, insertions, innervations and functions from scratch.</div>
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" onclick="switchPanel('mcq')">
+          <div class="ql-icon">&#9673;</div>
+          <div class="ql-body">
+            <div class="ql-title">MCQ — Anatomy</div>
+            <div class="ql-sub">4 choices from the same region. Pick origin, insertion, innervation or function.</div>
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+      </div>
+
+      <div class="quiz-section-label">Quick quiz — regions &amp; names</div>
       <div class="card">
         <div class="card-header">
           <div class="card-header-icon">&#9881;</div>
@@ -332,7 +359,9 @@
     </div>
 
     <!-- Setup card -->
-    <div id="recall-setup" class="card">
+    <div id="recall-setup">
+    <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+    <div class="card" id="recall-setup-card">
       <div class="card-header">
         <div class="card-header-icon">&#128302;</div>
         <div><h2>Start a recall session</h2><p>No hints. No order. Just you and your memory.</p></div>
@@ -484,6 +513,7 @@
 
     <!-- Setup -->
     <div id="anatomy-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
       <div class="page-title">
         <h1>Anatomy Quiz</h1>
         <p>Fill in the origin, insertion and/or function of each muscle from memory.</p>
@@ -600,6 +630,7 @@
 
     <!-- Setup -->
     <div id="mcq-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
       <div class="page-title">
         <h1>MCQ — Anatomy</h1>
         <p>4 choices from the same body region. Pick the correct one.</p>
