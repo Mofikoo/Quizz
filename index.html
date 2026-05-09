@@ -800,6 +800,12 @@
 <script>
 'use strict';
 
+// ── Core utility — defined first so all functions can use it ─────────────────
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 const STORE_KEY = 'musclequiz_v2_muscles';
 const STATS_KEY = 'musclequiz_v2_stats';
 
