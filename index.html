@@ -340,6 +340,11 @@
       <p>Your progress per muscle, sorted by success rate.</p>
     </div>
     <div class="stats-summary" id="stats-summary"></div>
+
+    <!-- Charts -->
+    <div class="stats-charts" id="stats-charts"></div>
+
+    <!-- Muscle table -->
     <div class="card card--flush">
       <div class="muscle-table-wrap">
         <table class="muscle-table">
@@ -1455,6 +1460,8 @@ function renderStats() {
     <div class="stat-card"><div class="val">${totalAns}</div><div class="lbl">Answers</div></div>
     <div class="stat-card"><div class="val">${rate}%</div><div class="lbl">Global rate</div></div>`;
 
+  renderStatsCharts();
+
   document.getElementById('stats-body').innerHTML =
     [...muscles].sort((a,b)=>getRate(a.id)-getRate(b.id)).map(m => {
       const s = stats[m.id]||{seen:0,correct:0};
@@ -1467,6 +1474,245 @@ function renderStats() {
         <td>${r!==null?`<div class="stat-bar-row"><div class="stat-bar"><div class="stat-bar-fill" style="width:${r}%"></div></div><span class="stat-pct">${r}%</span></div>`:'—'}</td>
       </tr>`;
     }).join('');
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+
+function renderStatsCharts() {
+  const container = document.getElementById('stats-charts');
+  const seenMuscles = muscles.filter(m => stats[m.id]?.seen > 0);
+  if (seenMuscles.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // ── Data helpers ────────────────────────────────────────────────────────────
+  const regions = [...new Set(muscles.map(m => m.region))].sort();
+
+  // Per-region error rate (wrong / seen, only seen muscles)
+  function regionErrorRate() {
+    return regions.map(r => {
+      const ms = muscles.filter(m => m.region === r);
+      const totalSeen = ms.reduce((a,m) => a + (stats[m.id]?.seen||0), 0);
+      const totalCorr = ms.reduce((a,m) => a + (stats[m.id]?.correct||0), 0);
+      const wrong = totalSeen - totalCorr;
+      return { label: r, value: totalSeen > 0 ? wrong / totalSeen : 0, seen: totalSeen, wrong };
+    }).filter(d => d.seen > 0);
+  }
+
+  // Per-region error rate for a specific anatomy field (uses anatResults-like proxy:
+  // we don't track per-field stats yet, so we use overall muscle error rate as proxy
+  // but weighted by whether the field is filled)
+  function regionFieldRate(field) {
+    return regions.map(r => {
+      const ms = muscles.filter(m => m.region === r && m.notes && m.notes[field] && m.notes[field].trim());
+      if (!ms.length) return null;
+      const totalSeen = ms.reduce((a,m) => a + (stats[m.id]?.seen||0), 0);
+      const totalCorr = ms.reduce((a,m) => a + (stats[m.id]?.correct||0), 0);
+      const wrong = totalSeen - totalCorr;
+      // Normalize by count of muscles with that field in region
+      const errorRel = totalSeen > 0 ? wrong / totalSeen : 0;
+      return { label: r, value: errorRel, seen: totalSeen, wrong, count: ms.length };
+    }).filter(Boolean).filter(d => d.seen > 0);
+  }
+
+  // Top N weakest muscles
+  function weakestMuscles(n) {
+    return [...muscles]
+      .filter(m => stats[m.id]?.seen >= 2)
+      .sort((a,b) => getRate(a.id) - getRate(b.id))
+      .slice(0, n)
+      .map(m => {
+        const s = stats[m.id];
+        return { label: m.name, region: m.region, rate: Math.round(s.correct/s.seen*100), seen: s.seen };
+      });
+  }
+
+  // Depth breakdown
+  function depthStats() {
+    const depths = [...new Set(muscles.map(m => m.depth || 'Unknown'))].sort();
+    return depths.map(d => {
+      const ms = muscles.filter(m => (m.depth||'Unknown') === d);
+      const totalSeen = ms.reduce((a,m) => a + (stats[m.id]?.seen||0), 0);
+      const totalCorr = ms.reduce((a,m) => a + (stats[m.id]?.correct||0), 0);
+      return { label: d, seen: totalSeen, correct: totalCorr,
+               rate: totalSeen > 0 ? Math.round(totalCorr/totalSeen*100) : null };
+    }).filter(d => d.seen > 0);
+  }
+
+  // ── Chart renderers ─────────────────────────────────────────────────────────
+
+  function donut(data, title, subtitle, colorFn) {
+    // data: [{label, value}] where value is error rate 0..1
+    // Higher value = more errors = bigger slice = worse
+    const total = data.reduce((a,d) => a + (d.value||0), 0);
+    if (total === 0) {
+      // All perfect — show a full green donut
+      data = [{ label: 'All correct', value: 1, _perfect: true }];
+    }
+
+    const cx = 80, cy = 80, r = 62, ri = 38;
+    const TAU = Math.PI * 2;
+    let angle = -Math.PI / 2;
+    let paths = '';
+
+    // Sort by value descending (biggest errors first)
+    const sorted = [...data].sort((a,b) => b.value - a.value);
+    const sum    = sorted.reduce((a,d) => a + d.value, 0) || 1;
+
+    sorted.forEach((d, i) => {
+      const slice = (d.value / sum) * TAU;
+      if (slice < 0.001) return;
+      const x1 = cx + r * Math.cos(angle);
+      const y1 = cy + r * Math.sin(angle);
+      angle += slice;
+      const x2 = cx + r * Math.cos(angle);
+      const y2 = cy + r * Math.sin(angle);
+      const xi1 = cx + ri * Math.cos(angle);
+      const yi1 = cy + ri * Math.sin(angle);
+      const xi2 = cx + ri * Math.cos(angle - slice);
+      const yi2 = cy + ri * Math.sin(angle - slice);
+      const lg  = slice > Math.PI ? 1 : 0;
+      const color = d._perfect ? 'var(--ok)' : colorFn(d, i);
+      const pct  = Math.round(d.value * 100);
+      paths += `<path d="M${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${lg},1 ${x2.toFixed(2)},${y2.toFixed(2)} L${xi1.toFixed(2)},${yi1.toFixed(2)} A${ri},${ri} 0 ${lg},0 ${xi2.toFixed(2)},${yi2.toFixed(2)} Z"
+        fill="${color}" opacity="0.9" stroke="var(--surface)" stroke-width="1.5">
+        <title>${esc(d.label)}: ${pct}% error rate</title>
+      </path>`;
+    });
+
+    // Legend
+    const legendItems = sorted.slice(0, 8).map((d, i) => {
+      const color = d._perfect ? 'var(--ok)' : colorFn(d, i);
+      const pct   = Math.round(d.value * 100);
+      return `<div class="chart-legend-item">
+        <span class="chart-legend-dot" style="background:${color}"></span>
+        <span class="chart-legend-label">${esc(d.label)}</span>
+        <span class="chart-legend-val">${pct}%</span>
+      </div>`;
+    }).join('');
+
+    return `<div class="stats-chart-card">
+      <div class="stats-chart-title">${esc(title)}</div>
+      <div class="stats-chart-sub">${esc(subtitle)}</div>
+      <div class="stats-chart-inner">
+        <svg viewBox="0 0 160 160" class="donut-svg">
+          ${paths}
+          <text x="80" y="76" text-anchor="middle" class="donut-center-val">${Math.round((1 - (sorted[0]?.value||0)) * 100)}%</text>
+          <text x="80" y="90" text-anchor="middle" class="donut-center-lbl">best</text>
+        </svg>
+        <div class="chart-legend">${legendItems}</div>
+      </div>
+    </div>`;
+  }
+
+  function barChart(data, title, subtitle) {
+    // Horizontal bar chart: data [{label, rate, seen, region}]
+    if (!data.length) return '';
+    const maxRate = 100;
+    const bars = data.map((d, i) => {
+      const color = d.region ? rc(d.region) : 'var(--accent)';
+      const errPct = 100 - d.rate;
+      return `<div class="bar-row">
+        <div class="bar-label" title="${esc(d.label)}">${esc(d.label.length > 28 ? d.label.slice(0,26)+'…' : d.label)}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${d.rate}%;background:${color}22;border:1px solid ${color}55">
+            <span class="bar-fill-inner" style="background:${color};width:${d.rate}%"></span>
+          </div>
+        </div>
+        <div class="bar-pct" style="color:${errPct > 40 ? 'var(--err)' : errPct > 20 ? 'var(--warn)' : 'var(--ok)'}">${d.rate}%</div>
+        <div class="bar-seen">${d.seen}×</div>
+      </div>`;
+    }).join('');
+    return `<div class="stats-chart-card stats-chart-card--wide">
+      <div class="stats-chart-title">${esc(title)}</div>
+      <div class="stats-chart-sub">${esc(subtitle)}</div>
+      <div class="bar-chart">${bars}</div>
+    </div>`;
+  }
+
+  function heatmap(title, subtitle) {
+    // Region × field error rate grid
+    const fields = ['origin','insertion','function','innervation','blood_supply'];
+    const fieldLabels = { origin:'Origin', insertion:'Insertion', function:'Function',
+                          innervation:'Innervation', blood_supply:'Blood supply' };
+    const seenRegions = regions.filter(r => muscles.some(m => m.region===r && stats[m.id]?.seen>0));
+    if (seenRegions.length === 0) return '';
+
+    const cols = fields.map(f => `<th class="hm-col">${fieldLabels[f]}</th>`).join('');
+    const rows = seenRegions.map(r => {
+      const ms = muscles.filter(m => m.region === r);
+      const cells = fields.map(f => {
+        const mf = ms.filter(m => m.notes && m.notes[f] && m.notes[f].trim());
+        const s = mf.reduce((a,m) => a + (stats[m.id]?.seen||0), 0);
+        const c = mf.reduce((a,m) => a + (stats[m.id]?.correct||0), 0);
+        if (s === 0) return '<td class="hm-cell hm-empty">—</td>';
+        const errRate = (s - c) / s;
+        const h = Math.round(errRate * 100);
+        // Color: green (0%) → yellow (50%) → red (100%)
+        const hue = Math.round(120 - errRate * 120); // 120=green, 0=red
+        return `<td class="hm-cell" style="background:hsl(${hue},55%,${document.documentElement.classList.contains('dark')?'25':'75'}%)" title="${r} · ${fieldLabels[f]}: ${h}% errors">${h}%</td>`;
+      }).join('');
+      const color = rc(r);
+      return `<tr><td class="hm-row-label"><span class="region-dot" style="background:${color}"></span>${esc(r.length>14?r.slice(0,13)+'…':r)}</td>${cells}</tr>`;
+    }).join('');
+
+    return `<div class="stats-chart-card stats-chart-card--wide">
+      <div class="stats-chart-title">${esc(title)}</div>
+      <div class="stats-chart-sub">${esc(subtitle)}</div>
+      <div style="overflow-x:auto">
+        <table class="hm-table">
+          <thead><tr><th></th>${cols}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  // ── Assemble charts ─────────────────────────────────────────────────────────
+  const errData = regionErrorRate();
+  const weak    = weakestMuscles(10);
+
+  // Donut color fn for regions
+  const regionColorFn = (d) => rc(d.label);
+  // Donut color fn for fields (fixed palette)
+  const fieldColors = ['#e07050','#5070e0','#50a870','#9050e0','#e0a030'];
+  const fieldColorFn = (d, i) => fieldColors[i % fieldColors.length];
+
+  // Build field donuts
+  const fieldDonuts = [
+    ['origin',      'Origin errors',      'Which regions struggle most with origins?'],
+    ['insertion',   'Insertion errors',   'Which regions struggle most with insertions?'],
+    ['function',    'Function errors',    'Which regions struggle most with functions?'],
+    ['innervation', 'Innervation errors', 'Which regions struggle most with innervation?'],
+    ['blood_supply','Blood supply errors','Which regions struggle most with blood supply?'],
+  ].map(([f, title, sub]) => {
+    const data = regionFieldRate(f);
+    return data.length > 0 ? donut(data, title, sub, regionColorFn) : '';
+  }).join('');
+
+  const overallDonut = donut(
+    errData.map(d => ({ label: d.label, value: d.value })),
+    'Overall error rate by region',
+    'Relative error rate per region (wrong / total answers)',
+    regionColorFn
+  );
+
+  const depthData = depthStats();
+  const depthDonut = depthData.length > 1 ? donut(
+    depthData.map(d => ({ label: d.label, value: d.rate !== null ? (100-d.rate)/100 : 0 })),
+    'Error rate by depth',
+    'Superficial vs Deep vs Intermediate',
+    fieldColorFn
+  ) : '';
+
+  const weakBar  = weak.length > 0 ? barChart(weak, 'Weakest muscles (≥2 answers)', 'Muscles with the lowest success rate', ) : '';
+  const heatmapEl = heatmap('Error rate heatmap', 'Region × anatomy field — darker = more errors');
+
+  const donutRow1 = `<div class="stats-donut-row">${overallDonut}${depthDonut}</div>`;
+  const donutRow2 = `<div class="stats-donut-row">${fieldDonuts}</div>`;
+
+  container.innerHTML = donutRow1 + weakBar + donutRow2 + heatmapEl;
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
@@ -2047,13 +2293,18 @@ function checkMCQAnat(idx, isCorrect) {
   const opts = document.querySelectorAll('.mcq-anat-opt');
   opts.forEach(b => b.disabled = true);
   opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  const { muscle: _m } = mcqPool[mcqIdx];
+  if (!stats[_m.id]) stats[_m.id] = { seen: 0, correct: 0 };
+  stats[_m.id].seen++;
+
   if (!isCorrect) {
-    // Highlight the correct button (stored as data-correct on each button)
     opts.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); });
     mcqWrong++;
   } else {
+    stats[_m.id].correct++;
     mcqCorrect++;
   }
+  saveStats(stats);
 
   // Update score display
   document.getElementById('mcq-score-ok').textContent  = mcqCorrect + ' ✓';
