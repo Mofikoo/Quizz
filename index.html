@@ -1551,7 +1551,12 @@ function buildRecallGrid() {
         const pidx = recallCellMap.get(m.id);
         td.className = 'recall-cell';
         td.id = 'rcell-' + pidx;
-        td.innerHTML = `<span class="recall-cell-blank"><span class="recall-cell-len">${m.name.length}</span></span><span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
+        td.innerHTML = (() => {
+          const normLen = normalizeRecall(m.name).length;
+          const baseLen = recallBaseName(m.name).length;
+          const hint = baseLen < normLen ? `${baseLen}–${normLen}` : String(normLen);
+          return `<span class="recall-cell-blank"><span class="recall-cell-len">${hint}</span></span><span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
+        })();
       } else {
         td.className = 'recall-cell recall-cell--empty';
       }
@@ -1574,51 +1579,72 @@ function onRecallInput() {
 }
 
 function normalizeRecall(s) {
-  // Lowercase, replace every non-alphanumeric char (parens, hyphens, &, accents…)
-  // with a space, then collapse spaces. Case and punctuation are ignored entirely.
+  // Lowercase, strip everything non-alphanumeric to space, collapse spaces.
   return s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function recallMatches(answer, canonical) {
-  // Both sides are already normalized before this function is called.
-  if (answer === canonical) return true;
+function recallBaseName(name) {
+  // Returns the "base" form of a name: everything before the first parenthetical.
+  // "Abductor Digiti Minimi (Hand)" → "abductor digiti minimi"
+  // "Gastrocnemius (Medial & Lateral Head)" → "gastrocnemius"
+  // "Biceps Brachii" → "biceps brachii"
+  const stripped = name.replace(/\s*\(.*?\).*$/g, '').trim();
+  return normalizeRecall(stripped);
+}
 
-  // Tolerance table (based on normalized canonical length):
-  //  ≤ 8 chars  → 0 errors  exact only  (Psoas, Soleus, Honduras, Gracilis…)
-  //  9–11 chars → 1 error   substitutions / transpositions  (Trapezius, Diaphragm…)
-  // 12–18 chars → 2 errors  (Biceps Brachii, Adductor Magnus…)
-  // 19+ chars   → 3 errors  (Sternocleidomastoid, Levator Labii…)
-  const t = canonical.length <= 8 ? 0
+function recallMatchesOne(answer, canonical) {
+  // Core matching: answer vs a single normalized canonical string.
+  if (answer === canonical) return true;
+  const t = canonical.length <= 8  ? 0
           : canonical.length <= 11 ? 1
           : canonical.length <= 18 ? 2 : 3;
   if (t === 0) return false;
-
-  // Exact length required — no shortening accepted, only substitutions/transpositions.
   if (answer.length < canonical.length) return false;
-
   return lev(answer, canonical) <= t;
+}
+
+function recallMatchesMuscle(answer, m) {
+  // Try matching against:
+  //  1. Full normalized name   ("abductor digiti minimi hand")
+  //  2. Base name (no parens)  ("abductor digiti minimi")  — only if different
+  //  3. Each synonym
+  const full = normalizeRecall(m.name);
+  const base = recallBaseName(m.name);
+  if (recallMatchesOne(answer, full)) return true;
+  if (base !== full && recallMatchesOne(answer, base)) return true;
+  if (m.synonyms) {
+    for (const s of m.synonyms) {
+      const sf = normalizeRecall(s);
+      const sb = recallBaseName(s);
+      if (recallMatchesOne(answer, sf)) return true;
+      if (sb !== sf && recallMatchesOne(answer, sb)) return true;
+    }
+  }
+  return false;
 }
 
 function checkRecallAnswer(raw, inp) {
   const answer = normalizeRecall(raw);
   if (answer.length < 3) return;
 
-  // Pass 1: exact match only (prevents fuzzy collisions between similar names)
+  // Pass 1: exact match on full name or base name (no fuzzy — prevents collisions)
   let matched = null;
   for (const m of recallPool) {
     if (recallFound.has(m.id)) continue;
-    if (normalizeRecall(m.name) === answer) { matched = m; break; }
-    if (m.synonyms && m.synonyms.some(s => normalizeRecall(s) === answer)) { matched = m; break; }
+    const full = normalizeRecall(m.name);
+    const base = recallBaseName(m.name);
+    if (answer === full || answer === base) { matched = m; break; }
+    if (m.synonyms && m.synonyms.some(s => {
+      const sf = normalizeRecall(s); const sb = recallBaseName(s);
+      return answer === sf || answer === sb;
+    })) { matched = m; break; }
   }
-  // Pass 2: fuzzy only if no exact match found
+
+  // Pass 2: fuzzy (only if no exact found)
   if (!matched) {
     for (const m of recallPool) {
       if (recallFound.has(m.id)) continue;
-      const canonical = normalizeRecall(m.name);
-      if (recallMatches(answer, canonical)) { matched = m; break; }
-      if (m.synonyms && m.synonyms.some(s => recallMatches(answer, normalizeRecall(s)))) {
-        matched = m; break;
-      }
+      if (recallMatchesMuscle(answer, m)) { matched = m; break; }
     }
   }
 
