@@ -2369,3 +2369,88 @@ select { cursor: pointer; }
   .mcqr-clues { padding: 0.75rem 1rem 0.5rem; }
   .mcqr-clue-val { font-size: 13px; }
 }
+
+/* ── Visual quiz & flashcard images ─────────────────────────────── */
+.visual-img-wrap {
+  width: 100%;
+  max-height: 380px;
+  overflow: hidden;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.visual-img {
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+  display: block;
+}
+.visual-img-missing {
+  padding: 2rem;
+  color: var(--text3);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Flashcard image */
+.fc-img-wrap {
+  width: 100%;
+  max-height: 200px;
+  overflow: hidden;
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.fc-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .visual-img-wrap { max-height: 260px; }
+  .visual-img      { max-height: 260px; }
+  .fc-img-wrap     { max-height: 160px; }
+  .fc-img          { max-height: 160px; }
+}
+
+/* ── Quiz hint (image reveal) ────────────────────────────────────── */
+.quiz-hint-wrap {
+  padding: 8px 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quiz-hint-btn {
+  align-self: flex-start;
+  background: var(--surface2);
+  border-color: var(--border-mid);
+  color: var(--text2);
+  font-size: 12.5px;
+}
+.quiz-hint-btn:hover { background: var(--bg2); color: var(--text); }
+.quiz-hint-img {
+  border-radius: var(--r);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  max-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+}
+.quiz-hint-img img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  display: block;
+}
+@media (max-width: 600px) {
+  .quiz-hint-img     { max-height: 200px; }
+  .quiz-hint-img img { max-height: 200px; }
+  .quiz-hint-wrap    { padding: 8px 1rem 0; }
+}
