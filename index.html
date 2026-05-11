@@ -1922,7 +1922,7 @@ function revealRecallCellByIdx(poolIdx) {
   const blank = cell.querySelector('.recall-cell-blank');
   const name  = cell.querySelector('.recall-cell-name');
   if (blank) blank.style.display = 'none';
-  if (name)  name.style.display  = '';
+  if (name)  name.style.display  = 'block';
 }
 
 function revealRecallCell(m) {
@@ -1951,7 +1951,7 @@ function giveUpRecall() {
       const blank = cell.querySelector('.recall-cell-blank');
       const name  = cell.querySelector('.recall-cell-name');
       if (blank) blank.style.display = 'none';
-      if (name)  name.style.display  = '';
+      if (name)  name.style.display  = 'block';
     }
   });
   clearInterval(recallTimerIntvl);
