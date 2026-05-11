@@ -1770,12 +1770,9 @@ function buildRecallGrid() {
         const pidx = recallCellMap.get(m.id);
         td.className = 'recall-cell';
         td.id = 'rcell-' + pidx;
-        td.innerHTML = (() => {
-          const normLen = normalizeRecall(m.name).length;
-          const baseLen = recallBaseName(m.name).length;
-          const hint = baseLen < normLen ? `${baseLen}–${normLen}` : String(normLen);
-          return `<span class="recall-cell-blank"><span class="recall-cell-len">${hint}</span></span><span class="recall-cell-name" style="display:none">${esc(m.name)}</span>`;
-        })();
+        const entry  = recallIndex.find(e => e.muscle.id === m.id);
+        const hint   = entry && entry.base ? entry.base.length + '–' + entry.canonical.length : String(normalizeRecall(m.name).length);
+        td.innerHTML = '<span class="recall-cell-blank"><span class="recall-cell-len">' + hint + '</span></span><span class="recall-cell-name" style="display:none">' + esc(m.name) + '</span>';
       } else {
         td.className = 'recall-cell recall-cell--empty';
       }
