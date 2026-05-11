@@ -1757,6 +1757,7 @@ function buildRecallGrid() {
   // Build module-level id→index map so revealRecallCell can find cells fast
   recallCellMap.clear();
   recallPool.forEach((m, idx) => recallCellMap.set(m.id, idx));
+  buildRecallIndex();
 
   // Body rows
   const tbody = document.createElement('tbody');
@@ -1796,82 +1797,92 @@ function onRecallInput() {
   checkRecallAnswer(raw, inp);
 }
 
+// ── RECALL MATCHING ──────────────────────────────────────────────────────────
+// All logic pre-computed once at startRecall() into recallIndex.
+// Each entry: { muscle, canonical, base (or null if ambiguous), poolIdx }
+let recallIndex = [];
+
 function normalizeRecall(s) {
-  // Lowercase, strip everything non-alphanumeric to space, collapse spaces.
   return s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function recallBaseName(name) {
-  // Returns the "base" form of a name: everything before the first parenthetical.
-  // "Abductor Digiti Minimi (Hand)" → "abductor digiti minimi"
-  // "Gastrocnemius (Medial & Lateral Head)" → "gastrocnemius"
-  // "Biceps Brachii" → "biceps brachii"
-  const stripped = name.replace(/\s*\(.*?\).*$/g, '').trim();
-  return normalizeRecall(stripped);
+function buildRecallIndex() {
+  // Compute canonical and base for each muscle in the pool.
+  // Disable base if it is shared by more than one muscle in the pool.
+  const baseCount = {};
+  recallPool.forEach(m => {
+    const b = normalizeRecall(m.name.replace(/\s*\(.*?\)\s*$/, ''));
+    const c = normalizeRecall(m.name);
+    if (b !== c) {
+      baseCount[b] = (baseCount[b] || 0) + 1;
+    }
+  });
+
+  recallIndex = recallPool.map((m, poolIdx) => {
+    const canonical = normalizeRecall(m.name);
+    const baseRaw   = normalizeRecall(m.name.replace(/\s*\(.*?\)\s*$/, ''));
+    const base      = (baseRaw !== canonical && baseCount[baseRaw] === 1) ? baseRaw : null;
+    return { muscle: m, canonical, base, poolIdx };
+  });
 }
 
-function recallMatchesOne(answer, canonical) {
-  // Core matching: answer vs a single normalized canonical string.
-  if (answer === canonical) return true;
-  const t = canonical.length <= 8  ? 0
-          : canonical.length <= 11 ? 1
-          : canonical.length <= 18 ? 2 : 3;
-  if (t === 0) return false;
-  if (answer.length < canonical.length) return false;
-  return lev(answer, canonical) <= t;
-}
-
-function recallMatchesMuscle(answer, m) {
-  // Try matching against:
-  //  1. Full normalized name   ("abductor digiti minimi hand")
-  //  2. Base name (no parens)  ("abductor digiti minimi")  — only if different
-  //  3. Each synonym
-  const full = normalizeRecall(m.name);
-  const base = recallBaseName(m.name);
-  if (recallMatchesOne(answer, full)) return true;
-  if (base !== full && recallMatchesOne(answer, base)) return true;
-  if (m.synonyms) {
-    for (const s of m.synonyms) {
-      const sf = normalizeRecall(s);
-      const sb = recallBaseName(s);
-      if (recallMatchesOne(answer, sf)) return true;
-      if (sb !== sf && recallMatchesOne(answer, sb)) return true;
+function damerauLev(a, b) {
+  // Damerau-Levenshtein: substitutions, insertions, deletions, transpositions
+  const m = a.length, n = b.length;
+  const d = {};
+  for (let i = -1; i <= m; i++) d[i + ',' + (-1)] = i + 1;
+  for (let j = -1; j <= n; j++) d[(-1) + ',' + j] = j + 1;
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < n; j++) {
+      const cost = a[i] === b[j] ? 0 : 1;
+      d[i + ',' + j] = Math.min(
+        d[(i-1) + ',' + j] + 1,
+        d[i + ',' + (j-1)] + 1,
+        d[(i-1) + ',' + (j-1)] + cost
+      );
+      if (i > 0 && j > 0 && a[i] === b[j-1] && a[i-1] === b[j])
+        d[i + ',' + j] = Math.min(d[i + ',' + j], d[(i-2) + ',' + (j-2)] + cost);
     }
   }
-  return false;
+  return d[(m-1) + ',' + (n-1)];
 }
 
 function checkRecallAnswer(raw, inp) {
   const answer = normalizeRecall(raw);
   if (answer.length < 3) return;
 
-  // Pass 1: exact match on full name or base name (no fuzzy — prevents collisions)
+  // ── Pass 1: exact match ────────────────────────────────────────────────────
   let matched = null;
-  for (const m of recallPool) {
-    if (recallFound.has(m.id)) continue;
-    const full = normalizeRecall(m.name);
-    const base = recallBaseName(m.name);
-    if (answer === full || answer === base) { matched = m; break; }
-    if (m.synonyms && m.synonyms.some(s => {
-      const sf = normalizeRecall(s); const sb = recallBaseName(s);
-      return answer === sf || answer === sb;
-    })) { matched = m; break; }
+  for (const entry of recallIndex) {
+    if (recallFound.has(entry.muscle.id)) continue;
+    if (answer === entry.canonical) { matched = entry; break; }
+    if (entry.base && answer === entry.base) { matched = entry; break; }
   }
 
-  // Pass 2: fuzzy (only if no exact found)
+  // ── Pass 2: fuzzy — max 1 error, answer must be >= canonical length ────────
   if (!matched) {
-    for (const m of recallPool) {
-      if (recallFound.has(m.id)) continue;
-      if (recallMatchesMuscle(answer, m)) { matched = m; break; }
+    for (const entry of recallIndex) {
+      if (recallFound.has(entry.muscle.id)) continue;
+      // Try against canonical
+      if (answer.length >= entry.canonical.length) {
+        if (damerauLev(answer, entry.canonical) <= 1) { matched = entry; break; }
+      }
+      // Try against base (if unique)
+      if (entry.base && answer.length >= entry.base.length) {
+        if (damerauLev(answer, entry.base) <= 1) { matched = entry; break; }
+      }
     }
   }
 
+
   if (matched) {
-    // Found!
-    recallFound.add(matched.id);
-    revealRecallCell(matched);
+    // Found! matched is a recallIndex entry {muscle, canonical, base, poolIdx}
+    const m = matched.muscle;
+    recallFound.add(m.id);
+    // Use poolIdx directly — no map lookup needed, no reference issues
+    revealRecallCellByIdx(matched.poolIdx);
     inp.value = '';
-    setRecallFeedback('correct', '✓ ' + matched.name);
+    setRecallFeedback('correct', '✓ ' + m.name);
     clearTimeout(recallTypingTimer);
     recallTypingTimer = setTimeout(() => setRecallFeedback('', ''), 1800);
 
@@ -1880,7 +1891,7 @@ function checkRecallAnswer(raw, inp) {
     document.getElementById('recall-progress').style.width = (recallFound.size / recallPool.length * 100) + '%';
 
     // Update region counter
-    updateRegionCount(matched.region);
+    updateRegionCount(m.region);
 
     // All found?
     if (recallFound.size === recallPool.length) {
@@ -1906,16 +1917,21 @@ function setRecallFeedback(type, msg) {
   if (type === 'correct') setTimeout(() => { if(inp) inp.className = ''; }, 400);
 }
 
-function revealRecallCell(m) {
-  const idx  = recallCellMap.get(m.id);
-  if (idx === undefined) { console.warn('rcell not found for', m.name, m.id); return; }
-  const cell = document.getElementById('rcell-' + idx);
-  if (!cell) { console.warn('DOM cell missing: rcell-' + idx); return; }
+function revealRecallCellByIdx(poolIdx) {
+  // Direct lookup by pool index — guaranteed to match the DOM cell
+  const cell = document.getElementById('rcell-' + poolIdx);
+  if (!cell) { console.warn('DOM cell missing: rcell-' + poolIdx); return; }
   cell.classList.add('found');
   const blank = cell.querySelector('.recall-cell-blank');
   const name  = cell.querySelector('.recall-cell-name');
   if (blank) blank.style.display = 'none';
   if (name)  name.style.display  = '';
+}
+
+function revealRecallCell(m) {
+  // Legacy wrapper used by giveUpRecall
+  const idx = recallCellMap.get(m.id);
+  if (idx !== undefined) revealRecallCellByIdx(idx);
 }
 
 function updateRegionCount(region) {
