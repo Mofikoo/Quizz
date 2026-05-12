@@ -2973,49 +2973,166 @@ function toggleArteryMap() {
 
 function renderArteryMindMap() {
   const container = document.getElementById('artery-mindmap');
-
-  function buildNode(name, depth) {
-    const children = ARTERY_TREE[name] || [];
-    const isLeaf   = !children.length;
-    const nodeEl   = document.createElement('div');
-    nodeEl.className = 'mm-node' + (depth === 0 ? ' mm-root' : isLeaf ? ' mm-leaf' : '');
-
-    const label = document.createElement('div');
-    label.className = 'mm-label';
-    label.textContent = name;
-    label.onclick = () => { arteryStack = []; buildPathTo(name); arteryDrillDown(name); scrollToTop(); };
-    nodeEl.appendChild(label);
-
-    if (children.length) {
-      const branchEl = document.createElement('div');
-      branchEl.className = 'mm-children mm-children--vertical';
-      children.forEach(c => branchEl.appendChild(buildNode(c, depth + 1)));
-      nodeEl.appendChild(branchEl);
-    }
-    return nodeEl;
-  }
-
-  function buildPathTo(target) {
-    // Walk up the tree to reconstruct path from Aorta
-    function findPath(cur, goal, path) {
-      if (cur === goal) return [...path, cur];
-      const ch = ARTERY_TREE[cur] || [];
-      for (const c of ch) {
-        const found = findPath(c, goal, [...path, cur]);
-        if (found) return found;
-      }
-      return null;
-    }
-    const path = findPath("Aorta", target, []);
-    if (path) arteryStack = path;
-  }
-
-  function scrollToTop() {
-    document.getElementById('artery-breadcrumb').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
   container.innerHTML = '';
-  container.appendChild(buildNode("Aorta", 0));
+
+  // Layout config
+  const NODE_W = 148, NODE_H = 32, H_GAP = 24, V_GAP = 14;
+  const nodes = {}; // name → {x, y, w, h}
+  const edges = [];
+
+  // Build a flat list with depth-first traversal, assigning columns by depth
+  // and rows by sibling index within parent
+  const COL_X = [30, 210, 390, 570, 750, 930, 1110, 1290];
+
+  function layout(name, depth, parentName) {
+    if (nodes[name]) return; // already placed (shared nodes like "Every Plantar...")
+    const children = ARTERY_TREE[name] || [];
+    nodes[name] = { name, depth, children, parentName };
+    children.forEach(c => layout(c, depth + 1, name));
+  }
+  layout('Aorta', 0, null);
+
+  // Assign Y positions: for each depth, stack nodes top-down
+  const byDepth = {};
+  Object.values(nodes).forEach(n => {
+    if (!byDepth[n.depth]) byDepth[n.depth] = [];
+    byDepth[n.depth].push(n);
+  });
+
+  // Sort each depth by parent order
+  function sortOrder(name) {
+    const n = nodes[name];
+    if (!n.parentName) return 0;
+    const siblings = ARTERY_TREE[n.parentName] || [];
+    return siblings.indexOf(name);
+  }
+  const maxDepth = Math.max(...Object.keys(byDepth).map(Number));
+
+  // Calculate total height needed per depth
+  let totalH = 0;
+  const depthHeights = {};
+  for (let d = 0; d <= maxDepth; d++) {
+    const nodesAtDepth = byDepth[d] || [];
+    depthHeights[d] = nodesAtDepth.length * (NODE_H + V_GAP) - V_GAP;
+    totalH = Math.max(totalH, depthHeights[d]);
+  }
+
+  // Assign Y: centered vertically per depth
+  const svgH = totalH + 80;
+  const svgW = COL_X[Math.min(maxDepth, COL_X.length-1)] + NODE_W + 50;
+
+  for (let d = 0; d <= maxDepth; d++) {
+    const nodesAtDepth = byDepth[d] || [];
+    nodesAtDepth.sort((a, b) => {
+      // Sort by parent position first, then sibling order
+      const pA = a.parentName ? (nodes[a.parentName]?.y || 0) : 0;
+      const pB = b.parentName ? (nodes[b.parentName]?.y || 0) : 0;
+      if (pA !== pB) return pA - pB;
+      return sortOrder(a.name) - sortOrder(b.name);
+    });
+    const blockH = nodesAtDepth.length * (NODE_H + V_GAP) - V_GAP;
+    const startY = (svgH - blockH) / 2;
+    nodesAtDepth.forEach((n, i) => {
+      n.x = COL_X[Math.min(d, COL_X.length-1)];
+      n.y = startY + i * (NODE_H + V_GAP);
+    });
+  }
+
+  // Build SVG
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + svgW + ' ' + svgH);
+  svg.style.width = '100%';
+  svg.style.minWidth = svgW + 'px';
+  svg.setAttribute('overflow', 'visible');
+
+  // Draw edges first
+  Object.values(nodes).forEach(n => {
+    (n.children || []).forEach(cName => {
+      const c = nodes[cName];
+      if (!c) return;
+      const x1 = n.x + NODE_W;
+      const y1 = n.y + NODE_H / 2;
+      const x2 = c.x;
+      const y2 = c.y + NODE_H / 2;
+      const mx = (x1 + x2) / 2;
+      const path = document.createElementNS(svgNS, 'path');
+      path.setAttribute('d', 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', '#e74c3c55');
+      path.setAttribute('stroke-width', '1.5');
+      svg.appendChild(path);
+    });
+  });
+
+  // Draw nodes
+  Object.values(nodes).forEach(n => {
+    const isRoot   = n.depth === 0;
+    const isLeaf   = !n.children || !n.children.length;
+    const hasBranches = !isLeaf;
+
+    const g = document.createElementNS(svgNS, 'g');
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', () => {
+      // Build path from root to this node
+      function findPath(cur, goal, path) {
+        if (cur === goal) return [...path, cur];
+        for (const ch of (ARTERY_TREE[cur] || [])) {
+          const f = findPath(ch, goal, [...path, cur]);
+          if (f) return f;
+        }
+        return null;
+      }
+      const path = findPath('Aorta', n.name, []) || [n.name];
+      arteryStack = path;
+      renderArteryNode(n.name);
+      document.getElementById('artery-breadcrumb').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    const rect = document.createElementNS(svgNS, 'rect');
+    rect.setAttribute('x', n.x); rect.setAttribute('y', n.y);
+    rect.setAttribute('width', NODE_W); rect.setAttribute('height', NODE_H);
+    rect.setAttribute('rx', '6');
+
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', n.x + NODE_W / 2);
+    text.setAttribute('y', n.y + NODE_H / 2);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('font-size', isRoot ? '13' : isLeaf ? '10.5' : '11.5');
+    text.setAttribute('font-weight', (isRoot || hasBranches) ? '500' : '400');
+
+    if (isRoot) {
+      rect.setAttribute('fill', '#e74c3c');
+      rect.setAttribute('stroke', '#c0392b');
+      rect.setAttribute('stroke-width', '1.5');
+      text.setAttribute('fill', 'white');
+    } else if (hasBranches) {
+      rect.setAttribute('fill', '#e74c3c18');
+      rect.setAttribute('stroke', '#e74c3c88');
+      rect.setAttribute('stroke-width', '1.5');
+      text.setAttribute('fill', 'var(--text, #ccc)');
+    } else {
+      rect.setAttribute('fill', 'var(--bg2, #222)');
+      rect.setAttribute('stroke', 'var(--border, #444)');
+      rect.setAttribute('stroke-width', '1');
+      text.setAttribute('fill', 'var(--text3, #888)');
+    }
+
+    // Truncate long names
+    const label = n.name.length > 22 ? n.name.slice(0, 20) + '…' : n.name;
+    text.textContent = label;
+    if (n.name.length > 22) {
+      const title = document.createElementNS(svgNS, 'title');
+      title.textContent = n.name;
+      g.appendChild(title);
+    }
+
+    g.appendChild(rect); g.appendChild(text);
+    svg.appendChild(g);
+  });
+
+  container.appendChild(svg);
 }
 
 // ── VISUAL QUIZ ───────────────────────────────────────────────────────────────

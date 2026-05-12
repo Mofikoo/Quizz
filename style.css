@@ -2689,78 +2689,19 @@ select { cursor: pointer; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  padding: 1.5rem;
+  padding: 1rem;
 }
 .artery-mindmap {
-  display: inline-block;
+  display: block;
   min-width: 100%;
 }
-
-/* ── Mind map — vertical tree layout ── */
-.mm-node {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  position: relative;
-  margin-bottom: 4px;
+.artery-mindmap svg {
+  display: block;
+  overflow: visible;
 }
 
-.mm-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  border: 1.5px solid #e74c3c55;
-  border-radius: 6px;
-  background: #e74c3c11;
-  font-size: 12px;
-  color: var(--text);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all .15s;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-}
-.mm-label:hover {
-  background: #e74c3c25;
-  border-color: #e74c3c99;
-}
-.mm-root > .mm-label {
-  background: #e74c3c;
-  color: white;
-  border-color: #c0392b;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 8px 18px;
-}
-.mm-leaf > .mm-label {
-  background: var(--bg2);
-  border-color: var(--border);
-  color: var(--text3);
-  font-size: 11px;
-}
-
-/* Vertical children — indented below parent */
-.mm-children--vertical {
-  display: flex;
-  flex-direction: column;
-  margin-top: 4px;
-  margin-left: 24px;
-  padding-left: 16px;
-  border-left: 2px solid #e74c3c33;
-  gap: 4px;
-}
-
-/* Horizontal connector from border to label */
-.mm-children--vertical > .mm-node > .mm-label::before {
-  content: '';
-  position: absolute;
-  left: -18px;
-  top: 50%;
-  width: 16px;
-  height: 2px;
-  background: #e74c3c33;
-}
+/* ── Mind map — SVG fan layout ── */
+/* The map is now rendered as SVG directly — no mm-* classes needed */
 
 @media (max-width: 600px) {
   .artery-grid { grid-template-columns: 1fr; }
