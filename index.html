@@ -1020,7 +1020,7 @@
     </div>
     <!-- Mind map toggle -->
     <div style="margin-top:2rem;text-align:center;">
-      <button class="btn btn-ghost btn-sm" onclick="toggleArteryMap()">&#128506; Show full map</button>
+      <button class="btn artery-map-toggle-btn" onclick="toggleArteryMap()">&#128506; Show full map</button>
     </div>
     <div class="artery-mindmap-wrap" id="artery-mindmap-wrap" style="display:none">
       <div class="artery-mindmap" id="artery-mindmap"></div>
@@ -2975,10 +2975,9 @@ function renderArteryMindMap() {
   const container = document.getElementById('artery-mindmap');
   container.innerHTML = '';
 
-  const NODE_W = 148, NODE_H = 32, H_GAP = 40, V_GAP = 12;
-  const ROW_Y = [30, 110, 190, 270, 350, 430, 510, 590];
+  const NODE_W = 148, NODE_H = 32, H_GAP = 24, V_GAP = 14;
+  const COL_X = [30, 210, 390, 570, 750, 930, 1110, 1290];
 
-  // Build node map
   const nodes = {};
   function build(name, depth, parentName) {
     if (nodes[name]) return;
@@ -2988,52 +2987,42 @@ function renderArteryMindMap() {
   }
   build('Aorta', 0, null);
 
-  // Group by depth
   const byDepth = {};
   const maxDepth = Math.max(...Object.values(nodes).map(n => n.depth));
   for (let d = 0; d <= maxDepth; d++) byDepth[d] = [];
   Object.values(nodes).forEach(n => byDepth[n.depth].push(n));
 
-  // Sort each row by parent x then sibling index
   function sibIdx(name) {
     const n = nodes[name];
     if (!n.parentName) return 0;
     return (ARTERY_TREE[n.parentName] || []).indexOf(name);
   }
 
-  // Assign Y per depth (rows)
-  const ROW_H = NODE_H + 24; // row height
-  Object.values(nodes).forEach(n => {
-    n.y = n.depth * (NODE_H + H_GAP);
-  });
-
-  // Assign X: for each depth, space nodes evenly
-  // First pass: count max nodes at any depth to determine total width
   const maxNodesAtDepth = Math.max(...Object.values(byDepth).map(a => a.length));
-  const SVG_W = Math.max(800, maxNodesAtDepth * (NODE_W + V_GAP) + 60);
-  const SVG_H = (maxDepth + 1) * (NODE_H + H_GAP) + 40;
+  const SVG_H = Math.max(600, maxNodesAtDepth * (NODE_H + V_GAP) + 60);
+  const SVG_W = COL_X[Math.min(maxDepth, COL_X.length - 1)] + NODE_W + 50;
 
-  // Sort each depth row
   for (let d = 0; d <= maxDepth; d++) {
     byDepth[d].sort((a, b) => {
-      const pAy = a.parentName ? (nodes[a.parentName]?.x || 0) : 0;
-      const pBy = b.parentName ? (nodes[b.parentName]?.x || 0) : 0;
-      if (pAy !== pBy) return pAy - pBy;
+      const pA = a.parentName ? (nodes[a.parentName]?.y || 0) : 0;
+      const pB = b.parentName ? (nodes[b.parentName]?.y || 0) : 0;
+      if (pA !== pB) return pA - pB;
       return sibIdx(a.name) - sibIdx(b.name);
     });
     const count = byDepth[d].length;
-    const totalW = count * NODE_W + (count - 1) * V_GAP;
-    const startX = (SVG_W - totalW) / 2;
+    const blockH = count * (NODE_H + V_GAP) - V_GAP;
+    const startY = (SVG_H - blockH) / 2;
     byDepth[d].forEach((n, i) => {
-      n.x = startX + i * (NODE_W + V_GAP);
+      n.x = COL_X[Math.min(d, COL_X.length - 1)];
+      n.y = startY + i * (NODE_H + V_GAP);
     });
   }
 
-  // Build SVG
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('viewBox', '0 0 ' + SVG_W + ' ' + SVG_H);
-  svg.style.width = '100%';
+  svg.style.width = SVG_W + 'px';
+  svg.style.height = SVG_H + 'px';
   svg.style.minWidth = SVG_W + 'px';
 
   // Edges
@@ -3041,13 +3030,11 @@ function renderArteryMindMap() {
     (n.children || []).forEach(cName => {
       const c = nodes[cName];
       if (!c) return;
-      const x1 = n.x + NODE_W / 2;
-      const y1 = n.y + NODE_H;
-      const x2 = c.x + NODE_W / 2;
-      const y2 = c.y;
-      const my = (y1 + y2) / 2;
+      const x1 = n.x + NODE_W, y1 = n.y + NODE_H / 2;
+      const x2 = c.x,          y2 = c.y + NODE_H / 2;
+      const mx = (x1 + x2) / 2;
       const path = document.createElementNS(svgNS, 'path');
-      path.setAttribute('d', 'M'+x1+' '+y1+' C'+x1+' '+my+' '+x2+' '+my+' '+x2+' '+y2);
+      path.setAttribute('d', 'M'+x1+' '+y1+' C'+mx+' '+y1+' '+mx+' '+y2+' '+x2+' '+y2);
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke', '#e74c3c55');
       path.setAttribute('stroke-width', '1.5');
@@ -3057,68 +3044,44 @@ function renderArteryMindMap() {
 
   // Nodes
   Object.values(nodes).forEach(n => {
-    const isRoot      = n.depth === 0;
+    const isRoot = n.depth === 0;
     const hasBranches = n.children && n.children.length > 0;
-    const isLeaf      = !hasBranches;
-
+    const isLeaf = !hasBranches;
     const g = document.createElementNS(svgNS, 'g');
     g.style.cursor = 'pointer';
     g.addEventListener('click', () => {
       function findPath(cur, goal, path) {
         if (cur === goal) return [...path, cur];
-        for (const ch of (ARTERY_TREE[cur] || [])) {
-          const f = findPath(ch, goal, [...path, cur]);
-          if (f) return f;
-        }
+        for (const ch of (ARTERY_TREE[cur] || [])) { const f = findPath(ch, goal, [...path, cur]); if (f) return f; }
         return null;
       }
-      const path = findPath('Aorta', n.name, []) || [n.name];
-      arteryStack = path;
+      arteryStack = findPath('Aorta', n.name, []) || [n.name];
       renderArteryNode(n.name);
       document.getElementById('artery-breadcrumb').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-
     const rect = document.createElementNS(svgNS, 'rect');
     rect.setAttribute('x', n.x); rect.setAttribute('y', n.y);
     rect.setAttribute('width', NODE_W); rect.setAttribute('height', NODE_H);
     rect.setAttribute('rx', '6');
-
     const text = document.createElementNS(svgNS, 'text');
-    text.setAttribute('x', n.x + NODE_W / 2);
-    text.setAttribute('y', n.y + NODE_H / 2);
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('dominant-baseline', 'central');
+    text.setAttribute('x', n.x + NODE_W / 2); text.setAttribute('y', n.y + NODE_H / 2);
+    text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'central');
     text.setAttribute('font-size', isRoot ? '13' : isLeaf ? '10.5' : '11.5');
     text.setAttribute('font-weight', (isRoot || hasBranches) ? '500' : '400');
-
     if (isRoot) {
-      rect.setAttribute('fill', '#e74c3c');
-      rect.setAttribute('stroke', '#c0392b');
-      rect.setAttribute('stroke-width', '1.5');
+      rect.setAttribute('fill', '#e74c3c'); rect.setAttribute('stroke', '#c0392b'); rect.setAttribute('stroke-width', '1.5');
       text.setAttribute('fill', 'white');
     } else if (hasBranches) {
-      rect.setAttribute('fill', '#e74c3c18');
-      rect.setAttribute('stroke', '#e74c3c88');
-      rect.setAttribute('stroke-width', '1.5');
+      rect.setAttribute('fill', '#e74c3c18'); rect.setAttribute('stroke', '#e74c3c88'); rect.setAttribute('stroke-width', '1.5');
       text.setAttribute('fill', 'var(--text, #ccc)');
     } else {
-      rect.setAttribute('fill', 'var(--bg2, #222)');
-      rect.setAttribute('stroke', 'var(--border, #444)');
-      rect.setAttribute('stroke-width', '1');
+      rect.setAttribute('fill', 'var(--bg2, #222)'); rect.setAttribute('stroke', 'var(--border, #444)'); rect.setAttribute('stroke-width', '1');
       text.setAttribute('fill', 'var(--text3, #888)');
     }
-
     const label = n.name.length > 20 ? n.name.slice(0, 18) + '…' : n.name;
     text.textContent = label;
-    if (n.name !== label) {
-      const title = document.createElementNS(svgNS, 'title');
-      title.textContent = n.name;
-      g.appendChild(title);
-    }
-
-    g.appendChild(rect);
-    g.appendChild(text);
-    svg.appendChild(g);
+    if (n.name !== label) { const t = document.createElementNS(svgNS, 'title'); t.textContent = n.name; g.appendChild(t); }
+    g.appendChild(rect); g.appendChild(text); svg.appendChild(g);
   });
 
   container.appendChild(svg);

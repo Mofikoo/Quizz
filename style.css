@@ -2708,3 +2708,36 @@ select { cursor: pointer; }
   .artery-btn  { font-size: 13px; padding: 10px 12px; }
   .mm-label    { font-size: 10.5px; padding: 4px 8px; }
 }
+
+/* ── Artery map toggle button ─────────────────────────────────────── */
+.artery-map-toggle-btn {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: var(--r);
+  padding: 10px 28px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  letter-spacing: .01em;
+}
+.artery-map-toggle-btn:hover {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
+
+.artery-map-btn {
+  background: #e74c3c;
+  color: white;
+  border-color: #c0392b;
+  font-size: 15px;
+  padding: 10px 24px;
+  font-weight: 500;
+  border-radius: var(--r);
+  transition: background .15s, transform .1s;
+}
+.artery-map-btn:hover {
+  background: #c0392b;
+  transform: translateY(-1px);
+}
