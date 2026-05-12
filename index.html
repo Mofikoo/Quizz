@@ -23,6 +23,7 @@
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
       <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
+      <button class="nav-btn" data-panel="artery" onclick="switchPanel('artery')">Arteries</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
     </nav>
   </div>
@@ -1001,6 +1002,31 @@
     </div>
   </div>
 
+  <!-- ══ ARTERY PANEL ══ -->
+  <div class="panel" id="panel-artery">
+    <div class="page-title">
+      <h1>Arterial Pathways</h1>
+      <p>Lower limb — click any artery to explore its branches.</p>
+    </div>
+    <div class="artery-container">
+      <!-- Breadcrumb trail -->
+      <div class="artery-breadcrumb" id="artery-breadcrumb"></div>
+      <!-- Current node -->
+      <div class="artery-current" id="artery-current"></div>
+      <!-- Children -->
+      <div class="artery-children" id="artery-children"></div>
+      <!-- Back button -->
+      <div class="artery-nav" id="artery-nav"></div>
+    </div>
+    <!-- Mind map toggle -->
+    <div style="margin-top:2rem;text-align:center;">
+      <button class="btn btn-ghost btn-sm" onclick="toggleArteryMap()">&#128506; Show full map</button>
+    </div>
+    <div class="artery-mindmap-wrap" id="artery-mindmap-wrap" style="display:none">
+      <div class="artery-mindmap" id="artery-mindmap"></div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -1090,6 +1116,7 @@ function switchPanel(name) {
   document.querySelectorAll('[data-panel="' + name + '"]').forEach(b => b.classList.add('active'));
   if (name === 'list')   { populateFilters(); renderList(); }
   if (name === 'stats')  { renderStats(); }
+  if (name === 'artery') { initArteryMap(); }
   if (name === 'quiz')   { populateFilters(); }
   if (name === 'recall') { populateRecallFilters(); }
   if (name === 'cards')  { initCards(); }
@@ -2823,6 +2850,171 @@ function stopAnatomyQuiz() {
 }
 
 
+
+
+// ── ARTERIAL PATHWAYS ─────────────────────────────────────────────────────────
+
+const ARTERY_TREE = {
+  "Aorta":                           ["L Common Iliac Artery","R Common Iliac Artery"],
+  "L Common Iliac Artery":           ["External Iliac Artery","Internal Iliac Artery"],
+  "R Common Iliac Artery":           ["External Iliac Artery","Internal Iliac Artery"],
+  "External Iliac Artery":           ["Femoral Artery"],
+  "Internal Iliac Artery":           ["Superior Gluteal Artery","Inferior Gluteal Artery"],
+  "Superior Gluteal Artery":         ["Superficial Superior Gluteal Artery","Deep Superior Gluteal Artery"],
+  "Femoral Artery":                  ["Superficial Circumflex Iliac Artery","Deep Circumflex Iliac Artery","Superficial External Pudendal Artery","Deep External Pudendal Artery","Deep Femoral Artery","Popliteal Artery"],
+  "Deep Femoral Artery":             ["Medial Circumflex Femoral Artery","Lateral Circumflex Femoral Artery","Four Perforating"],
+  "Lateral Circumflex Femoral Artery":["Descending Branch","Ascending Branch","Transverse Branch"],
+  "Popliteal Artery":                ["Descending Genicular Artery","Medial Superior Genicular Artery","Lateral Superior Genicular Artery","Anterior Tibial Artery","Posterior Tibial Artery","Medial Inferior Genicular Artery","Lateral Inferior Genicular Artery"],
+  "Anterior Tibial Artery":          ["Anteromedial Malleolar Artery","Anterolateral Malleolar Artery","Dorsal Pedis Artery"],
+  "Anteromedial Malleolar Artery":   ["Lateral Tarsal Artery","Medial Tarsal Artery"],
+  "Dorsal Pedis Artery":             ["Arcuate Artery","Hallucis Artery"],
+  "Arcuate Artery":                  ["Digitorum Irrigation"],
+  "Hallucis Artery":                 ["Hallucis Irrigation"],
+  "Posterior Tibial Artery":         ["Posterior Tibial Recurrent Artery","Fibular Artery","Calcaneal Artery","Medial Plantar Artery","Lateral Plantar Artery"],
+  "Fibular Artery":                  ["Calcaneal Artery"],
+  "Medial Plantar Artery":           ["Every Plantar Arteries Of the Foot"],
+  "Lateral Plantar Artery":          ["Every Plantar Arteries Of the Foot"],
+};
+
+// Find all parents of a node
+function arteryParents(name) {
+  const parents = [];
+  for (const [parent, children] of Object.entries(ARTERY_TREE)) {
+    if (children.includes(name)) parents.push(parent);
+  }
+  return parents;
+}
+
+let arteryStack = ["Aorta"]; // navigation history
+
+function initArteryMap() {
+  arteryStack = ["Aorta"];
+  renderArteryNode("Aorta");
+}
+
+function renderArteryNode(name) {
+  const children = ARTERY_TREE[name] || [];
+  const isLeaf   = children.length === 0;
+
+  // Breadcrumb
+  const crumb = document.getElementById('artery-breadcrumb');
+  crumb.innerHTML = arteryStack.map((n, i) => {
+    const isLast = i === arteryStack.length - 1;
+    return '<span class="artery-crumb' + (isLast ? ' active' : '') + '"'
+      + (isLast ? '' : ' onclick="arteryGoTo(' + i + ')"')
+      + '>' + esc(n) + '</span>'
+      + (isLast ? '' : '<span class="artery-crumb-sep">›</span>');
+  }).join('');
+
+  // Current node
+  const cur = document.getElementById('artery-current');
+  cur.innerHTML = '<div class="artery-node-main">'
+    + '<div class="artery-node-name">' + esc(name) + '</div>'
+    + (isLeaf ? '<div class="artery-node-terminal">Terminal branch</div>' : '')
+    + '</div>';
+
+  // Children
+  const ch = document.getElementById('artery-children');
+  if (!children.length) {
+    ch.innerHTML = '<p class="artery-empty">No further branches in this map.</p>';
+  } else {
+    ch.innerHTML = '<div class="artery-label">Branches (' + children.length + ')</div>'
+      + '<div class="artery-grid">'
+      + children.map(c => {
+          const hasBranches = !!(ARTERY_TREE[c] && ARTERY_TREE[c].length);
+          return '<button class="artery-btn' + (hasBranches ? '' : ' artery-btn--leaf') + '"'
+            + ' onclick="arteryDrillDown(\'' + c.replace(/'/g, "\\'") + '\')">'
+            + '<span class="artery-btn-name">' + esc(c) + '</span>'
+            + (hasBranches
+                ? '<span class="artery-btn-arrow">›</span>'
+                : '<span class="artery-btn-terminal">●</span>')
+            + '</button>';
+        }).join('')
+      + '</div>';
+  }
+
+  // Back nav
+  const nav = document.getElementById('artery-nav');
+  nav.innerHTML = arteryStack.length > 1
+    ? '<button class="btn btn-ghost" onclick="arteryGoBack()">&#8592; Back to ' + esc(arteryStack[arteryStack.length - 2]) + '</button>'
+    : '';
+}
+
+function arteryDrillDown(name) {
+  arteryStack.push(name);
+  renderArteryNode(name);
+}
+
+function arteryGoBack() {
+  if (arteryStack.length > 1) {
+    arteryStack.pop();
+    renderArteryNode(arteryStack[arteryStack.length - 1]);
+  }
+}
+
+function arteryGoTo(idx) {
+  arteryStack = arteryStack.slice(0, idx + 1);
+  renderArteryNode(arteryStack[arteryStack.length - 1]);
+}
+
+// ── Full mind map ─────────────────────────────────────────────────────────────
+let arteryMapVisible = false;
+
+function toggleArteryMap() {
+  const wrap = document.getElementById('artery-mindmap-wrap');
+  arteryMapVisible = !arteryMapVisible;
+  wrap.style.display = arteryMapVisible ? 'block' : 'none';
+  if (arteryMapVisible) renderArteryMindMap();
+  document.querySelector('[onclick="toggleArteryMap()"]').textContent
+    = arteryMapVisible ? '✕ Hide full map' : '🗺 Show full map';
+}
+
+function renderArteryMindMap() {
+  const container = document.getElementById('artery-mindmap');
+
+  function buildNode(name, depth) {
+    const children = ARTERY_TREE[name] || [];
+    const isLeaf   = !children.length;
+    const nodeEl   = document.createElement('div');
+    nodeEl.className = 'mm-node' + (depth === 0 ? ' mm-root' : isLeaf ? ' mm-leaf' : '');
+
+    const label = document.createElement('div');
+    label.className = 'mm-label';
+    label.textContent = name;
+    label.onclick = () => { arteryStack = []; buildPathTo(name); arteryDrillDown(name); scrollToTop(); };
+    nodeEl.appendChild(label);
+
+    if (children.length) {
+      const branchEl = document.createElement('div');
+      branchEl.className = 'mm-children';
+      children.forEach(c => branchEl.appendChild(buildNode(c, depth + 1)));
+      nodeEl.appendChild(branchEl);
+    }
+    return nodeEl;
+  }
+
+  function buildPathTo(target) {
+    // Walk up the tree to reconstruct path from Aorta
+    function findPath(cur, goal, path) {
+      if (cur === goal) return [...path, cur];
+      const ch = ARTERY_TREE[cur] || [];
+      for (const c of ch) {
+        const found = findPath(c, goal, [...path, cur]);
+        if (found) return found;
+      }
+      return null;
+    }
+    const path = findPath("Aorta", target, []);
+    if (path) arteryStack = path;
+  }
+
+  function scrollToTop() {
+    document.getElementById('artery-breadcrumb').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  container.innerHTML = '';
+  container.appendChild(buildNode("Aorta", 0));
+}
 
 // ── VISUAL QUIZ ───────────────────────────────────────────────────────────────
 let visualMode    = 'name';
