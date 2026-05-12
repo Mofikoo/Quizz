@@ -2896,7 +2896,7 @@ function renderArteryNode(name) {
   const children = ARTERY_TREE[name] || [];
   const isLeaf   = children.length === 0;
 
-  // Breadcrumb
+  // Breadcrumb — still rendered for click navigation but hidden visually
   const crumb = document.getElementById('artery-breadcrumb');
   crumb.innerHTML = arteryStack.map((n, i) => {
     const isLast = i === arteryStack.length - 1;
@@ -2906,9 +2906,11 @@ function renderArteryNode(name) {
       + (isLast ? '' : '<span class="artery-crumb-sep">›</span>');
   }).join('');
 
-  // Current node
+  // Current node — show full path + big name
   const cur = document.getElementById('artery-current');
+  const pathStr = arteryStack.slice(0, -1).join(' › ');
   cur.innerHTML = '<div class="artery-node-main">'
+    + (pathStr ? '<div class="artery-node-path">' + esc(pathStr) + '</div>' : '')
     + '<div class="artery-node-name">' + esc(name) + '</div>'
     + (isLeaf ? '<div class="artery-node-terminal">Terminal branch</div>' : '')
     + '</div>';
@@ -2986,7 +2988,7 @@ function renderArteryMindMap() {
 
     if (children.length) {
       const branchEl = document.createElement('div');
-      branchEl.className = 'mm-children';
+      branchEl.className = 'mm-children mm-children--vertical';
       children.forEach(c => branchEl.appendChild(buildNode(c, depth + 1)));
       nodeEl.appendChild(branchEl);
     }

@@ -2583,6 +2583,8 @@ select { cursor: pointer; }
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   min-height: 38px;
+  /* Path is now shown inside the node bubble — keep crumb for click nav but smaller */
+  font-size: 11px;
 }
 .artery-crumb {
   color: var(--text3);
@@ -2598,18 +2600,29 @@ select { cursor: pointer; }
   background: linear-gradient(135deg, #c0392b22, #e74c3c11);
   border: 1.5px solid #e74c3c55;
   border-radius: var(--r-lg);
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem 2rem 1.75rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.artery-node-path {
+  font-size: 12px;
+  color: #e74c3c99;
+  letter-spacing: .03em;
+  line-height: 1.5;
+  font-family: var(--sans);
 }
 .artery-node-name {
   font-family: var(--serif);
-  font-size: clamp(20px, 3vw, 28px);
+  font-size: clamp(28px, 4vw, 40px);
   font-style: italic;
   color: var(--text);
   letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 .artery-node-terminal {
-  margin-top: 6px;
+  margin-top: 4px;
   font-size: 11.5px;
   color: var(--text3);
   text-transform: uppercase;
@@ -2683,41 +2696,42 @@ select { cursor: pointer; }
   min-width: 100%;
 }
 
+/* ── Mind map — vertical tree layout ── */
 .mm-node {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0;
   position: relative;
+  margin-bottom: 4px;
 }
-.mm-node + .mm-node { margin-top: 4px; }
 
 .mm-label {
   display: inline-flex;
   align-items: center;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border: 1.5px solid #e74c3c55;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #e74c3c11;
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
   transition: all .15s;
   flex-shrink: 0;
-  margin: 2px 0;
+  position: relative;
+  z-index: 1;
 }
 .mm-label:hover {
-  background: #e74c3c22;
+  background: #e74c3c25;
   border-color: #e74c3c99;
-  color: var(--text);
 }
 .mm-root > .mm-label {
   background: #e74c3c;
   color: white;
   border-color: #c0392b;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
+  padding: 8px 18px;
 }
 .mm-leaf > .mm-label {
   background: var(--bg2);
@@ -2726,43 +2740,26 @@ select { cursor: pointer; }
   font-size: 11px;
 }
 
-.mm-children {
+/* Vertical children — indented below parent */
+.mm-children--vertical {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-left: 0;
-  margin-left: 8px;
-  position: relative;
+  margin-top: 4px;
+  margin-left: 24px;
+  padding-left: 16px;
+  border-left: 2px solid #e74c3c33;
+  gap: 4px;
 }
 
-/* Connector lines */
-.mm-children::before {
+/* Horizontal connector from border to label */
+.mm-children--vertical > .mm-node > .mm-label::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateX(-8px);
-  width: 0;
-  height: 0;
-}
-
-.mm-node:not(.mm-root) > .mm-label {
-  position: relative;
-}
-.mm-node:not(.mm-root) > .mm-label::before {
-  content: '';
-  position: absolute;
-  left: -16px;
+  left: -18px;
   top: 50%;
   width: 16px;
-  height: 1.5px;
-  background: #e74c3c55;
-}
-
-.mm-children {
-  border-left: 1.5px solid #e74c3c33;
-  padding-left: 16px;
-  margin-left: 8px;
+  height: 2px;
+  background: #e74c3c33;
 }
 
 @media (max-width: 600px) {
