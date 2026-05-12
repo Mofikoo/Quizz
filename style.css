@@ -973,18 +973,19 @@ select { cursor: pointer; }
   display: none;
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  height: 64px;
+  height: 68px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   box-shadow: 0 -4px 16px rgba(28,26,22,0.08);
   z-index: 200;
-  padding: 0 8px;
+  padding: 0 4px;
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 .bottom-nav-inner {
   display: flex;
   height: 100%;
   align-items: stretch;
+  justify-content: space-around;
 }
 .bottom-nav-btn {
   flex: 1;
@@ -992,19 +993,20 @@ select { cursor: pointer; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   border: none;
   background: transparent;
   color: var(--text3);
   cursor: pointer;
-  padding: 6px 4px;
+  padding: 4px 2px;
   border-radius: var(--r-sm);
   transition: color 0.14s, background 0.14s;
   font-family: var(--sans);
   position: relative;
+  min-width: 0;
 }
-.bottom-nav-btn .bnav-icon { font-size: 20px; line-height: 1; }
-.bottom-nav-btn .bnav-label { font-size: 10px; letter-spacing: 0.02em; font-weight: 400; }
+.bottom-nav-btn .bnav-icon { font-size: 22px; line-height: 1; }
+.bottom-nav-btn .bnav-label { font-size: 9.5px; letter-spacing: 0; font-weight: 400; white-space: nowrap; }
 .bottom-nav-btn .bnav-badge {
   position: absolute;
   top: 4px;
@@ -1094,9 +1096,10 @@ select { cursor: pointer; }
   .form-actions .btn { justify-content: center; }
 
   /* List toolbar stacks */
-  .list-toolbar { gap: 6px; }
-  .list-toolbar select { max-width: 100%; }
-  .list-count { width: 100%; text-align: right; margin-left: 0; }
+  .list-toolbar { gap: 6px; flex-direction: column; align-items: stretch; }
+  .list-toolbar .search-wrap { min-width: 0; }
+  .list-selects-row { flex-wrap: nowrap; gap: 6px; }
+  .list-count { text-align: right; }
 
   /* Table: also hide stat bar and region on very small */
   .col-stat { display: none; }
@@ -1121,8 +1124,8 @@ select { cursor: pointer; }
 
 /* ── VERY SMALL (≤ 360px) ──────────────────────────────────── */
 @media (max-width: 360px) {
-  .bottom-nav-btn .bnav-label { display: none; }
-  .bottom-nav { height: 52px; }
+  .bottom-nav-btn .bnav-label { font-size: 9px; }
+  .bottom-nav { height: 64px; }
   main { padding-bottom: 4rem; }
   .stats-summary { grid-template-columns: 1fr 1fr; }
 }
@@ -1210,6 +1213,11 @@ select { cursor: pointer; }
   align-items: flex-start;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  position: sticky;
+  top: 56px;              /* below header on mobile */
+  z-index: 50;
+  background: var(--bg);
+  padding: 8px 0 10px;
 }
 
 .recall-input-wrap {
@@ -2453,4 +2461,47 @@ select { cursor: pointer; }
   .quiz-hint-img     { max-height: 200px; }
   .quiz-hint-img img { max-height: 200px; }
   .quiz-hint-wrap    { padding: 8px 1rem 0; }
+}
+
+/* ── List toolbar selects — labeled on mobile only ─────────────── */
+/* Desktop: inline row, no labels */
+.list-selects-row { display: flex; gap: 8px; align-items: center; }
+.list-select-group { display: flex; align-items: center; gap: 0; }
+.list-select-label { display: none; }
+.list-select-group .select-wrap { min-width: 120px; }
+
+@media (max-width: 480px) {
+  .list-selects-row { gap: 6px; }
+  .list-select-group { flex-direction: column; align-items: flex-start; gap: 2px; flex: 1; }
+  .list-select-label {
+    display: block;
+    font-size: 10px; font-weight: 600; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .list-select-group .select-wrap { width: 100%; min-width: 0; }
+}
+
+/* ── Recall: sticky input + 2-col grid on mobile ───────────────── */
+@media (max-width: 540px) {
+  .recall-topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg); padding: 8px 0 6px; margin-bottom: 0.5rem;
+  }
+  /* 2-col grid per region — tbody becomes a grid, col-headers span full width */
+  .recall-table tbody {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+  }
+  .recall-col-header {
+    grid-column: 1 / -1;
+    position: static !important;
+  }
+  .recall-table thead { display: none; }
+  .recall-cell { min-height: 38px; }
+  .recall-cell-name { font-size: 10.5px !important; padding: 4px 6px !important; }
+}
+
+/* ── Bottom nav: always show labels ────────────────────────────── */
+@media (max-width: 360px) {
+  .bottom-nav-btn .bnav-label { font-size: 8.5px; }
+  .bottom-nav-btn .bnav-icon  { font-size: 20px; }
 }
