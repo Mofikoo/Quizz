@@ -477,6 +477,11 @@
 
     <!-- Toolbar -->
     <div class="cards-toolbar">
+      <div class="cards-search-wrap">
+        <input type="text" id="cards-search" placeholder="Search muscle..."
+          autocomplete="off" oninput="onCardsSearch()" onkeydown="if(event.key==='Escape'){document.getElementById('cards-search-dropdown').style.display='none';this.value=''}" />
+        <div class="cards-search-dropdown" id="cards-search-dropdown"></div>
+      </div>
       <div class="select-wrap" style="flex:1;max-width:200px">
         <select id="cards-region-filter" onchange="initCards()">
           <option value="">All regions</option>
@@ -3253,6 +3258,31 @@ function stopMCQR() {
 let cardDeck  = [];
 let cardIdx   = 0;
 let cardFlipped = false;
+
+function onCardsSearch() {
+  const q    = document.getElementById('cards-search').value.trim().toLowerCase();
+  const drop = document.getElementById('cards-search-dropdown');
+  if (!q) { drop.style.display = 'none'; drop.innerHTML = ''; return; }
+
+  const matches = cardDeck.filter(m => m.name.toLowerCase().includes(q)).slice(0, 8);
+  if (!matches.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = '';
+  matches.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'cards-search-item';
+    el.innerHTML = '<span class="region-dot" style="background:' + rc(m.region) + '"></span><span>' + esc(m.name) + '</span>';
+    el.addEventListener('mousedown', () => {
+      cardIdx = cardDeck.indexOf(m);
+      cardFlipped = false;
+      renderCard();
+      drop.style.display = 'none';
+      document.getElementById('cards-search').value = '';
+    });
+    drop.appendChild(el);
+  });
+  drop.style.display = 'block';
+}
 
 function initCards() {
   const fReg   = document.getElementById('cards-region-filter').value;

@@ -2505,3 +2505,55 @@ select { cursor: pointer; }
   .bottom-nav-btn .bnav-label { font-size: 8.5px; }
   .bottom-nav-btn .bnav-icon  { font-size: 20px; }
 }
+/* ── Cards search bar ─────────────────────────────────────────────── */
+.cards-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 240px;
+}
+.cards-search-wrap input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-mid);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  transition: border-color .15s, box-shadow .15s;
+  box-sizing: border-box;
+}
+.cards-search-wrap input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(42,92,66,.10);
+}
+.cards-search-wrap input::placeholder { color: var(--text4); }
+
+.cards-search-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  overflow: hidden;
+}
+.cards-search-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s;
+}
+.cards-search-item:hover { background: var(--accent-light); }
+
+@media (max-width: 600px) {
+  .cards-search-wrap { max-width: 100%; }
+}
