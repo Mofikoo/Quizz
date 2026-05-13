@@ -1023,9 +1023,17 @@
       <button class="btn artery-map-toggle-btn" onclick="toggleArteryMap()">&#128506; Show full map</button>
     </div>
     <div id="artery-mindmap-wrap" style="display:none">
-      <!-- Scrollable tree only -->
-      <div style="overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:1rem;">
-        <div class="artery-mindmap" id="artery-mindmap"></div>
+      <!-- Pan/zoom map -->
+      <div class="artery-map-viewport" id="artery-map-viewport">
+        <div class="artery-map-canvas" id="artery-map-canvas">
+          <div class="artery-mindmap" id="artery-mindmap"></div>
+        </div>
+        <!-- Controls -->
+        <div class="artery-map-controls">
+          <button class="artery-ctrl-btn" onclick="arteryZoom(1.2)" title="Zoom in">＋</button>
+          <button class="artery-ctrl-btn" onclick="arteryZoom(0.8)" title="Zoom out">－</button>
+          <button class="artery-ctrl-btn" onclick="arteryResetView()" title="Reset">⤢</button>
+        </div>
       </div>
       <!-- Reference image: no horizontal scroll, full width -->
       <div style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);padding:1.25rem;">
@@ -2861,6 +2869,76 @@ function stopAnatomyQuiz() {
 
 
 
+
+// ── ARTERY MAP PAN/ZOOM ───────────────────────────────────────────────────────
+let _mapScale = 1, _mapX = 0, _mapY = 0;
+let _mapDragging = false, _mapLastX = 0, _mapLastY = 0;
+
+function arteryMapTransform() {
+  const canvas = document.getElementById('artery-map-canvas');
+  if (canvas) canvas.style.transform = 'translate(' + _mapX + 'px,' + _mapY + 'px) scale(' + _mapScale + ')';
+}
+
+function arteryZoom(factor) {
+  _mapScale = Math.min(3, Math.max(0.2, _mapScale * factor));
+  arteryMapTransform();
+}
+
+function arteryResetView() {
+  _mapScale = 1; _mapX = 0; _mapY = 0;
+  arteryMapTransform();
+}
+
+function initArteryPanZoom() {
+  const vp = document.getElementById('artery-map-viewport');
+  if (!vp) return;
+
+  // Mouse drag
+  vp.addEventListener('mousedown', e => {
+    if (e.target.closest('g')) return; // don't drag when clicking a node
+    _mapDragging = true; _mapLastX = e.clientX; _mapLastY = e.clientY;
+    vp.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!_mapDragging) return;
+    _mapX += e.clientX - _mapLastX;
+    _mapY += e.clientY - _mapLastY;
+    _mapLastX = e.clientX; _mapLastY = e.clientY;
+    arteryMapTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    _mapDragging = false;
+    const vp = document.getElementById('artery-map-viewport');
+    if (vp) vp.style.cursor = 'grab';
+  });
+
+  // Touch drag
+  let _touchLast = null;
+  vp.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      _touchLast = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, { passive: true });
+  vp.addEventListener('touchmove', e => {
+    if (e.touches.length === 1 && _touchLast) {
+      _mapX += e.touches[0].clientX - _touchLast.x;
+      _mapY += e.touches[0].clientY - _touchLast.y;
+      _touchLast = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      arteryMapTransform();
+    }
+  }, { passive: true });
+  vp.addEventListener('touchend', () => { _touchLast = null; });
+
+  // Scroll wheel zoom
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    arteryZoom(e.deltaY < 0 ? 1.1 : 0.9);
+  }, { passive: false });
+
+  vp.style.cursor = 'grab';
+}
+
 // ── ARTERIAL PATHWAYS ─────────────────────────────────────────────────────────
 
 const ARTERY_TREE = {
@@ -2974,7 +3052,7 @@ function toggleArteryMap() {
   const wrap = document.getElementById('artery-mindmap-wrap');
   arteryMapVisible = !arteryMapVisible;
   wrap.style.display = arteryMapVisible ? 'block' : 'none';
-  if (arteryMapVisible) renderArteryMindMap();
+  if (arteryMapVisible) { arteryResetView(); renderArteryMindMap(); setTimeout(initArteryPanZoom, 50); }
   document.querySelector('[onclick="toggleArteryMap()"]').textContent
     = arteryMapVisible ? '✕ Hide full map' : '🗺 Show full map';
 }

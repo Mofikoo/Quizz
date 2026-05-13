@@ -2683,21 +2683,39 @@ select { cursor: pointer; }
 .artery-nav { padding-top: .5rem; }
 
 /* ── Mind map ── */
-.artery-mindmap-wrap {
-  margin-top: 1rem;
+/* Generated tree — scrolls horizontally */
+.artery-mindmap-scroll {
   overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: 1rem;
+  margin-top: 1rem;
 }
 .artery-mindmap {
   display: block;
-  min-width: 100%;
 }
 .artery-mindmap svg {
   display: block;
   overflow: visible;
+}
+
+/* Reference image — full width, no scroll */
+.artery-ref-img-wrap {
+  margin-top: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  overflow: hidden;
+}
+.artery-ref-label {
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 10px;
 }
 
 /* ── Mind map — SVG fan layout ── */
@@ -2740,4 +2758,56 @@ select { cursor: pointer; }
 .artery-map-btn:hover {
   background: #c0392b;
   transform: translateY(-1px);
+}
+
+/* ── Artery map pan/zoom viewport ───────────────────────────────── */
+.artery-map-viewport {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  height: 520px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.artery-map-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: top left;
+  padding: 1rem;
+  will-change: transform;
+}
+
+/* Controls overlay */
+.artery-map-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+}
+.artery-ctrl-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-mid);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, border-color .12s;
+  line-height: 1;
+}
+.artery-ctrl-btn:hover {
+  background: #e74c3c22;
+  border-color: #e74c3c88;
+  color: #e74c3c;
 }
