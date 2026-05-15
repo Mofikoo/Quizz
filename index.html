@@ -23,7 +23,8 @@
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
       <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
-      <button class="nav-btn" data-panel="bones"  onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">40</span></button>
+      <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge">58</span></button>
+      <button class="nav-btn" data-panel="bones"  onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
       <button class="nav-btn" data-panel="artery" onclick="switchPanel('artery')">Arteries</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
     </nav>
@@ -229,6 +230,20 @@
       <div class="quiz-section-label" style="margin-top:0">Muscle quizzes</div>
 
       <div class="quiz-section-label" style="margin-top:1.5rem">Bone quizzes</div>
+
+      <div class="quiz-section-label" style="margin-top:1.5rem">Ligament quizzes</div>
+      <div class="quiz-launchers" style="margin-bottom:1.5rem">
+        <div class="quiz-launcher-card" style="border-color:#60aa7888" onclick="switchPanel('ligs-recall')">
+          <div class="ql-icon">&#128302;</div>
+          <div class="ql-body"><div class="ql-title">Recall - Ligament names</div><div class="ql-sub">Name every ligament from memory, grouped by region.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" style="border-color:#60aa7888" onclick="switchPanel('ligs-mcq')">
+          <div class="ql-icon">&#9673;</div>
+          <div class="ql-body"><div class="ql-title">MCQ - Ligament features</div><div class="ql-sub">Given origin, insertion or function, identify the correct ligament.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+      </div>
       <div class="quiz-launchers" style="margin-bottom:1.5rem">
         <div class="quiz-launcher-card quiz-launcher-card--bones" onclick="switchPanel('bones-recall')">
           <div class="ql-icon">&#128302;</div>
@@ -498,6 +513,7 @@
       <div style="display:flex;gap:6px;flex-shrink:0;">
         <button class="btn btn-sm cards-type-btn active" id="cards-type-muscle" onclick="setCardsType('muscle')">Muscles</button>
         <button class="btn btn-sm cards-type-btn" id="cards-type-bone" onclick="setCardsType('bone')">Bones</button>
+        <button class="btn btn-sm cards-type-btn" id="cards-type-lig" onclick="setCardsType('lig')">Ligaments</button>
       </div>
       <div class="cards-search-wrap">
         <input type="text" id="cards-search" placeholder="Search muscle..."
@@ -1183,6 +1199,117 @@
     </div>
   </div>
 
+  <!-- ══ LIGAMENTS PANEL ══ -->
+  <div class="panel" id="panel-ligaments">
+    <div class="page-title">
+      <h1>Ligaments</h1>
+      <p>Articular ligaments — origin, insertion, function and clinical notes.</p>
+    </div>
+    <div class="cards-toolbar" style="margin-bottom:1rem;">
+      <div class="cards-search-wrap">
+        <input type="text" id="ligs-search" placeholder="Search ligament..." autocomplete="off" oninput="renderLigsList()" />
+      </div>
+      <div class="select-wrap" style="flex:1;max-width:200px">
+        <select id="ligs-region-filter" onchange="renderLigsList()">
+          <option value="">All regions</option>
+        </select>
+      </div>
+    </div>
+    <div id="ligs-list" class="bones-list"></div>
+    <div class="bones-detail-overlay" id="ligs-detail-overlay" style="display:none" onclick="closeLigDetail()">
+      <div class="bones-detail-card" onclick="event.stopPropagation()">
+        <button class="bones-detail-close" onclick="closeLigDetail()">&#10005;</button>
+        <div id="ligs-detail-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGAMENTS RECALL -->
+  <div class="panel" id="panel-ligs-recall">
+    <div id="lrecall-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+      <div class="page-title"><h1>Ligament Recall</h1><p>Name every ligament from memory.</p></div>
+      <div class="card">
+        <div class="card-header"><div class="card-header-icon">&#9881;</div><h2>Settings</h2></div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="lrecallSelectAll()">All</button><button class="btn btn-sm" onclick="lrecallSelectNone()">None</button></div>
+          </div>
+          <div class="recall-region-checks" id="lrecall-region-checks"></div>
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="startLigsRecall()">Start</button>
+      </div>
+    </div>
+    <div id="lrecall-session" style="display:none">
+      <div class="anat-session-header">
+        <div class="anat-progress-label"><span id="lrecall-found">0</span> / <span id="lrecall-total">0</span></div>
+        <div class="quiz-progress" style="flex:1;margin:0;"><div class="quiz-progress-fill" id="lrecall-progress" style="width:0%"></div></div>
+        <button class="btn btn-ghost btn-sm" onclick="stopLigsRecall()">Stop</button>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <input type="text" id="lrecall-input" placeholder="Type a ligament name..." autocomplete="off" oninput="onLrecallInput()" style="width:100%;padding:10px 14px;border:1.5px solid var(--border-mid);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;box-sizing:border-box;"/>
+        <div id="lrecall-feedback" style="height:20px;font-size:12px;margin-top:4px;"></div>
+      </div>
+      <div id="lrecall-grid"></div>
+      <div style="margin-top:1rem;"><button class="btn btn-ghost btn-sm" onclick="giveUpLigsRecall()">Give up - show all</button></div>
+    </div>
+  </div>
+
+  <!-- LIGAMENTS MCQ -->
+  <div class="panel" id="panel-ligs-mcq">
+    <div id="lmcq-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+      <div class="page-title"><h1>MCQ - Ligament Features</h1><p>Identify the ligament from its features.</p></div>
+      <div class="card">
+        <div class="card-header"><div class="card-header-icon">&#9881;</div><h2>Settings</h2></div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="lmcqSelectAll()">All</button><button class="btn btn-sm" onclick="lmcqSelectNone()">None</button></div>
+          </div>
+          <div class="recall-region-checks" id="lmcq-region-checks"></div>
+        </div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="display:block;margin-bottom:8px;">Feature type</label>
+          <div class="anat-field-picks" id="lmcq-feature-picks">
+            <label class="recall-region-chip checked"><input type="checkbox" value="origin" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Origin</span></label>
+            <label class="recall-region-chip checked"><input type="checkbox" value="insertion" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Insertion</span></label>
+            <label class="recall-region-chip checked"><input type="checkbox" value="function" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Function</span></label>
+            <label class="recall-region-chip"><input type="checkbox" value="notes" onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Clinical</span></label>
+          </div>
+        </div>
+        <div class="quiz-options-row">
+          <div class="form-field"><label class="form-label">Questions</label><div class="select-wrap"><select id="lmcq-count"><option value="10" selected>10</option><option value="20">20</option><option value="all">All</option></select></div></div>
+          <div class="form-field"><label class="form-label">Order</label><div class="select-wrap"><select id="lmcq-order"><option value="random">Random</option><option value="alpha">Alphabetical</option></select></div></div>
+        </div>
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);"><button class="btn btn-primary btn-full btn-lg" onclick="startLigsMCQ()">Start</button></div>
+      </div>
+    </div>
+    <div id="lmcq-session" style="display:none">
+      <div class="anat-session-header">
+        <div class="anat-progress-label"><span id="lmcq-q-num">1</span> / <span id="lmcq-q-total">10</span></div>
+        <div class="quiz-progress" style="flex:1;margin:0;"><div class="quiz-progress-fill" id="lmcq-progress" style="width:0%"></div></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--ok);font-weight:500;" id="lmcq-ok">0 &#10003;</span>
+          <span style="font-size:12px;color:var(--err);font-weight:500;" id="lmcq-err">0 &#10007;</span>
+          <button class="btn btn-ghost btn-sm" onclick="stopLigsMCQ()">Stop</button>
+        </div>
+      </div>
+      <div class="anat-card" id="lmcq-card"></div>
+    </div>
+    <div id="lmcq-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="lmcq-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="lmcq-end-title">Done!</div>
+      <div class="quiz-end-sub" id="lmcq-end-sub"></div>
+      <div class="quiz-end-scores" id="lmcq-end-scores"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startLigsMCQ()">Play again</button>
+        <button class="btn" onclick="showLMCQSetup()">Settings</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -1236,6 +1363,374 @@
 <script>
 'use strict';
 
+
+
+
+// ── LIGAMENTS RECALL ──────────────────────────────────────────────────────────
+let lrecallPool = [], lrecallFound = new Set(), lrecallIndex = [];
+
+function initLigsRecall() {
+  const regions = [...new Set(ligsData.map(l => l.region))].sort();
+  const container = document.getElementById('lrecall-region-checks');
+  if (!container || container.children.length > 0) return;
+  regions.forEach(r => {
+    const color = lrc(r), count = ligsData.filter(l => l.region === r).length;
+    const lbl = document.createElement('label');
+    lbl.className = 'recall-region-chip checked';
+    lbl.innerHTML = '<input type="checkbox" value="' + r + '" checked onchange="this.closest(&quot;label&quot;).classList.toggle(&quot;checked&quot;,this.checked)" style="display:none"><span class="region-dot" style="background:' + color + '"></span><span>' + esc(r) + '</span><span class="recall-chip-count">' + count + '</span>';
+    container.appendChild(lbl);
+  });
+}
+function lrecallSelectAll()  { document.querySelectorAll('#lrecall-region-checks input').forEach(cb => { cb.checked=true;  cb.closest('label').classList.add('checked'); }); }
+function lrecallSelectNone() { document.querySelectorAll('#lrecall-region-checks input').forEach(cb => { cb.checked=false; cb.closest('label').classList.remove('checked'); }); }
+
+function startLigsRecall() {
+  const sel = [...document.querySelectorAll('#lrecall-region-checks input:checked')].map(c => c.value);
+  if (!sel.length) { toast('Select at least one region!'); return; }
+  lrecallPool  = ligsData.filter(l => sel.includes(l.region));
+  lrecallFound = new Set();
+  lrecallIndex = lrecallPool.map((l, i) => ({
+    lig: l, idx: i,
+    canonical: l.name.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(),
+    abbrev: l.name.match(/\(([^)]+)\)/)?.[1]?.toLowerCase() || null
+  }));
+  document.getElementById('lrecall-setup').style.display   = 'none';
+  document.getElementById('lrecall-session').style.display = 'block';
+  document.getElementById('lrecall-total').textContent     = lrecallPool.length;
+  document.getElementById('lrecall-found').textContent     = '0';
+  document.getElementById('lrecall-progress').style.width  = '0%';
+  buildLrecallGrid();
+  setTimeout(() => document.getElementById('lrecall-input').focus(), 50);
+}
+
+function buildLrecallGrid() {
+  const regions = [...new Set(lrecallPool.map(l => l.region))].sort();
+  document.getElementById('lrecall-grid').innerHTML = regions.map(r => {
+    const ligs = lrecallPool.filter(l => l.region === r);
+    const color = lrc(r);
+    const cells = ligs.map(l => {
+      const idx = lrecallPool.indexOf(l);
+      return '<td class="recall-cell" id="lrcell-' + idx + '" style="min-width:140px"><span class="recall-cell-blank"><span class="recall-cell-len">' + l.name.length + '</span></span><span class="recall-cell-name" style="display:none;font-size:10px;padding:2px 4px">' + esc(l.name) + '</span></td>';
+    }).join('');
+    return '<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:' + color + ';text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px"><span class="region-dot" style="background:' + color + '"></span>' + esc(r) + ' <span style="opacity:.5;color:var(--text3)">' + ligs.length + '</span></div><table class="recall-table"><tbody><tr>' + cells + '</tr></tbody></table></div>';
+  }).join('');
+}
+
+function onLrecallInput() {
+  const inp = document.getElementById('lrecall-input');
+  const answer = inp.value.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  if (answer.length < 2) return;
+  let matched = null;
+  for (const entry of lrecallIndex) {
+    if (lrecallFound.has(entry.lig.id)) continue;
+    if (answer === entry.canonical) { matched = entry; break; }
+    if (entry.abbrev && answer === entry.abbrev) { matched = entry; break; }
+    if (answer.length >= entry.canonical.length && damerauLev(answer, entry.canonical) <= 1) { matched = entry; break; }
+  }
+  if (matched) {
+    lrecallFound.add(matched.lig.id);
+    inp.value = '';
+    const cell = document.getElementById('lrcell-' + matched.idx);
+    if (cell) { cell.classList.add('found'); cell.querySelector('.recall-cell-blank').style.display='none'; cell.querySelector('.recall-cell-name').style.display='block'; }
+    const count = lrecallFound.size;
+    document.getElementById('lrecall-found').textContent    = count;
+    document.getElementById('lrecall-progress').style.width = (count / lrecallPool.length * 100) + '%';
+    const fb = document.getElementById('lrecall-feedback');
+    if (fb) { fb.textContent = '\u2713 ' + matched.lig.name; fb.style.color = 'var(--ok)'; }
+    if (count === lrecallPool.length) setTimeout(() => toast('All ligaments found!'), 300);
+  }
+}
+
+function giveUpLigsRecall() {
+  lrecallIndex.forEach(e => {
+    if (lrecallFound.has(e.lig.id)) return;
+    const cell = document.getElementById('lrcell-' + e.idx);
+    if (cell) { cell.classList.add('missed'); cell.querySelector('.recall-cell-blank').style.display='none'; cell.querySelector('.recall-cell-name').style.display='block'; }
+  });
+}
+function stopLigsRecall() {
+  document.getElementById('lrecall-session').style.display = 'none';
+  document.getElementById('lrecall-setup').style.display   = 'block';
+}
+
+// ── LIGAMENTS MCQ ─────────────────────────────────────────────────────────────
+let lmcqPool = [], lmcqIdx = 0, lmcqCorrect = 0, lmcqWrong = 0, lmcqAnswered = false;
+const LMCQ_LABELS = { origin:'Origin', insertion:'Insertion', function:'Function', notes:'Clinical note', type:'Type' };
+const LMCQ_ICONS  = { origin:'\uD83D\uDCCD', insertion:'\uD83C\uDFAF', function:'\u26A1', notes:'\uD83E\uDE7A', type:'\uD83D\uDD37' };
+
+function initLigsMCQ() {
+  const regions = [...new Set(ligsData.map(l => l.region))].sort();
+  const container = document.getElementById('lmcq-region-checks');
+  if (!container || container.children.length > 0) return;
+  regions.forEach(r => {
+    const color = lrc(r), count = ligsData.filter(l => l.region === r).length;
+    const lbl = document.createElement('label');
+    lbl.className = 'recall-region-chip checked';
+    lbl.innerHTML = '<input type="checkbox" value="' + r + '" checked onchange="this.closest(&quot;label&quot;).classList.toggle(&quot;checked&quot;,this.checked)" style="display:none"><span class="region-dot" style="background:' + color + '"></span><span>' + esc(r) + '</span><span class="recall-chip-count">' + count + '</span>';
+    container.appendChild(lbl);
+  });
+}
+function lmcqSelectAll()  { document.querySelectorAll('#lmcq-region-checks input').forEach(cb => { cb.checked=true;  cb.closest('label').classList.add('checked'); }); }
+function lmcqSelectNone() { document.querySelectorAll('#lmcq-region-checks input').forEach(cb => { cb.checked=false; cb.closest('label').classList.remove('checked'); }); }
+function getLmcqFeatures() { return [...document.querySelectorAll('#lmcq-feature-picks input:checked')].map(cb => cb.value); }
+
+function startLigsMCQ() {
+  const selRegions = [...document.querySelectorAll('#lmcq-region-checks input:checked')].map(cb => cb.value);
+  const selFeats   = getLmcqFeatures();
+  const countSel   = document.getElementById('lmcq-count').value;
+  const order      = document.getElementById('lmcq-order').value;
+  if (!selRegions.length) { toast('Select at least one region!'); return; }
+  if (!selFeats.length)   { toast('Select at least one feature!'); return; }
+  let pool = ligsData.filter(l => selRegions.includes(l.region) && selFeats.some(f => l.features[f]));
+  if (pool.length < 4) { toast('Need at least 4 ligaments with data!'); return; }
+  if (order === 'random') shuffle(pool); else pool.sort((a,b) => a.name.localeCompare(b.name));
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  lmcqPool = pool.slice(0, count);
+  lmcqIdx = 0; lmcqCorrect = 0; lmcqWrong = 0; lmcqAnswered = false;
+  document.getElementById('lmcq-setup').style.display   = 'none';
+  document.getElementById('lmcq-end').style.display     = 'none';
+  document.getElementById('lmcq-session').style.display = 'block';
+  document.getElementById('lmcq-q-total').textContent   = lmcqPool.length;
+  renderLigsMCQ();
+}
+
+function renderLigsMCQ() {
+  if (lmcqIdx >= lmcqPool.length) { showLMCQEnd(); return; }
+  lmcqAnswered = false;
+  const lig   = lmcqPool[lmcqIdx];
+  const color = lrc(lig.region);
+  const feats = getLmcqFeatures().filter(f => lig.features[f]);
+  if (!feats.length) { lmcqIdx++; renderLigsMCQ(); return; }
+  const feat   = feats[Math.floor(Math.random() * feats.length)];
+  const val    = lig.features[feat];
+  const valStr = Array.isArray(val) ? val.slice(0,2).join(' / ') : String(val);
+  const label  = LMCQ_LABELS[feat] || feat;
+  const icon   = LMCQ_ICONS[feat]  || '\u2022';
+
+  document.getElementById('lmcq-q-num').textContent    = lmcqIdx + 1;
+  document.getElementById('lmcq-progress').style.width = (lmcqIdx / lmcqPool.length * 100) + '%';
+  document.getElementById('lmcq-ok').textContent       = lmcqCorrect + ' \u2713';
+  document.getElementById('lmcq-err').textContent      = lmcqWrong  + ' \u2717';
+
+  const same   = ligsData.filter(l => l.id !== lig.id && l.region === lig.region);
+  const others = ligsData.filter(l => l.id !== lig.id && l.region !== lig.region);
+  shuffle(same); shuffle(others);
+  const options = shuffle([{name:lig.name,correct:true},...[...same,...others].slice(0,3).map(d=>({name:d.name,correct:false}))]);
+
+  document.getElementById('lmcq-card').innerHTML =
+    '<div class="anat-muscle-header"><div class="fc-region-bar" style="background:' + color + ';border-radius:var(--r-lg) var(--r-lg) 0 0;margin:-1px -1px 0;"></div>'
+    + '<div class="anat-muscle-inner"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(lig.region) + '</span>'
+    + '<h2 class="mcqr-question-title">Which ligament has this ' + icon + ' <strong>' + esc(label.toLowerCase()) + '</strong>?</h2>'
+    + '</div></div>'
+    + '<div class="mcqr-clues"><div class="mcqr-clue-row"><div class="mcqr-clue-label">' + icon + ' ' + esc(label) + '</div>'
+    + '<div class="mcqr-clue-val">' + esc(valStr.length > 220 ? valStr.slice(0,218) + '...' : valStr) + '</div></div></div>'
+    + '<div class="mcq-options-grid" id="lmcq-opts">'
+    + options.map((o,i) => '<button class="mcq-anat-opt" id="lmcqopt-' + i + '" data-correct="' + o.correct + '" onclick="checkLigsMCQ(' + i + ',' + o.correct + ')"><span class="mcq-opt-letter">' + 'ABCD'[i] + '</span><span class="mcq-opt-text" style="font-size:12px">' + esc(o.name) + '</span></button>').join('')
+    + '</div><div class="mcq-anat-feedback" id="lmcq-feedback" style="display:none"></div>';
+}
+
+function checkLigsMCQ(idx, isCorrect) {
+  if (lmcqAnswered) return;
+  lmcqAnswered = true;
+  const opts = document.querySelectorAll('#lmcq-opts .mcq-anat-opt');
+  opts.forEach(b => b.disabled = true);
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) { opts.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); }); lmcqWrong++; }
+  else lmcqCorrect++;
+  document.getElementById('lmcq-ok').textContent  = lmcqCorrect + ' \u2713';
+  document.getElementById('lmcq-err').textContent = lmcqWrong  + ' \u2717';
+  const lig = lmcqPool[lmcqIdx];
+  const fb = document.getElementById('lmcq-feedback');
+  fb.style.display = 'block';
+  fb.innerHTML = '<div class="mcq-fb-row"><span class="mcq-fb-icon ' + (isCorrect?'ok':'err') + '">' + (isCorrect?'\u2713':'\u2717') + '</span><span class="mcq-fb-text">' + (isCorrect ? 'Correct!' : 'Wrong - it was <strong>' + esc(lig.name) + '</strong>') + '</span><button class="btn btn-primary" style="margin-left:auto" onclick="nextLigsMCQ()">' + (lmcqIdx+1 < lmcqPool.length ? 'Next \u2192' : 'Results') + '</button></div>';
+  if (isCorrect) setTimeout(() => { if (lmcqAnswered) nextLigsMCQ(); }, 1200);
+}
+function nextLigsMCQ() { lmcqIdx++; renderLigsMCQ(); }
+
+function showLMCQEnd() {
+  document.getElementById('lmcq-session').style.display = 'none';
+  document.getElementById('lmcq-end').style.display     = 'flex';
+  const pct = lmcqPool.length ? Math.round(lmcqCorrect/lmcqPool.length*100) : 0;
+  document.getElementById('lmcq-end-emoji').textContent = pct>=80?'\uD83C\uDF89':pct>=60?'\uD83D\uDCAA':'\uD83D\uDCDA';
+  document.getElementById('lmcq-end-title').textContent = pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practicing!';
+  document.getElementById('lmcq-end-sub').textContent   = pct + '% correct over ' + lmcqPool.length + ' questions';
+  document.getElementById('lmcq-end-scores').innerHTML  = '<div class="end-score-box ok"><div class="val">' + lmcqCorrect + '</div><div class="lbl">Correct</div></div><div class="end-score-box err"><div class="val">' + lmcqWrong + '</div><div class="lbl">Wrong</div></div><div class="end-score-box"><div class="val">' + pct + '%</div><div class="lbl">Rate</div></div>';
+}
+function showLMCQSetup() {
+  document.getElementById('lmcq-session').style.display = 'none';
+  document.getElementById('lmcq-end').style.display     = 'none';
+  document.getElementById('lmcq-setup').style.display   = 'block';
+}
+function stopLigsMCQ() {
+  showModal('Stop?', '<p>Progress will be lost.</p>', [
+    { label: 'Stop',     cls: 'btn btn-danger',  action: () => { hideModal(); showLMCQSetup(); } },
+    { label: 'Continue', cls: 'btn btn-primary',  action: hideModal },
+  ]);
+}
+
+// ── LIGAMENTS CARDS ───────────────────────────────────────────────────────────
+function initLigCards() {
+  const rfEl = document.getElementById('cards-region-filter');
+  const ligRegions = [...new Set(ligsData.map(l => l.region))].sort();
+  rfEl.innerHTML = '<option value="">All regions</option>';
+  ligRegions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rfEl.appendChild(o); });
+  const fReg = rfEl.value;
+  let pool = ligsData.filter(l => !fReg || l.region === fReg);
+  const order = document.getElementById('cards-order').value;
+  if (order === 'random') shuffle(pool); else pool.sort((a,b) => a.name.localeCompare(b.name));
+  cardDeck = pool; cardIdx = 0; cardFlipped = false;
+  renderCard();
+  const counter = document.getElementById('cards-counter');
+  if (counter) counter.textContent = '1 / ' + cardDeck.length;
+}
+
+function renderLigCard() {
+  const stage = document.getElementById('cards-stage');
+  if (!cardDeck.length) { stage.innerHTML = '<p>No cards.</p>'; return; }
+  const l = cardDeck[cardIdx];
+  const color = lrc(l.region);
+  const counter = document.getElementById('cards-counter');
+  if (counter) counter.textContent = (cardIdx+1) + ' / ' + cardDeck.length;
+
+  const FEAT_LABELS = { origin:'Origin', insertion:'Insertion', function:'Function', type:'Type', notes:'Clinical notes', components:'Components' };
+  const FEAT_ICONS  = { origin:'\uD83D\uDCCD', insertion:'\uD83C\uDFAF', function:'\u26A1', type:'\uD83D\uDD37', notes:'\uD83E\uDE7A', components:'\uD83D\uDD37' };
+  const ORDER = ['origin','insertion','function','type','components','notes'];
+
+  const featureRows = ORDER.filter(k => l.features[k]).map(k => {
+    const lbl  = FEAT_LABELS[k] || k;
+    const ico  = FEAT_ICONS[k]  || '\u2022';
+    const val  = l.features[k];
+    const content = Array.isArray(val)
+      ? '<ul class="bone-feature-list" style="margin:2px 0 0 20px">' + val.map(v => '<li>' + esc(v) + '</li>').join('') + '</ul>'
+      : '<p class="bone-feature-text" style="padding-left:20px;margin:2px 0">' + esc(String(val)) + '</p>';
+    return '<div class="fc-field" style="margin-bottom:.75rem"><div class="fc-field-head"><span class="fc-field-icon">' + ico + '</span><span class="fc-field-label">' + esc(lbl) + '</span></div>' + content + '</div>';
+  }).join('');
+
+  stage.innerHTML =
+    '<div class="flashcard-wrap"><div class="flashcard' + (cardFlipped ? ' flipped' : '') + '" id="flashcard" onclick="flipCard()">'
+    + '<div class="flashcard-front"><div class="fc-region-bar" style="background:' + color + '"></div>'
+    + '<div class="fc-front-body"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span>'
+    + '<h2 class="fc-muscle-name" style="font-size:clamp(16px,2.5vw,22px)">' + esc(l.name) + '</h2>'
+    + '<span class="fc-depth-badge">' + esc(l.joint) + '</span>'
+    + '<p style="color:var(--text3);font-size:12px;margin-top:1rem">Tap to reveal details</p>'
+    + '</div></div>'
+    + '<div class="flashcard-back"><div class="fc-back-header"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span><h3 class="fc-back-name">' + esc(l.name) + '</h3></div>'
+    + '<div class="fc-back-fields">' + featureRows + '</div>'
+    + '</div></div></div>';
+}
+
+// ── LIGAMENTS PANEL ───────────────────────────────────────────────────────────
+
+const LIG_REGION_COLORS = {
+  'Shoulder':'#5080c0','Elbow':'#4098c0','Wrist':'#38a0b0','Hand':'#30b8c0',
+  'Hip':'#8060c0','Knee':'#6090a8','Ankle':'#60aa78','Foot':'#88a048',
+  'Head':'#d08070','Thorax':'#b06898','Abdomen':'#c88040',
+  'Pelvis':'#8060c0','Lumbar \u2014 Pelvis':'#7B9E7B',
+  'Thorax / Vertebral Column':'#7B8E9E',
+};
+function lrc(region) { return LIG_REGION_COLORS[region] || '#8888aa'; }
+
+function initLigaments() {
+  const regions = [...new Set(ligsData.map(l => l.region))].sort();
+  const sel = document.getElementById('ligs-region-filter');
+  if (sel && sel.options.length === 1) {
+    regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; sel.appendChild(o); });
+  }
+  renderLigsList();
+}
+
+function renderLigsList() {
+  const q      = (document.getElementById('ligs-search')?.value || '').toLowerCase().trim();
+  const region = document.getElementById('ligs-region-filter')?.value || '';
+  const list   = document.getElementById('ligs-list');
+  if (!list) return;
+
+  let filtered = ligsData.filter(l => {
+    if (region && l.region !== region) return false;
+    if (q && !l.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (!filtered.length) { list.innerHTML = '<p style="color:var(--text3);font-style:italic;padding:1rem;">No ligaments found.</p>'; return; }
+
+  const groups = {};
+  filtered.forEach(l => { if (!groups[l.region]) groups[l.region] = []; groups[l.region].push(l); });
+
+  list.innerHTML = Object.keys(groups).sort().map(r => {
+    const color = lrc(r);
+    const items = groups[r].map(l => {
+      const div = document.createElement('div');
+      div.className = 'bone-card';
+      div.dataset.id = l.id;
+      div.innerHTML =
+        '<div class="bone-card-bar" style="background:' + color + '"></div>'
+        + '<div class="bone-card-body">'
+        + '<div class="bone-card-name">' + esc(l.name) + '</div>'
+        + '<div class="bone-card-meta">'
+        + '<span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(l.joint) + '</span>'
+        + '</div></div>'
+        + '<div class="bone-card-arrow">\u203a</div>';
+      div.addEventListener('click', () => openLigDetail(l.id));
+      return div.outerHTML;
+    }).join('');
+    return '<div class="bones-region-group">'
+      + '<div class="bones-region-header"><span class="region-dot" style="background:' + color + '"></span>' + esc(r) + '</div>'
+      + '<div class="bones-region-items">' + items + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openLigDetail(id) {
+  const l = ligsData.find(x => x.id === id);
+  if (!l) return;
+  const color = lrc(l.region);
+  const f = l.features || {};
+
+  const FEAT_LABELS = {
+    origin:'Origin', insertion:'Insertion', function:'Function', type:'Type',
+    notes:'Clinical notes', components:'Components', special:'Special'
+  };
+  const FEAT_ICONS = {
+    origin:'\uD83D\uDCCD', insertion:'\uD83C\uDFAF', function:'\u26A1', type:'\uD83D\uDD37',
+    notes:'\uD83E\uDE7A', components:'\uD83D\uDD37', special:'\u2B50'
+  };
+  // Order of display
+  const ORDER = ['origin','insertion','function','type','components','notes','special'];
+  const entries = [
+    ...ORDER.filter(k => f[k]).map(k => [k, f[k]]),
+    ...Object.entries(f).filter(([k]) => !ORDER.includes(k))
+  ];
+
+  const featureHTML = entries.map(([key, val]) => {
+    const label = FEAT_LABELS[key] || key.replace(/_/g,' ');
+    const icon  = FEAT_ICONS[key] || '\u2022';
+    const content = Array.isArray(val)
+      ? '<ul class="bone-feature-list">' + val.map(v => '<li>' + esc(v) + '</li>').join('') + '</ul>'
+      : '<p class="bone-feature-text">' + esc(val) + '</p>';
+    return '<div class="bone-feature-section">'
+      + '<div class="bone-feature-header"><span class="bone-feature-icon">' + icon + '</span><span class="bone-feature-label">' + esc(label) + '</span></div>'
+      + content + '</div>';
+  }).join('');
+
+  document.getElementById('ligs-detail-content').innerHTML =
+    '<div class="bone-detail-top" style="border-top:4px solid ' + color + '">'
+    + '<div class="bone-detail-region" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</div>'
+    + '<h2 class="bone-detail-name">' + esc(l.name) + '</h2>'
+    + '<span class="badge" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(l.joint) + '</span>'
+    + '</div>'
+    + '<div class="bone-features-grid">' + featureHTML + '</div>';
+
+  document.getElementById('ligs-detail-overlay').style.display = 'flex';
+}
+
+function closeLigDetail() {
+  document.getElementById('ligs-detail-overlay').style.display = 'none';
+}
+
+// ── LIGAMENTS DATA ────────────────────────────────────────────────────────────
+const BUNDLED_LIGAMENTS = [{"id":"lig_coracoacromial","name":"Coracoacromial Ligament","region":"Shoulder","joint":"Coracoacromial arch","features":{"origin":"Lateral border of coracoid process","insertion":"Anterior edge and tip of acromion","function":"Forms the coracoacromial arch; prevents superior dislocation of the humeral head; protects the rotator cuff","type":"Intrinsic — connects two processes of the same bone (scapula)","notes":"The only ligament connecting two parts of the same bone; forms a roof over the rotator cuff. Thickening contributes to subacromial impingement syndrome."}},{"id":"lig_superior_transverse_scapular","name":"Superior Transverse Scapular Ligament","region":"Shoulder","joint":"Scapular notch","features":{"origin":"Medial border of suprascapular notch","insertion":"Lateral border of suprascapular notch (converts notch to foramen)","function":"Converts the suprascapular notch into a foramen; the suprascapular nerve passes under it, the suprascapular artery passes over it","type":"Accessory","notes":"Mnemonic: Army under the bridge, Navy over the bridge (nerve under, artery over). Can ossify and cause suprascapular nerve entrapment."}},{"id":"lig_costoclavicular","name":"Costoclavicular Ligament","region":"Shoulder","joint":"Sternoclavicular joint","features":{"origin":"Upper surface of 1st rib and its costal cartilage","insertion":"Inferior surface of medial clavicle (costal tuberosity)","function":"Primary stabilizer of the sternoclavicular joint; limits elevation, protraction, and retraction of the clavicle; anchors the clavicle to the first rib","type":"Extrinsic capsular","notes":"Also called the rhomboid ligament. Most important ligament of the sternoclavicular joint — stronger than the joint capsule itself."}},{"id":"lig_interclavicular","name":"Interclavicular Ligament","region":"Shoulder","joint":"Sternoclavicular joint","features":{"origin":"Superior surface of medial end of one clavicle","insertion":"Superior surface of medial end of opposite clavicle (passing over jugular notch)","function":"Stabilizes both sternoclavicular joints simultaneously; resists downward displacement of the clavicle","type":"Extrinsic","notes":"Connects both clavicles across the jugular notch of the manubrium; acts like a hammock supporting the shoulder girdle."}},{"id":"lig_acromioclavicular","name":"Acromioclavicular Ligament","region":"Shoulder","joint":"Acromioclavicular joint","features":{"origin":"Acromial end of clavicle (superior and inferior surfaces)","insertion":"Acromion (adjacent surface)","function":"Maintains apposition of the AC joint; resists horizontal (anteroposterior) displacement","type":"Intrinsic capsular","notes":"Torn first in AC joint separations (Grade I–II). The coracoclavicular ligaments (trapezoid + conoid) are torn in Grade III+ separations."}},{"id":"lig_trapezoid","name":"Trapezoid Ligament","region":"Shoulder","joint":"Acromioclavicular joint (coracoclavicular)","features":{"origin":"Superior surface of coracoid process (anterior-lateral part)","insertion":"Trapezoid line on inferior surface of clavicle","function":"Anterior part of coracoclavicular ligament; resists medial displacement of the clavicle; transmits compression forces from upper limb to clavicle","type":"Coracoclavicular (extrinsic)","notes":"Part of the coracoclavicular complex. Quadrilateral in shape. Key in suspending the scapula from the clavicle."}},{"id":"lig_conoid","name":"Conoid Ligament","region":"Shoulder","joint":"Acromioclavicular joint (coracoclavicular)","features":{"origin":"Knuckle (root) of coracoid process (posterior-medial)","insertion":"Conoid tubercle on inferior surface of clavicle","function":"Posterior part of coracoclavicular ligament; resists lateral displacement and upward rotation of the scapula; primary restraint against superior clavicle displacement","type":"Coracoclavicular (extrinsic)","notes":"Cone-shaped (hence 'conoid'). Together with trapezoid ligament forms the coracoclavicular ligament. Critical in AC joint Grade III separations."}},{"id":"lig_coracohumeral","name":"Coracohumeral Ligament","region":"Shoulder","joint":"Glenohumeral joint","features":{"origin":"Lateral border of the base of coracoid process","insertion":"Greater and lesser tubercles of the humerus (two bands bridging the bicipital groove)","function":"Reinforces the superior glenohumeral joint capsule; limits inferior translation and external rotation of the humerus; holds long head of biceps in groove","type":"Intrinsic capsular","notes":"Thickened in adhesive capsulitis (frozen shoulder), particularly the rotator interval portion. Bridges the intertubercular groove, creating a tunnel for the long head of biceps."}},{"id":"lig_annular_radius","name":"Annular Ligament (Radial Head)","region":"Elbow","joint":"Proximal radioulnar joint","features":{"origin":"Anterior margin of radial notch of ulna","insertion":"Posterior margin of radial notch of ulna (encircles the radial head)","function":"Holds the radial head against the ulna's radial notch; allows supination/pronation while preventing distal displacement of the radius","type":"Intrinsic","notes":"Forms a ring around the radial head. In children, the radial head can slip out inferiorly — 'nursemaid's elbow' (pulled elbow). Lined with cartilage where it contacts the radius."}},{"id":"lig_ulnar_collateral_elbow","name":"Ulnar Collateral Ligament (Elbow)","region":"Elbow","joint":"Humeroulnar joint","features":{"origin":"Medial epicondyle of humerus","insertion":"Medial aspect of coronoid process (anterior band) and olecranon (posterior band)","function":"Primary stabilizer against valgus stress at the elbow; 3 components: anterior band (strongest), posterior band, oblique (Cooper's) band","type":"Intrinsic capsular — medial","notes":"Most important ligament for elbow stability in throwing athletes. Frequently injured in overhead athletes (Tommy John surgery = UCL reconstruction). Anterior band is the primary stabilizer."}},{"id":"lig_radial_collateral_elbow","name":"Radial Collateral Ligament (Elbow)","region":"Elbow","joint":"Humeroradial joint","features":{"origin":"Lateral epicondyle of humerus","insertion":"Annular ligament and lateral ulna (supinator crest)","function":"Stabilizes the lateral elbow against varus stress; reinforces the lateral joint capsule","type":"Intrinsic capsular — lateral","notes":"Part of the lateral collateral ligament complex (with annular and lateral ulnar collateral ligaments). Lateral ulnar collateral ligament (LUCL) is critical for posterolateral rotatory instability."}},{"id":"lig_quadrate","name":"Quadrate Ligament","region":"Elbow","joint":"Proximal radioulnar joint","features":{"origin":"Distal margin of radial notch of ulna","insertion":"Medial surface of radial neck","function":"Reinforces the inferior part of the proximal radioulnar joint; limits supination and pronation at extremes of range","type":"Intrinsic","notes":"Small but important stabilizer of the proximal radioulnar joint; tightens at the extremes of forearm rotation."}},{"id":"lig_palmar_radiocarpal","name":"Palmar Radiocarpal Ligament","region":"Wrist","joint":"Radiocarpal joint","features":{"origin":"Anterior (palmar) margin of distal radius and radial styloid","insertion":"Proximal carpal row: scaphoid, lunate, triquetrum; also capitate (radiocapitate component)","function":"Primary palmar stabilizer of the wrist; resists dorsal displacement and ulnar translation of the carpus; stronger than dorsal counterpart","type":"Extrinsic palmar","notes":"Most important intrinsic wrist ligaments. The radioscaphocapitate (RSC) portion acts as a pivot for the proximal row. Injury leads to carpal instability."}},{"id":"lig_dorsal_radiocarpal","name":"Dorsal Radiocarpal Ligament","region":"Wrist","joint":"Radiocarpal joint","features":{"origin":"Dorsal margin of distal radius","insertion":"Triquetrum (primarily); also lunate and scaphoid","function":"Resists palmar displacement and radial translation of the carpus; tightens in wrist flexion","type":"Extrinsic dorsal","notes":"Thinner than palmar radiocarpal ligaments but important in limiting volar flexion and stabilizing the midcarpal joint during loaded grip."}},{"id":"lig_palmar_ulnocarpal","name":"Palmar Ulnocarpal Ligament","region":"Wrist","joint":"Ulnocarpal joint","features":{"origin":"Ulnar styloid process and distal ulna (via TFCC disc)","insertion":"Lunate and triquetrum","function":"Stabilizes the ulnar side of the wrist; resists supination and ulnar translation; part of the TFCC (triangular fibrocartilage complex)","type":"Extrinsic palmar","notes":"Part of the TFCC — triangular fibrocartilage complex. Central disc tears are the most common wrist ligament injury. Stabilizes the distal radioulnar joint (DRUJ)."}},{"id":"lig_radial_carpal_collateral","name":"Radial Carpal Collateral Ligament","region":"Wrist","joint":"Radiocarpal joint","features":{"origin":"Radial styloid process","insertion":"Scaphoid (radial surface) and trapezium","function":"Resists ulnar deviation; stabilizes the radial side of the wrist","type":"Extrinsic lateral","notes":"Works with the abductor pollicis longus tendon to stabilize the radial border of the wrist."}},{"id":"lig_pisohamate","name":"Pisohamate Ligament","region":"Wrist","joint":"Pisotriquetral joint","features":{"origin":"Pisiform bone (distal aspect)","insertion":"Hook of hamate","function":"Connects pisiform to hamate; transmits pull of flexor carpi ulnaris to hamate; forms medial wall of Guyon's canal","type":"Intrinsic","notes":"Together with the pisometacarpal ligament, the pisiform acts as a sesamoid bone within the FCU tendon. Guyon's canal (ulnar tunnel) is bounded medially by these ligaments."}},{"id":"lig_palmar_intercarpal","name":"Palmar Intercarpal Ligaments","region":"Wrist","joint":"Intercarpal joints","features":{"origin":"Palmar surfaces of carpal bones (proximal row and distal row)","insertion":"Adjacent carpal bones","function":"Bind carpal bones together on the palmar side; maintain carpal arch; the scapholunate and lunotriquetral ligaments are key components","type":"Intrinsic palmar","notes":"Scapholunate ligament (SL) tear is the most common intercarpal ligament injury — leads to dorsal intercalated segment instability (DISI). Lunotriquetral (LT) tear leads to VISI."}},{"id":"lig_dorsal_intercarpal","name":"Dorsal Intercarpal Ligaments","region":"Wrist","joint":"Intercarpal joints","features":{"origin":"Dorsal surface of triquetrum (dorsal intercarpal ligament) and scaphoid","insertion":"Scaphoid, lunate, triquetrum (interconnecting)","function":"Secondary stabilizers of the carpus; the dorsal intercarpal ligament (DIC) provides dorsal support to the proximal carpal row","type":"Intrinsic dorsal","notes":"The dorsal scapholunate ligament is the primary dorsal restraint to scapholunate dissociation. Dorsal intercarpal band is key in carpal tunnel surgeries."}},{"id":"lig_pisometacarpal","name":"Pisometacarpal Ligament","region":"Wrist","joint":"Pisiform — 5th metacarpal","features":{"origin":"Pisiform bone (distal aspect)","insertion":"Base of 5th metacarpal","function":"Transmits tension of flexor carpi ulnaris to the 5th metacarpal; helps flex and ulnar deviate the wrist","type":"Intrinsic","notes":"Together with the pisohamate ligament, acts as a continuation of the FCU tendon. Pisiform essentially functions as a sesamoid bone."}},{"id":"lig_palmar_carpometacarpal","name":"Palmar Carpometacarpal Ligaments","region":"Hand","joint":"Carpometacarpal joints","features":{"origin":"Palmar surfaces of distal carpal row (trapezium, trapezoid, capitate, hamate)","insertion":"Bases of 2nd–5th metacarpals (palmar surfaces)","function":"Stabilize carpometacarpal joints from the palmar side; limit dorsal displacement of metacarpal bases","type":"Extrinsic palmar","notes":"CMC joints 2 and 3 are the most rigid (minimal mobility). CMC joints 4 and 5 allow progressively more mobility for grip adaptation."}},{"id":"lig_dorsal_carpometacarpal","name":"Dorsal Carpometacarpal Ligaments","region":"Hand","joint":"Carpometacarpal joints","features":{"origin":"Dorsal surfaces of distal carpal row","insertion":"Bases of 2nd–5th metacarpals (dorsal surfaces)","function":"Stabilize CMC joints from the dorsal side; stronger than palmar counterparts for the 2nd and 3rd CMC joints","type":"Extrinsic dorsal","notes":"CMC dislocations are rare but serious; the dorsal ligaments are usually disrupted in dorsal CMC dislocations."}},{"id":"lig_dorsal_metacarpal","name":"Dorsal Metacarpal Ligaments","region":"Hand","joint":"Intermetacarpal joints","features":{"origin":"Dorsal surface of metacarpal bases","insertion":"Adjacent metacarpal bases","function":"Connect adjacent metacarpal bases dorsally; limit spread of metacarpals","type":"Intrinsic dorsal","notes":"Work with palmar and interosseous metacarpal ligaments to stabilize the metacarpal arch."}},{"id":"lig_interosseous_metacarpal","name":"Interosseous Metacarpal Ligaments","region":"Hand","joint":"Intermetacarpal joints","features":{"origin":"Roughened areas between metacarpal bases","insertion":"Adjacent metacarpal bases","function":"Deepest stabilizers of the intermetacarpal joints; bind metacarpal bases tightly","type":"Intrinsic interosseous","notes":"Deepest of the three metacarpal base ligament groups. Essential for maintaining the transverse arch of the hand."}},{"id":"lig_palmar_metacarpal","name":"Palmar Metacarpal Ligaments","region":"Hand","joint":"Intermetacarpal joints","features":{"origin":"Palmar surfaces of metacarpal bases","insertion":"Adjacent metacarpal bases","function":"Stabilize metacarpal bases on the palmar side","type":"Intrinsic palmar","notes":"Part of the three-layer stabilizing system of the metacarpal bases (dorsal, interosseous, palmar)."}},{"id":"lig_collateral_fingers","name":"Collateral Ligaments (Fingers)","region":"Hand","joint":"MCP and IP joints","features":{"origin":"Dorsolateral aspect of proximal bone head/condyle (at MCP: metacarpal head; at IP: phalanx head)","insertion":"Volar-lateral base of distal bone (at MCP: base of proximal phalanx; at IP joints: base of middle or distal phalanx)","function":"Primary stabilizers against varus and valgus stress; tighten in flexion (cam effect at MCP — must immobilize in flexion to prevent contracture)","type":"Intrinsic capsular — paired (radial and ulnar)","notes":"Cam effect at MCP joint: collateral ligaments are slack in extension, taut in flexion — immobilize MCP in 70-90° flexion to prevent contracture. UCL of thumb (skier's thumb / gamekeeper's thumb) is most commonly injured."}},{"id":"lig_sacroiliac","name":"Sacroiliac Ligaments (Pelvic-Sacral)","region":"Pelvis","joint":"Sacroiliac joint","features":{"origin":"Ilium (posterior iliac spines, iliac tuberosity)","insertion":"Sacrum (lateral surface, posterior sacral tubercles)","function":"Strongest ligaments in the body; resist forward tilting (nutation) and shear forces at the sacroiliac joint; transmit weight from spine to lower limbs","components":["Anterior sacroiliac ligament (weak)","Interosseous sacroiliac ligament (strongest — fills the sulcus)","Posterior sacroiliac ligament (long and short dorsal)"],"notes":"The interosseous SI ligament is the strongest ligament in the human body. SI joint transmits entire upper body weight to the lower limbs. Dysfunction common in pregnancy (relaxin)."}},{"id":"lig_inguinal","name":"Inguinal Ligament","region":"Pelvis","joint":"Inguinal region (not a joint)","features":{"origin":"ASIS (anterior superior iliac spine)","insertion":"Pubic tubercle","function":"Forms the floor of the inguinal canal; demarcates the thigh from the abdomen; lacunar ligament (medial extension) forms medial border of femoral ring","type":"Thickened inferior border of external oblique aponeurosis","notes":"Not a true joint ligament but a fascial thickening. Femoral vessels and nerve pass deep to it (lateral to medial: N-A-V-E-L mnemonic). Hernias pass above (inguinal) or below (femoral) it."}},{"id":"lig_sacrotuberous","name":"Sacrotuberous Ligament","region":"Pelvis","joint":"Pelvic ligaments","features":{"origin":"Posterior iliac spine, dorsal sacrum, and coccyx","insertion":"Ischial tuberosity (medial margin)","function":"Resists nutation (forward rotation) of the sacrum; converts the greater and lesser sciatic notches into foramina; stabilizes the pelvis","type":"Accessory pelvic","notes":"Forms the inferior boundary of the greater sciatic foramen. Biceps femoris long head has a slip that attaches to it. Important palpation landmark in dry needling."}},{"id":"lig_sacrospinous","name":"Sacrospinous Ligament","region":"Pelvis","joint":"Pelvic ligaments","features":{"origin":"Lateral border of sacrum and coccyx","insertion":"Ischial spine","function":"Converts the greater sciatic notch into the greater sciatic foramen; stabilizes the sacrum against excessive nutation; defines boundary between greater and lesser sciatic foramina","type":"Accessory pelvic","notes":"Divides the greater and lesser sciatic foramina. Pudendal nerve and internal pudendal vessels hook around the ischial spine and sacrospinous ligament to enter the perineum."}},{"id":"lig_iliolumbar","name":"Iliolumbar Ligament","region":"Lumbar — Pelvis","joint":"Lumbosacral junction","features":{"origin":"Transverse process of L5 (and L4)","insertion":"Posterior iliac crest (iliac fossa, posterior part)","function":"Stabilizes the L5-S1 junction; resists anterior and lateral displacement of L5 on the sacrum; limits lateral flexion and rotation at the lumbosacral joint","type":"Accessory vertebropelvic","notes":"Key stabilizer at the lumbosacral junction. L5 is the most commonly spondylolisthetic vertebra — this ligament is under enormous stress. Strain is a common cause of low back pain."}},{"id":"lig_ligament_head_femur","name":"Ligament of Head of Femur (Ligamentum Teres)","region":"Hip","joint":"Hip joint (coxofemoral)","features":{"origin":"Acetabular notch (via transverse acetabular ligament) and edges of acetabular notch","insertion":"Fovea capitis (small pit on the head of the femur)","function":"Transmits blood supply to femoral head in children (via obturator artery branch); minor role in stabilization against hip dislocation in extreme adduction","type":"Intracapsular","notes":"Little mechanical role in adults, but critical blood supply to femoral head in children. Obturator artery branch travels within it. Tears are diagnosed arthroscopically and can cause hip pain and instability."}},{"id":"lig_transverse_hip","name":"Transverse Acetabular Ligament","region":"Hip","joint":"Hip joint","features":{"origin":"One margin of acetabular notch","insertion":"Other margin of acetabular notch (bridges the notch)","function":"Converts the acetabular notch into a foramen; deepens the acetabulum; provides attachment for ligamentum teres; resists inferior femoral head displacement","type":"Intrinsic","notes":"Part of the acetabular labrum (fibrocartilaginous rim). Converts the acetabular notch into a foramen through which vessels enter the joint."}},{"id":"lig_acl","name":"Anterior Cruciate Ligament (ACL)","region":"Knee","joint":"Tibiofemoral joint","features":{"origin":"Posterior part of medial surface of lateral femoral condyle","insertion":"Anterior intercondylar area of tibia (anterior to tibial spines)","function":"Prevents anterior translation of tibia on femur; resists internal rotation and hyperextension; two bundles: anteromedial (AM, tight in flexion) and posterolateral (PL, tight in extension)","type":"Intracapsular, extrasynovial","notes":"Most commonly torn knee ligament (non-contact pivoting mechanism). Lachman test (most sensitive), anterior drawer, pivot shift. Poor intrinsic healing — requires reconstruction. Lateral meniscus commonly co-injured."}},{"id":"lig_pcl","name":"Posterior Cruciate Ligament (PCL)","region":"Knee","joint":"Tibiofemoral joint","features":{"origin":"Anterior part of lateral surface of medial femoral condyle","insertion":"Posterior intercondylar area of tibia (posterior tibial plateau, below articular surface)","function":"Prevents posterior translation of tibia on femur; primary stabilizer of the knee; two bundles: anterolateral (larger, primary) and posteromedial","type":"Intracapsular, extrasynovial","notes":"Stronger than ACL (twice the tensile strength). Posterior drawer test, posterior sag sign. Dashboard injury mechanism (posterior force on flexed knee). PCL injuries often missed."}},{"id":"lig_mcl","name":"Medial Collateral Ligament — Knee (MCL)","region":"Knee","joint":"Tibiofemoral joint","features":{"origin":"Medial femoral epicondyle","insertion":"Medial surface of tibia (distal to pes anserinus)","function":"Primary restraint against valgus stress; superficial MCL (most important) and deep MCL (capsular); deep MCL attaches to medial meniscus","type":"Extrinsic capsular — medial","notes":"Most commonly injured knee ligament. Valgus stress test. Attaches to medial meniscus (deep MCL) — explains combined MCL + medial meniscus injuries. Often heals conservatively."}},{"id":"lig_lcl","name":"Lateral Collateral Ligament — Knee (LCL)","region":"Knee","joint":"Tibiofemoral joint","features":{"origin":"Lateral femoral epicondyle","insertion":"Head of fibula (anterolateral)","function":"Primary restraint against varus stress; does NOT attach to lateral meniscus (unlike MCL to medial meniscus); part of the posterolateral corner (PLC)","type":"Extrinsic — cord-like (distinct from capsule)","notes":"Isolated LCL injury is rare; usually part of posterolateral corner (PLC) injury. Peroneal nerve is at risk with LCL/PLC injuries. Varus stress test."}},{"id":"lig_atfl","name":"Anterior Talofibular Ligament (ATFL)","region":"Ankle","joint":"Talocrural joint","features":{"origin":"Anterior margin of lateral malleolus","insertion":"Lateral surface of talar body (anterior to fibular articular facet)","function":"Resists anterior talar translation (anterior drawer); resists inversion in plantar flexion; weakest of the three lateral ankle ligaments","type":"Lateral — anterior","notes":"Most commonly torn ligament in lateral ankle sprains (inversion + plantarflexion). Anterior drawer test of ankle. Part of the lateral ligament complex (ATFL + CFL + PTFL)."}},{"id":"lig_cfl","name":"Calcaneofibular Ligament (CFL)","region":"Ankle","joint":"Talocrural + subtalar joint","features":{"origin":"Tip and anterior border of lateral malleolus","insertion":"Lateral surface of calcaneus (posterior tubercle)","function":"Resists inversion at neutral and dorsiflexion; stabilizes both the talocrural and subtalar joints; second most commonly injured lateral ankle ligament","type":"Lateral — posterior to ATFL","notes":"Unique in that it crosses and stabilizes two joints (ankle AND subtalar). Talar tilt test assesses CFL integrity. Injured after ATFL in severe lateral ankle sprains."}},{"id":"lig_ptfl","name":"Posterior Talofibular Ligament (PTFL)","region":"Ankle","joint":"Talocrural joint","features":{"origin":"Posterior surface of lateral malleolus (malleolar fossa)","insertion":"Lateral tubercle of posterior talar process","function":"Strongest of the three lateral ankle ligaments; resists posterior talar translation and extreme dorsiflexion; rarely torn in isolation","type":"Lateral — posterior","notes":"Strongest lateral ankle ligament. Only torn in complete ankle dislocation. Horizontal orientation when foot is dorsiflexed."}},{"id":"lig_deltoid","name":"Deltoid Ligament (Triangular / Medial Ankle Ligament)","region":"Ankle","joint":"Talocrural joint","features":{"origin":"Medial malleolus (anterior and posterior colliculi)","insertion":"Multiple: navicular, calcaneus (sustentaculum tali), talus (medial surface)  — superficial and deep layers","function":"Resists eversion and lateral talar displacement; prevents excessive pronation; strongest ankle ligament complex — resists ankle eversion","components":["Superficial: tibionavicular, tibiocalcaneal, posterior tibiotalar","Deep: anterior and posterior tibiotalar (stronger)"],"notes":"Also called the medial collateral ligament or triangular ligament. Rarely torn in isolation (medial malleolus fractures more common with eversion force). Deep deltoid prevents lateral talar shift in bimalleolar fractures."}},{"id":"lig_plantar_calcaneonavicular","name":"Plantar Calcaneonavicular Ligament (Spring Ligament)","region":"Foot","joint":"Talonavicular (part of transverse tarsal joint)","features":{"origin":"Sustentaculum tali of calcaneus (anteromedial surface)","insertion":"Plantar surface and medial surface of navicular","function":"Supports the head of the talus; maintains the medial longitudinal arch; fibrocartilaginous superior surface articulates with the head of the talus","type":"Plantar intrinsic","notes":"Critical for maintaining the medial longitudinal arch. Insufficiency leads to flatfoot (pes planus). Often fails in posterior tibial tendon dysfunction (adult-acquired flatfoot). The fibrocartilaginous surface makes it part of the acetabulum-like socket for the talar head."}},{"id":"lig_short_plantar","name":"Short Plantar Ligament (Plantar Calcaneocuboid)","region":"Foot","joint":"Calcaneocuboid joint","features":{"origin":"Anterior tubercle of calcaneus (plantar surface, anterior)","insertion":"Plantar surface of cuboid (posterior)","function":"Supports the calcaneocuboid joint; contributes to the lateral longitudinal arch","type":"Plantar — deep","notes":"Shorter and deeper than the long plantar ligament. Primary stabilizer of the calcaneocuboid joint. Supports the lateral longitudinal arch."}},{"id":"lig_long_plantar","name":"Long Plantar Ligament","region":"Foot","joint":"Calcaneocuboid + tarsometatarsal joints","features":{"origin":"Plantar surface of calcaneus (posterior and anterior tubercles)","insertion":"Plantar surface of cuboid (superficial fibers continue to bases of 2nd–5th metatarsals)","function":"Longest ligament of the foot; supports both the lateral longitudinal arch and the transverse arch; converts the cuboid groove into a tunnel for peroneus longus tendon","type":"Plantar — superficial","notes":"Longest ligament in the foot. Critical for maintaining the longitudinal arch of the foot. Converts the peroneal groove of the cuboid into a tunnel for the peroneus longus tendon to pass to the 1st metatarsal."}},{"id":"lig_bifurcate","name":"Bifurcate Ligament (Y-ligament of Chopart)","region":"Foot","joint":"Midtarsal (Chopart) joint","features":{"origin":"Anterior surface of calcaneus (dorsal, lateral)","insertion":"Two bands: calcaneocuboid band (lateral) and calcaneonavicular band (medial)","function":"Stabilizes the Chopart (midtarsal) joint; key restraint against supination at the transverse tarsal joint; critical in Chopart joint dislocations","type":"Dorsal — Y-shaped","notes":"Also called the jugal ligament or Y-ligament. Key landmark in Chopart joint dislocations. Avulsion fracture of calcaneus at its attachment is the 'nutcracker fracture.'"}},{"id":"lig_interosseous_talocalcaneal","name":"Interosseous Talocalcaneal Ligament","region":"Foot","joint":"Subtalar joint","features":{"origin":"Sulcus tali (groove on inferior talus within sinus tarsi)","insertion":"Sulcus calcanei (groove on superior calcaneus within sinus tarsi)","function":"Primary stabilizer of the subtalar joint; resists inversion; limits relative movement between talus and calcaneus; fills the sinus tarsi","type":"Intrinsic interosseous","notes":"Fills the sinus tarsi. Sinus tarsi syndrome — chronic pain after ankle sprain from interosseous ligament disruption. Critical for subtalar joint stability."}},{"id":"lig_lateral_tmj","name":"Lateral Ligament (TMJ)","region":"Head","joint":"Temporomandibular joint","features":{"origin":"Zygomatic arch (tubercle on root of zygoma — articular tubercle)","insertion":"Posterior surface of condylar neck (lateral and posterior aspects)","function":"Strongest and most important TMJ ligament; limits posterior and inferior displacement of the condyle; prevents condylar translation beyond the articular tubercle","type":"Intrinsic capsular — lateral (thickening of lateral capsule)","notes":"Only true ligament of the TMJ (the other two are accessory). Oblique portion limits mandibular depression; horizontal portion limits posterior condylar translation. Bruxism and malocclusion stress this ligament."}},{"id":"lig_stylomandibular","name":"Stylomandibular Ligament","region":"Head","joint":"TMJ (accessory)","features":{"origin":"Styloid process of temporal bone","insertion":"Posterior border and angle of mandible","function":"Limits excessive protrusion of the mandible; separates parotid and submandibular glands","type":"Accessory — thickened deep cervical fascia","notes":"Accessory ligament of the TMJ. Not part of the capsule. Tightens when the mandible is protruded. Separates the parotid gland (above) from the submandibular gland (below)."}},{"id":"lig_sphenomandibular","name":"Sphenomandibular Ligament","region":"Head","joint":"TMJ (accessory)","features":{"origin":"Spine of sphenoid bone","insertion":"Lingula of mandibular foramen (medial surface of mandibular ramus)","function":"Suspends the mandible; remnant of Meckel's cartilage (embryological); limits mandibular protrusion","type":"Accessory — remnant of first pharyngeal arch","notes":"Developmental remnant of Meckel's cartilage (1st pharyngeal arch). Transmits no blood vessels or nerves across it. Its separation from the lingula allows the inferior alveolar nerve to enter the mandibular foramen."}},{"id":"lig_stylohyoid","name":"Stylohyoid Ligament","region":"Head","joint":"Cranio-hyoid connection","features":{"origin":"Tip of styloid process of temporal bone","insertion":"Lesser cornu (horn) of hyoid bone","function":"Connects the styloid process to the hyoid; suspends the hyoid from the skull; may ossify (Eagle syndrome)","type":"Fibrous remnant of 2nd pharyngeal arch cartilage","notes":"Remnant of Reichert's cartilage (2nd pharyngeal arch). Ossification causes Eagle syndrome — sharp pain on swallowing or turning head. Can be palpated through the pharynx."}},{"id":"lig_hyomandibular","name":"Hyomandibular Ligament","region":"Head","joint":"Mandible-hyoid region","features":{"origin":"Medial surface of mandible (near symphysis menti or angle)","insertion":"Body of hyoid bone","function":"Stabilizes hyoid position relative to mandible during swallowing and speech; part of the hyoid suspension system","type":"Accessory fibrous band","notes":"Minor ligament connecting mandible to hyoid. Part of the complex hyoid suspension system that also includes the suprahyoid and infrahyoid muscles."}},{"id":"lig_costotransverse","name":"Costotransverse Ligament","region":"Thorax","joint":"Costotransverse joint","features":{"origin":"Posterior surface of rib neck","insertion":"Anterior surface of transverse process (same vertebral level)","function":"Binds the rib neck to the transverse process; short and strong; limits rib movement at costotransverse joint","type":"Intrinsic","notes":"The three costotransverse ligaments (costotransverse, lateral costotransverse, superior costotransverse) together stabilize the rib-vertebra junction. Absent for ribs 11 and 12 (floating ribs have no transverse process articulation)."}},{"id":"lig_lateral_costotransverse","name":"Lateral Costotransverse Ligament","region":"Thorax","joint":"Costotransverse joint","features":{"origin":"Tip of transverse process","insertion":"Non-articular part of rib tubercle","function":"Strengthens the costotransverse joint laterally; limits rotation and gliding at the costotransverse joint","type":"Intrinsic lateral","notes":"The lateral costotransverse ligament is the strongest of the three costotransverse ligaments. Works with the costotransverse and superior costotransverse ligaments to create the 'bucket handle' movement of the ribs."}},{"id":"lig_superior_costotransverse","name":"Superior Costotransverse Ligament","region":"Thorax","joint":"Costotransverse joint","features":{"origin":"Crest of rib neck (superior surface)","insertion":"Transverse process of vertebra above","function":"Connects each rib neck to the vertebra above; limits excess movement at the superior costotransverse joint; divided into anterior and posterior lamellae","type":"Intrinsic superior","notes":"Stabilizes and limits excess movement at the superior costotransverse joint. The anterior lamella carries the intercostal vessels and nerve into the intercostal space. Absent at the 1st rib (lumbocostal ligament equivalent)."}},{"id":"lig_anterior_longitudinal","name":"Anterior Longitudinal Ligament (ALL)","region":"Thorax / Vertebral Column","joint":"Vertebral column (anterior)","features":{"origin":"Anterior tubercle of atlas (C1) — extends to sacrum","insertion":"Anterior surfaces of vertebral bodies and intervertebral discs (all levels, C1–S1)","function":"Prevents hyperextension of the spine; limits anterior disc herniation; maintains stability of the vertebral column in extension; strongest spinal ligament","type":"Longitudinal spinal","notes":"Broadest and strongest spinal ligament. Taut in extension. Rarely injured (requires extreme hyperextension — associated with compression fractures). Key landmark in anterior spinal surgery."}},{"id":"lig_medial_arcuate","name":"Medial Arcuate Ligament","region":"Abdomen","joint":"Diaphragm — psoas (not a true joint)","features":{"origin":"Body of L1 vertebra (and L2)","insertion":"Transverse process of L1","function":"Arching tendinous thickening of diaphragm over psoas major; allows psoas to pass beneath it; forms medial opening of the diaphragm","type":"Arcuate tendinous arch (diaphragm)","notes":"Together with the lateral arcuate ligament, forms the aortic hiatus of the diaphragm. Medial arcuate ligament syndrome (MALS/celiac artery compression) is caused by compression of the celiac artery."}},{"id":"lig_lateral_arcuate","name":"Lateral Arcuate Ligament","region":"Abdomen","joint":"Diaphragm — quadratus lumborum (not a true joint)","features":{"origin":"Transverse process of L1","insertion":"12th rib (lower border, near tip)","function":"Arching tendinous thickening of diaphragm over quadratus lumborum; allows QL to pass beneath it; forms the lateral costodiaphragmatic recess","type":"Arcuate tendinous arch (diaphragm)","notes":"Part of the diaphragm's posterior attachment system. The subcostal nerve (T12) passes deep to it. Creates the lateral lumbocostal arch."}},{"id":"lig_arcuate_pubis","name":"Arcuate Ligament of the Pubis (Inferior Pubic Ligament)","region":"Pelvis","joint":"Pubic symphysis","features":{"origin":"Inferior border of one pubic body and inferior pubic ramus","insertion":"Inferior border of opposite pubic body and inferior pubic ramus","function":"Reinforces the inferior aspect of the pubic symphysis; limits separation of the pubic bones; forms the apex of the pubic arch","type":"Intrinsic inferior","notes":"Defines the lower border of the pubic arch (subpubic angle). During delivery, the pubic symphysis widens under relaxin influence. The urogenital diaphragm (perineal membrane) attaches to the arcuate ligament."}}];
+let ligsData = BUNDLED_LIGAMENTS;
+
 // ── BONES DATA ────────────────────────────────────────────────────────────────
 const BUNDLED_BONES = [{"id":"bone_ethmoid","name":"Ethmoid Bone","region":"Skull","type":"Irregular","features":{"parts":["Cribriform plate","Perpendicular plate","Lateral masses (labyrinths)"],"processes":["Crista galli","Middle nasal conchae","Superior nasal conchae"],"foramina":["Cribriform foramina (CN I olfactory)"],"articulations":["Frontal","Sphenoid","Nasal","Lacrimal","Maxilla","Inferior nasal concha","Vomer","Palatine"],"extra":"Forms part of nasal septum, nasal conchae, and medial orbital wall"}},{"id":"bone_frontal","name":"Frontal Bone","region":"Skull","type":"Flat","features":{"surfaces":["External surface","Internal surface (endocranial)"],"processes":["Zygomatic process","Nasal spine"],"foramina":["Supraorbital foramen/notch"],"parts":["Squamous part","Orbital plates","Nasal part"],"articulations":["Parietal (coronal suture)","Sphenoid","Nasal","Ethmoid","Lacrimal","Zygomatic","Maxilla"],"extra":"Forms anterior cranial fossa and roof of orbits"}},{"id":"bone_occipital","name":"Occipital Bone","region":"Skull","type":"Flat","features":{"parts":["Squamous part","Lateral parts (condylar)","Basilar part"],"foramina":["Foramen magnum","Hypoglossal canal","Jugular foramen"],"processes":["External occipital protuberance","Internal occipital protuberance"],"lines":["Superior nuchal line","Inferior nuchal line","External occipital crest"],"condyles":["Occipital condyles (articulate with C1 atlas)"],"articulations":["Parietal (lambdoid)","Temporal","Sphenoid","Atlas (C1)"],"extra":"Contains foramen magnum; articulates with atlas forming atlanto-occipital joint"}},{"id":"bone_parietal","name":"Parietal Bone","region":"Skull","type":"Flat","features":{"surfaces":["External surface","Internal (endocranial) surface"],"borders":["Sagittal border","Squamosal border","Frontal border","Occipital border"],"foramina":["Parietal foramen (emissary vein)"],"articulations":["Opposite parietal (sagittal suture)","Frontal (coronal)","Occipital (lambdoid)","Temporal (squamosal)","Sphenoid"],"extra":"Forms the sides and roof of the cranium; has superior and inferior temporal lines"}},{"id":"bone_sphenoid","name":"Sphenoid Bone","region":"Skull","type":"Irregular","features":{"parts":["Body","Greater wings","Lesser wings","Pterygoid processes"],"foramina":["Foramen ovale","Foramen rotundum","Foramen spinosum","Optic canal","Superior orbital fissure"],"fossa":["Sella turcica (pituitary fossa)","Pterygopalatine fossa","Infratemporal fossa"],"processes":["Pterygoid processes (medial & lateral plates)"],"articulations":["Frontal","Parietal","Temporal","Occipital","Ethmoid","Vomer","Palatine","Zygomatic"],"extra":"Keystone of the skull base; sella turcica houses the pituitary gland"}},{"id":"bone_temporal","name":"Temporal Bone","region":"Skull","type":"Irregular","features":{"parts":["Squamous part","Tympanic part","Petrous part","Mastoid part"],"processes":["Mastoid process","Styloid process","Zygomatic process"],"foramina":["External acoustic meatus","Internal acoustic meatus","Stylomastoid foramen","Carotid canal","Jugular foramen"],"fossa":["Mandibular fossa (TMJ)","Carotid canal"],"articulations":["Parietal","Occipital","Sphenoid","Zygomatic","Mandible (TMJ)"],"extra":"Houses middle and inner ear; contains the carotid canal and jugular foramen"}},{"id":"bone_inferior_nasal_concha","name":"Inferior Nasal Concha","region":"Face","type":"Irregular","features":{"processes":["Lacrimal process","Maxillary process","Ethmoidal process"],"articulations":["Ethmoid","Lacrimal","Maxilla","Palatine"],"extra":"Largest of the three nasal conchae; independent bone (not part of ethmoid)"}},{"id":"bone_lacrimal","name":"Lacrimal Bone","region":"Face","type":"Flat","features":{"features_list":["Lacrimal groove","Posterior lacrimal crest","Anterior lacrimal crest"],"articulations":["Frontal","Ethmoid","Maxilla","Inferior nasal concha"],"extra":"Smallest and most fragile facial bone; contains lacrimal groove for nasolacrimal duct"}},{"id":"bone_mandible","name":"Mandible","region":"Face","type":"Irregular","features":{"parts":["Body","Ramus (left & right)"],"processes":["Coronoid process","Condylar process (head & neck)","Alveolar process"],"foramina":["Mandibular foramen","Mental foramen"],"borders":["Base","Alveolar border","Oblique line","Mylohyoid line"],"articulations":["Temporal bone (TMJ) — only movable joint of skull"],"extra":"Only movable bone of the skull; mental foramen transmits mental nerve and vessels"}},{"id":"bone_maxilla","name":"Maxilla","region":"Face","type":"Irregular","features":{"processes":["Frontal process","Zygomatic process","Alveolar process","Palatine process"],"foramina":["Infraorbital foramen","Incisive foramen"],"surfaces":["Anterior (facial)","Posterior (infratemporal)","Superior (orbital)","Medial (nasal)"],"articulations":["Opposite maxilla","Frontal","Nasal","Ethmoid","Lacrimal","Inferior nasal concha","Palatine","Zygomatic","Vomer"],"extra":"Contains upper teeth; palatine processes form anterior hard palate"}},{"id":"bone_nasal","name":"Nasal Bone","region":"Face","type":"Flat","features":{"surfaces":["External","Internal"],"articulations":["Opposite nasal bone","Frontal","Maxilla","Ethmoid (perpendicular plate)"],"extra":"Paired bones forming the bridge of the nose"}},{"id":"bone_palatine","name":"Palatine Bone","region":"Face","type":"Irregular","features":{"parts":["Horizontal plate","Perpendicular plate"],"processes":["Pyramidal process","Orbital process","Sphenoidal process"],"foramina":["Greater palatine foramen","Lesser palatine foramen"],"articulations":["Opposite palatine","Maxilla","Sphenoid","Ethmoid","Inferior nasal concha","Vomer"],"extra":"Forms posterior hard palate and part of nasal cavity floor"}},{"id":"bone_vomer","name":"Vomer","region":"Face","type":"Flat","features":{"parts":["Alae (superior wings)","Vertical plate"],"articulations":["Sphenoid","Ethmoid","Palatine","Maxilla","Opposite maxilla"],"extra":"Forms the inferior and posterior nasal septum; unpaired midline bone"}},{"id":"bone_zygomatic","name":"Zygomatic Bone","region":"Face","type":"Irregular","features":{"processes":["Frontal process","Temporal process","Maxillary process"],"foramina":["Zygomaticofacial foramen","Zygomaticotemporal foramen"],"surfaces":["Lateral (facial)","Temporal","Orbital"],"articulations":["Frontal","Temporal (forms zygomatic arch)","Maxilla","Sphenoid"],"extra":"Forms the cheekbone and part of the lateral orbital wall and zygomatic arch"}},{"id":"bone_hyoid","name":"Hyoid Bone","region":"Neck","type":"Irregular","features":{"parts":["Body","Greater horns (cornua)","Lesser horns (cornua)"],"articulations":["No bony articulations — suspended by muscles and ligaments"],"extra":"Only bone in the body with no bony articulations; U-shaped; supports tongue"}},{"id":"bone_atlas","name":"Atlas (C1)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Anterior arch","Posterior arch","Lateral masses","Transverse processes"],"foramina":["Vertebral foramen","Transverse foramen","Groove for vertebral artery (posterior arch)"],"facets":["Superior articular facets (occipital condyles)","Inferior articular facets (C2 axis)","Facet for dens"],"articulations":["Occipital bone (atlanto-occipital)","Axis C2 (atlanto-axial)"],"extra":"No body, no spinous process; ring-shaped; allows head flexion/extension (yes joint)"}},{"id":"bone_axis","name":"Axis (C2)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Body","Dens (odontoid process)","Pedicles","Laminae","Spinous process"],"foramina":["Vertebral foramen","Transverse foramen"],"special":["Dens (odontoid process) — pivot for atlas rotation"],"articulations":["Atlas C1","C3 vertebra","Occiput (through atlas)"],"extra":"Pivot joint with C1; dens retained body of atlas; allows head rotation (no joint)"}},{"id":"bone_cervical_vertebra","name":"Cervical Vertebra (C3–C7)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Body","Pedicles","Laminae","Spinous process","Transverse processes","Articular processes"],"foramina":["Vertebral foramen (triangular, large)","Transverse foramen (vertebral artery)"],"special":["Bifid spinous process (C3–C6)","Uncinate processes (joints of Luschka)"],"articulations":["Adjacent vertebrae via intervertebral discs and zygapophyseal joints"],"extra":"Smallest vertebrae; transverse foramen transmits vertebral artery and veins (C1–C6)"}},{"id":"bone_coccyx","name":"Coccyx","region":"Vertebral Column","type":"Irregular","features":{"parts":["3–5 fused rudimentary vertebrae","Coccygeal cornua"],"articulations":["Sacrum (sacrococcygeal joint)"],"extra":"Vestigial tailbone; attachment for gluteus maximus, coccygeus, levator ani and anococcygeal ligament"}},{"id":"bone_lumbar_vertebra","name":"Lumbar Vertebra (L1–L5)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Large body (kidney-shaped)","Pedicles","Laminae","Short stout spinous process","Transverse processes","Mammillary processes"],"foramina":["Vertebral foramen (triangular)"],"articulations":["Adjacent vertebrae","Sacrum (L5–S1)"],"extra":"Largest vertebrae; no transverse foramina, no costal facets; bears greatest weight"}},{"id":"bone_sacrum","name":"Sacrum","region":"Vertebral Column","type":"Irregular","features":{"parts":["Base (S1 superior surface)","Apex","Lateral parts (alae)","Sacral canal"],"foramina":["Anterior sacral foramina (x4 pairs)","Posterior sacral foramina (x4 pairs)","Sacral hiatus","Sacral canal"],"processes":["Median sacral crest","Intermediate sacral crests","Lateral sacral crests","Sacral promontory","Auricular surface"],"articulations":["L5 (lumbosacral)","Ilium (sacroiliac joint — both sides)","Coccyx"],"extra":"5 fused vertebrae; wedge-shaped; forms posterior wall of pelvis; sacroiliac joints transmit weight to lower limbs"}},{"id":"bone_thoracic_vertebra","name":"Thoracic Vertebra (T1–T12)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Body","Pedicles","Laminae","Long spinous process (downward)","Transverse processes"],"facets":["Superior & inferior articular facets","Costal facets on body (head of rib)","Costal facets on transverse process (T1–T10, tubercle of rib)"],"foramina":["Vertebral foramen (circular, smaller than cervical)"],"articulations":["Adjacent vertebrae","Ribs (costovertebral joints)"],"extra":"Unique costal facets for rib articulation; long spinous processes overlap inferiorly"}},{"id":"bone_rib","name":"Ribs (1–12)","region":"Thorax","type":"Flat","features":{"parts":["Head","Neck","Tubercle","Shaft (body)","Angle","Costal groove"],"types":["True ribs (1–7): articulate directly with sternum via costal cartilage","False ribs (8–10): costal cartilage joins 7th","Floating ribs (11–12): no anterior articulation"],"special_ribs":["Rib 1: shortest, most curved; groove for subclavian vessels","Rib 2: roughness for serratus anterior","Rib 10–12: single articular facet on head"],"articulations":["Vertebrae (costovertebral joints)","Sternum via costal cartilage (1–7)"],"extra":"12 pairs; costal groove on inferior border protects intercostal neurovascular bundle"}},{"id":"bone_sternum","name":"Sternum","region":"Thorax","type":"Flat","features":{"parts":["Manubrium","Body (gladiolus)","Xiphoid process"],"joints":["Sternal angle (angle of Louis) — manubriosternal joint","Xiphisternal joint"],"notches":["Jugular (suprasternal) notch","Clavicular notches","Costal notches (1–7)"],"articulations":["Clavicles (sternoclavicular)","Costal cartilages 1–7","Manubrium articulates with 1st & 2nd rib"],"extra":"Sternal angle marks T4/T5 disc, 2nd rib, aortic arch, carina; red marrow used for biopsy"}},{"id":"bone_capitate","name":"Capitate","region":"Upper Limb","type":"Short — Carpal","features":{"parts":["Head (proximal — rounded)","Neck","Body"],"surfaces":["Head articulates with lunate & scaphoid","Distal: 3rd metacarpal (primary)","Lateral: trapezoid","Medial: hamate"],"articulations":["Lunate & Scaphoid (proximal)","Trapezoid","Hamate","2nd, 3rd, 4th metacarpals"],"extra":"Largest carpal bone; central keystone of the wrist; 2nd most commonly dislocated (perilunate)"}},{"id":"bone_clavicle","name":"Clavicle","region":"Upper Limb","type":"Long","features":{"ends":["Sternal (medial) end — rounded","Acromial (lateral) end — flattened"],"surfaces":["Superior","Inferior"],"impressions":["Impression for costoclavicular ligament","Conoid tubercle","Trapezoid line"],"foramina":["Nutrient foramen"],"articulations":["Sternum (sternoclavicular joint)","Acromion (acromioclavicular joint)"],"extra":"Only long bone that lies horizontally; S-shaped; transmits forces from upper limb to axial skeleton; most commonly fractured bone"}},{"id":"bone_hamate","name":"Hamate","region":"Upper Limb","type":"Short — Carpal","features":{"hook":"Hook of hamate (hamulus) — projects palmarly; ulnar nerve (deep branch) and ulnar artery pass around it","surfaces":["Proximal (lunate)","Lateral (capitate)","Distal (4th & 5th metacarpals)","Medial (triquetrum)"],"articulations":["Lunate","Triquetrum","Capitate","4th & 5th metacarpals"],"extra":"Hook fracture: cyclists, golfers, racquet sports; ulnar nerve deep branch curves around hook — motor branch at risk; Guyon's canal lateral wall"}},{"id":"bone_humerus","name":"Humerus","region":"Upper Limb","type":"Long","features":{"proximal":["Head","Anatomical neck","Surgical neck","Greater tubercle","Lesser tubercle","Intertubercular (bicipital) groove"],"shaft":["Deltoid tuberosity","Radial groove (spiral groove) — radial nerve","Nutrient foramen"],"distal":["Capitulum","Trochlea","Medial epicondyle","Lateral epicondyle","Olecranon fossa","Coronoid fossa","Radial fossa","Medial supracondylar ridge","Lateral supracondylar ridge"],"articulations":["Scapula (glenohumeral)","Radius (humeroradial)","Ulna (humeroulnar)"],"extra":"Surgical neck — axillary nerve injury; radial groove — radial nerve injury; medial epicondyle — ulnar nerve"}},{"id":"bone_lunate","name":"Lunate","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal convex (radius & TFCC)","Distal concave (capitate & hamate)","Medial (triquetrum)","Lateral (scaphoid)","Palmar (larger)","Dorsal (smaller)"],"shape":"Crescent (lunate-shaped) on lateral view","articulations":["Radius","Scaphoid (laterally)","Triquetrum (medially)","Capitate (distally)","Hamate (distally, medially)"],"extra":"Perilunate dislocation & lunate dislocation — major wrist injuries; Kienböck's disease — avascular necrosis of lunate"}},{"id":"bone_metacarpals","name":"Metacarpal Bones","region":"Upper Limb","type":"Long","features":{"parts":["Base (proximal)","Shaft","Head (knuckle)"],"numbering":"1 (thumb) to 5 (little finger)","articulations":["Carpals (carpometacarpal)","Proximal phalanges (metacarpophalangeal)"],"extra":"5 bones; 1st metacarpal has saddle joint with trapezium allowing thumb opposition"}},{"id":"bone_phalanges_hand","name":"Phalanges (Hand)","region":"Upper Limb","type":"Long","features":{"arrangement":["Proximal phalanges (x5)","Middle phalanges (x4 — no middle in thumb)","Distal phalanges (x5)"],"parts":["Base","Shaft","Head","Tuberosity (distal)"],"articulations":["Metacarpals (MCP joints)","Interphalangeal joints (PIP, DIP)"],"extra":"14 phalanges per hand; thumb has only 2 (proximal + distal); distal phalanges have ungual tuberosity"}},{"id":"bone_pisiform","name":"Pisiform","region":"Upper Limb","type":"Short — Sesamoid Carpal","features":{"shape":"Pea-shaped sesamoid bone embedded in flexor carpi ulnaris tendon","surfaces":["Articular facet for triquetrum (dorsal)"],"articulations":["Triquetrum only"],"attachments":["Flexor carpi ulnaris (tendon)","Flexor retinaculum","Abductor digiti minimi","Pisohamate ligament","Pisometacarpal ligament"],"extra":"Sesamoid bone within FCU tendon; forms medial boundary of Guyon's canal (ulnar nerve & artery pass lateral to it)"}},{"id":"bone_radius","name":"Radius","region":"Upper Limb","type":"Long","features":{"proximal":["Head (disc-shaped)","Neck","Radial tuberosity (bicipital tuberosity)"],"shaft":["Anterior oblique line","Interosseous border"],"distal":["Styloid process","Dorsal tubercle (Lister's tubercle)","Ulnar notch","Carpal articular surface"],"articulations":["Humerus (humeroradial)","Ulna (proximal & distal radioulnar)","Scaphoid & lunate (radiocarpal)"],"extra":"Lateral bone of forearm; rotates around ulna in pronation/supination; bears most of wrist load"}},{"id":"bone_scaphoid","name":"Scaphoid","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal convex surface (articulates with radius)","Waist (narrowest — fracture site)","Distal surface","Palmar surface (tubercle)"],"tubercle":"Scaphoid tubercle — attachment of flexor retinaculum and abductor pollicis brevis","articulations":["Radius (radiocarpal joint)","Lunate (medially)","Trapezium & Trapezoid (distally)","Capitate (distally & medially)"],"blood_supply":"Dorsal branch of radial artery enters distally → waist fractures risk avascular necrosis of proximal pole","extra":"Most commonly fractured carpal bone (fall on outstretched hand); tenderness in anatomical snuffbox; proximal pole AVN risk if fracture untreated"}},{"id":"bone_scapula","name":"Scapula","region":"Upper Limb","type":"Flat","features":{"surfaces":["Costal (subscapular) fossa","Posterior: supraspinous fossa, infraspinous fossa"],"borders":["Superior border","Medial (vertebral) border","Lateral (axillary) border"],"angles":["Superior angle","Inferior angle","Lateral angle (glenoid cavity)"],"processes":["Acromion","Coracoid process","Spine of scapula"],"notches":["Suprascapular notch"],"articulations":["Clavicle (acromioclavicular)","Humerus (glenohumeral — ball and socket)"],"extra":"Triangular flat bone; coracoid process — 'bent finger' — attachment for biceps short head, coracobrachialis, pectoralis minor"}},{"id":"bone_trapezium","name":"Trapezium","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal (scaphoid)","Distal (1st metacarpal — saddle joint)","Medial (trapezoid & 2nd metacarpal)"],"groove":"Groove for flexor carpi radialis tendon on palmar surface","tubercle":"Trapezium tubercle — attachment of flexor retinaculum","articulations":["Scaphoid","Trapezoid","1st metacarpal (CMC1 — saddle joint)","2nd metacarpal"],"extra":"Saddle joint with 1st metacarpal allows thumb opposition; FCR tendon grooves its palmar surface; flexor retinaculum attaches to tubercle"}},{"id":"bone_trapezoid","name":"Trapezoid","region":"Upper Limb","type":"Short — Carpal","features":{"shape":"Wedge-shaped — smallest bone of distal carpal row","surfaces":["Proximal (scaphoid)","Distal (2nd metacarpal — tight fit)","Medial (capitate)","Lateral (trapezium)"],"articulations":["Scaphoid","2nd metacarpal","Capitate","Trapezium"],"extra":"Least commonly fractured carpal due to protected position; 2nd metacarpal tightly wedged — stable CMC joint"}},{"id":"bone_triquetrum","name":"Triquetrum","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal (TFCC/ulnocarpal complex — no direct ulnar contact)","Hamate facet (distal)","Lunate facet (lateral)","Pisiform facet (palmar — oval)"],"articulations":["Lunate","Hamate","Pisiform"],"extra":"3rd most commonly fractured carpal; no direct articulation with ulna; pisiform sits on its palmar surface"}},{"id":"bone_ulna","name":"Ulna","region":"Upper Limb","type":"Long","features":{"proximal":["Olecranon","Coronoid process","Trochlear notch","Radial notch"],"shaft":["Interosseous border","Anterior surface","Posterior surface"],"distal":["Head","Styloid process"],"articulations":["Humerus (humeroulnar — primary elbow joint)","Radius (proximal & distal radioulnar)","Wrist — only via disc"],"extra":"Medial bone of forearm; olecranon — attachment of triceps; does not directly articulate with carpal bones"}},{"id":"bone_hip","name":"Hip Bone (Os Coxae)","region":"Pelvis","type":"Irregular","features":{"components":["Ilium (superior — blade)","Ischium (posteroinferior)","Pubis (anteroinferior)"],"landmarks_ilium":["Iliac crest","ASIS","AIIS","PSIS","PIIS","Iliac fossa","Auricular surface","Gluteal lines (anterior, posterior, inferior)"],"landmarks_ischium":["Ischial tuberosity","Ischial spine","Lesser sciatic notch","Ischial ramus"],"landmarks_pubis":["Pubic symphysis","Pubic tubercle","Pubic crest","Superior & inferior pubic rami","Obturator foramen"],"acetabulum":["Formed by ilium (2/5) + ischium (2/5) + pubis (1/5)","Acetabular notch","Lunate surface","Acetabular fossa"],"greater_sciatic_notch":"Between PIIS and ischial spine — piriformis exits here","articulations":["Sacrum (sacroiliac)","Opposite hip bone (pubic symphysis)","Femur (hip joint)"],"extra":"3 bones fused at acetabulum by age 16–17; obturator foramen — largest foramen in body"}},{"id":"bone_calcaneus","name":"Calcaneus","region":"Lower Limb","type":"Short — Tarsal","features":{"parts":["Body","Calcaneal tuberosity (posterior — Achilles tendon)","Sustentaculum tali","Anterior process","Peroneal trochlea"],"articular_surfaces":["Posterior talocalcaneal facet (largest)","Middle talocalcaneal facet (on sustentaculum tali)","Anterior talocalcaneal facet","Calcaneocuboid facet"],"grooves":["Groove for flexor hallucis longus (under sustentaculum tali)","Sinus tarsi — between posterior and middle facets"],"articulations":["Talus (subtalar joint — 3 facets)","Cuboid (calcaneocuboid joint)"],"extra":"Largest tarsal bone; sustentaculum tali supports talus head; Achilles inserts on posterior tuberosity; most commonly fractured tarsal (fall from height — 'lover's fracture'); Böhler's angle reduced in fracture"}},{"id":"bone_cuboid","name":"Cuboid","region":"Lower Limb","type":"Short — Tarsal","features":{"groove":"Groove for peroneus longus tendon on plantar surface","tuberosity":"Cuboid tuberosity — peroneus brevis insertion","surfaces":["Proximal (calcaneus)","Distal (4th & 5th metatarsals)","Medial (lateral cuneiform & navicular)","Plantar (groove for peroneus longus)"],"articulations":["Calcaneus","4th & 5th metatarsals","Lateral cuneiform","Navicular (inconstant)"],"extra":"Only tarsal bone articulating with 2 metatarsals; peroneus longus groove on plantar surface — key landmark; cuboid syndrome — subluxation causing lateral foot pain"}},{"id":"bone_femur","name":"Femur","region":"Lower Limb","type":"Long","features":{"proximal":["Head","Fovea capitis (ligamentum teres)","Neck","Greater trochanter","Lesser trochanter","Intertrochanteric line (anterior)","Intertrochanteric crest (posterior)","Trochanteric fossa"],"shaft":["Linea aspera (medial & lateral lips)","Gluteal tuberosity","Pectineal line","Nutrient foramen"],"distal":["Medial condyle","Lateral condyle","Medial epicondyle","Lateral epicondyle","Intercondylar fossa","Popliteal surface","Adductor tubercle"],"articulations":["Hip bone (hip joint — ball and socket)","Tibia (knee joint)","Patella"],"extra":"Longest and strongest bone; neck-shaft angle ~126°; angle of inclination; neck fracture → avascular necrosis; linea aspera = main posterior attachment ridge"}},{"id":"bone_fibula","name":"Fibula","region":"Lower Limb","type":"Long","features":{"proximal":["Head","Neck (common fibular nerve)","Apex of head"],"shaft":["Interosseous border","Anterior border","Posterior border","Nutrient foramen"],"distal":["Lateral malleolus","Articular facets","Malleolar fossa"],"articulations":["Tibia (proximal & distal tibiofibular — syndesmosis)","Talus (lateral part of ankle mortise)"],"extra":"Lateral bone of leg; non-weight bearing; common fibular nerve wraps around neck — vulnerable to injury; lateral malleolus extends more inferiorly than medial"}},{"id":"bone_intermediate_cuneiform","name":"Intermediate Cuneiform","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Smallest cuneiform; wedge with base dorsal (reversed vs medial)","articulations":["Navicular","2nd metatarsal","Medial cuneiform","Lateral cuneiform"],"extra":"Smallest and most recessed cuneiform; 2nd metatarsal recessed into mortise between cuneiforms — makes CMC2 most stable; Lisfranc ligament attaches between medial cuneiform and 2nd metatarsal base"}},{"id":"bone_lateral_cuneiform","name":"Lateral Cuneiform","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Intermediate size; wedge with base dorsal","articulations":["Navicular","3rd metatarsal","Cuboid","Intermediate cuneiform","4th metatarsal (partial)"],"attachments":["Tibialis posterior (partial)","Flexor hallucis brevis (partial)"],"extra":"Articulates with both navicular and cuboid; forms lateral part of Lisfranc joint; 3rd TMT joint more mobile than 1st and 2nd"}},{"id":"bone_medial_cuneiform","name":"Medial Cuneiform","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Largest cuneiform; wedge-shaped with base plantar","articulations":["Navicular (proximally)","1st metatarsal (distally)","Intermediate cuneiform (laterally)","2nd metatarsal (partial)"],"attachments":["Tibialis anterior (plantar base)","Tibialis posterior (partial)","Peroneus longus (partial)","1st metatarsal joint capsule"],"extra":"Base is plantar — wider plantarly, contributes to medial longitudinal arch; key bone of Lisfranc joint complex"}},{"id":"bone_metatarsals","name":"Metatarsal Bones","region":"Lower Limb","type":"Long","features":{"parts":["Base (proximal)","Shaft","Head (distal)"],"special":["1st metatarsal — shortest, widest; 2 sesamoid bones under head","5th metatarsal — styloid process (peroneus brevis insertion); commonly fractured (Jones fracture)"],"numbering":"1 (big toe) to 5 (little toe)","articulations":["Tarsals (tarsometatarsal)","Proximal phalanges (metatarsophalangeal)"],"extra":"5 bones; 1st bears most weight; 5th base Jones fracture common; transverse arch at heads"}},{"id":"bone_navicular","name":"Navicular","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Boat-shaped (navicular = little boat)","tuberosity":"Navicular tuberosity (medial) — tibialis posterior insertion; palpable medially","surfaces":["Proximal concave (talus head)","Distal (3 cuneiform facets)","Plantar (rough — ligaments)"],"articulations":["Talus (talonavicular)","Medial, intermediate, lateral cuneiforms"],"extra":"Tibialis posterior main insertion; accessory navicular (os naviculare) common variant; stress fractures in athletes; Köhler's disease — AVN in children"}},{"id":"bone_patella","name":"Patella","region":"Lower Limb","type":"Sesamoid","features":{"surfaces":["Anterior (subcutaneous)","Posterior (articular — medial & lateral facets)"],"borders":["Base (superior)","Apex (inferior)"],"articulations":["Femur (patellofemoral joint)"],"extra":"Largest sesamoid bone; embedded in quadriceps tendon; protects knee joint; increases leverage of quadriceps"}},{"id":"bone_phalanges_foot","name":"Phalanges (Foot)","region":"Lower Limb","type":"Long","features":{"arrangement":["Proximal phalanges (x5)","Middle phalanges (x4 — hallux has none)","Distal phalanges (x5)"],"parts":["Base","Shaft","Head","Tuberosity (distal)"],"articulations":["Metatarsals (MTP joints)","Interphalangeal joints (PIP, DIP)"],"extra":"14 phalanges per foot; hallux has 2; hammer toe — PIP flexion deformity; claw toe — MTP hyperextension"}},{"id":"bone_talus","name":"Talus","region":"Lower Limb","type":"Short — Tarsal","features":{"parts":["Head","Neck","Body","Trochlea (superior articular surface)","Medial & lateral tubercles","Posterior process"],"articular_surfaces":["Superior trochlea (tibia)","Medial facet (medial malleolus)","Lateral facet (lateral malleolus)","Head (navicular)","3 calcaneal facets (inferior)"],"sulcus_tali":"Sinus tarsi — groove between posterior and middle calcaneal facets","articulations":["Tibia & fibula (talocrural — ankle mortise)","Calcaneus (subtalar joint)","Navicular (talonavicular joint)"],"blood_supply":"Tenuous — from artery of tarsal sinus & posterior tibial artery; neck fractures → AVN risk","extra":"No muscle attachments; transmits entire body weight; second most commonly fractured tarsal; AVN risk after neck fracture (Hawkins classification)"}},{"id":"bone_tibia","name":"Tibia","region":"Lower Limb","type":"Long","features":{"proximal":["Medial condyle","Lateral condyle","Tibial plateau","Intercondylar eminence (spines)","Gerdy's tubercle","Fibular facet"],"shaft":["Tibial tuberosity (patellar ligament)","Anterior border (shin)","Medial surface (subcutaneous)","Soleal line","Interosseous border","Nutrient foramen"],"distal":["Medial malleolus","Fibular notch","Inferior articular surface","Groove for tibialis posterior"],"articulations":["Femur (knee)","Fibula (proximal & distal tibiofibular)","Talus (ankle mortise)"],"extra":"Medial bone of leg; bears ~85% of body weight; medial malleolus — deltoid ligament; anterior border subcutaneous — stress fractures"}}];
 let bonesData = JSON.parse(localStorage.getItem('musclequiz_bones') || 'null') || BUNDLED_BONES;
@@ -1286,7 +1781,10 @@ function switchPanel(name) {
   if (name === 'list')   { populateFilters(); renderList(); }
   if (name === 'stats')  { renderStats(); }
   if (name === 'artery') { initArteryMap(); }
-  if (name === 'bones')  { initBones(); }
+  if (name === 'bones')       { initBones(); }
+  if (name === 'ligaments')   { initLigaments(); }
+  if (name === 'ligs-recall')  { initLigsRecall(); }
+  if (name === 'ligs-mcq')     { initLigsMCQ(); }
   if (name === 'bones-recall') { initBonesRecall(); }
   if (name === 'bones-mcq')   { initBonesMCQ(); }
   if (name === 'quiz')   { populateFilters(); }
@@ -4189,6 +4687,7 @@ function renderBoneCard() {
 
 function initCards() {
   if (typeof cardsType !== 'undefined' && cardsType === 'bone') { initBoneCards(); return; }
+  if (typeof cardsType !== 'undefined' && cardsType === 'lig')  { initLigCards(); return; }
   const fReg   = document.getElementById('cards-region-filter').value;
   const fDepth = document.getElementById('cards-depth-filter').value;
   const order  = document.getElementById('cards-order').value;
@@ -4230,6 +4729,8 @@ function initCards() {
 }
 
 function renderCard() {
+  if (typeof cardsType !== 'undefined' && cardsType === 'bone') { renderBoneCard(); return; }
+  if (typeof cardsType !== 'undefined' && cardsType === 'lig')  { renderLigCard(); return; }
   if (!cardDeck.length) return;
   const m   = cardDeck[cardIdx];
   const n   = m.notes || {};
