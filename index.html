@@ -23,6 +23,7 @@
       </button>
       <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
       <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
+      <button class="nav-btn" data-panel="bones"  onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">40</span></button>
       <button class="nav-btn" data-panel="artery" onclick="switchPanel('artery')">Arteries</button>
       <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
     </nav>
@@ -224,6 +225,22 @@
         </div>
       </div>
 
+
+      <div class="quiz-section-label" style="margin-top:0">Muscle quizzes</div>
+
+      <div class="quiz-section-label" style="margin-top:1.5rem">Bone quizzes</div>
+      <div class="quiz-launchers" style="margin-bottom:1.5rem">
+        <div class="quiz-launcher-card quiz-launcher-card--bones" onclick="switchPanel('bones-recall')">
+          <div class="ql-icon">&#128302;</div>
+          <div class="ql-body"><div class="ql-title">Recall - Bone names</div><div class="ql-sub">Name every bone from memory, grouped by region.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card quiz-launcher-card--bones" onclick="switchPanel('bones-mcq')">
+          <div class="ql-icon">&#9673;</div>
+          <div class="ql-body"><div class="ql-title">MCQ - Bone features</div><div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+      </div>
 
       <div class="quiz-section-label">Quick quiz — regions &amp; names</div>
       <div class="card">
@@ -478,6 +495,10 @@
 
     <!-- Toolbar -->
     <div class="cards-toolbar">
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn btn-sm cards-type-btn active" id="cards-type-muscle" onclick="setCardsType('muscle')">Muscles</button>
+        <button class="btn btn-sm cards-type-btn" id="cards-type-bone" onclick="setCardsType('bone')">Bones</button>
+      </div>
       <div class="cards-search-wrap">
         <input type="text" id="cards-search" placeholder="Search muscle..."
           autocomplete="off" oninput="onCardsSearch()" onkeydown="if(event.key==='Escape'){document.getElementById('cards-search-dropdown').style.display='none';this.value=''}" />
@@ -1044,6 +1065,124 @@
       </div>
   </div>
 
+  <!-- ══ BONES PANEL ══ -->
+  <div class="panel" id="panel-bones">
+    <div class="page-title">
+      <h1>Bones</h1>
+      <p>Skeletal anatomy — features, landmarks and articulations.</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="cards-toolbar" style="margin-bottom:1rem;">
+      <div class="cards-search-wrap">
+        <input type="text" id="bones-search" placeholder="Search bone..."
+          autocomplete="off" oninput="renderBonesList()" />
+      </div>
+      <div class="select-wrap" style="flex:1;max-width:200px">
+        <select id="bones-region-filter" onchange="renderBonesList()">
+          <option value="">All regions</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div id="bones-list" class="bones-list"></div>
+
+    <!-- Detail modal -->
+    <div class="bones-detail-overlay" id="bones-detail-overlay" style="display:none" onclick="closeBoneDetail()">
+      <div class="bones-detail-card" onclick="event.stopPropagation()">
+        <button class="bones-detail-close" onclick="closeBoneDetail()">&#10005;</button>
+        <div id="bones-detail-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BONES RECALL PANEL -->
+  <div class="panel" id="panel-bones-recall">
+    <div id="brecall-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+      <div class="page-title"><h1>Bone Recall</h1><p>Name every bone from memory.</p></div>
+      <div class="card">
+        <div class="card-header"><div class="card-header-icon">&#9881;</div><h2>Settings</h2></div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="brecallSelectAll()">All</button><button class="btn btn-sm" onclick="brecallSelectNone()">None</button></div>
+          </div>
+          <div class="recall-region-checks" id="brecall-region-checks"></div>
+        </div>
+        <button class="btn btn-primary btn-full btn-lg" onclick="startBonesRecall()">Start</button>
+      </div>
+    </div>
+    <div id="brecall-session" style="display:none">
+      <div class="anat-session-header">
+        <div class="anat-progress-label"><span id="brecall-found">0</span> / <span id="brecall-total">0</span></div>
+        <div class="quiz-progress" style="flex:1;margin:0;"><div class="quiz-progress-fill" id="brecall-progress" style="width:0%"></div></div>
+        <button class="btn btn-ghost btn-sm" onclick="stopBonesRecall()">Stop</button>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <input type="text" id="brecall-input" placeholder="Type a bone name..." autocomplete="off" oninput="onBrecallInput()" style="width:100%;padding:10px 14px;border:1.5px solid var(--border-mid);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:14px;box-sizing:border-box;"/>
+        <div id="brecall-feedback" style="height:20px;font-size:12px;margin-top:4px;"></div>
+      </div>
+      <div id="brecall-grid"></div>
+      <div style="margin-top:1rem;"><button class="btn btn-ghost btn-sm" onclick="giveUpBonesRecall()">Give up - show all</button></div>
+    </div>
+  </div>
+
+  <!-- BONES MCQ PANEL -->
+  <div class="panel" id="panel-bones-mcq">
+    <div id="bmcq-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&#8592; Back to Quiz</button>
+      <div class="page-title"><h1>MCQ - Bone Features</h1><p>Identify the bone from its features.</p></div>
+      <div class="card">
+        <div class="card-header"><div class="card-header-icon">&#9881;</div><h2>Settings</h2></div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+            <div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="bmcqSelectAll()">All</button><button class="btn btn-sm" onclick="bmcqSelectNone()">None</button></div>
+          </div>
+          <div class="recall-region-checks" id="bmcq-region-checks"></div>
+        </div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <label class="form-label" style="display:block;margin-bottom:8px;">Feature type</label>
+          <div class="anat-field-picks" id="bmcq-feature-picks">
+            <label class="recall-region-chip checked"><input type="checkbox" value="articulations" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Articulations</span></label>
+            <label class="recall-region-chip checked"><input type="checkbox" value="foramina" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Foramina</span></label>
+            <label class="recall-region-chip checked"><input type="checkbox" value="processes" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Processes</span></label>
+            <label class="recall-region-chip"><input type="checkbox" value="extra" onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>Clinical</span></label>
+          </div>
+        </div>
+        <div class="quiz-options-row">
+          <div class="form-field"><label class="form-label">Questions</label><div class="select-wrap"><select id="bmcq-count"><option value="10" selected>10</option><option value="20">20</option><option value="all">All</option></select></div></div>
+          <div class="form-field"><label class="form-label">Order</label><div class="select-wrap"><select id="bmcq-order"><option value="random">Random</option><option value="alpha">Alphabetical</option></select></div></div>
+        </div>
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);"><button class="btn btn-primary btn-full btn-lg" onclick="startBonesMCQ()">Start</button></div>
+      </div>
+    </div>
+    <div id="bmcq-session" style="display:none">
+      <div class="anat-session-header">
+        <div class="anat-progress-label"><span id="bmcq-q-num">1</span> / <span id="bmcq-q-total">10</span></div>
+        <div class="quiz-progress" style="flex:1;margin:0;"><div class="quiz-progress-fill" id="bmcq-progress" style="width:0%"></div></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="font-size:12px;color:var(--ok);font-weight:500;" id="bmcq-ok">0 &#10003;</span>
+          <span style="font-size:12px;color:var(--err);font-weight:500;" id="bmcq-err">0 &#10007;</span>
+          <button class="btn btn-ghost btn-sm" onclick="stopBonesMCQ()">Stop</button>
+        </div>
+      </div>
+      <div class="anat-card" id="bmcq-card"></div>
+    </div>
+    <div id="bmcq-end" style="display:none;" class="quiz-end">
+      <div class="quiz-end-emoji" id="bmcq-end-emoji">&#127881;</div>
+      <div class="quiz-end-title" id="bmcq-end-title">Done!</div>
+      <div class="quiz-end-sub" id="bmcq-end-sub"></div>
+      <div class="quiz-end-scores" id="bmcq-end-scores"></div>
+      <div class="quiz-end-actions">
+        <button class="btn btn-primary btn-lg" onclick="startBonesMCQ()">Play again</button>
+        <button class="btn" onclick="showBMCQSetup()">Settings</button>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -1097,6 +1236,19 @@
 <script>
 'use strict';
 
+// ── BONES DATA ────────────────────────────────────────────────────────────────
+const BUNDLED_BONES = [{"id":"bone_ethmoid","name":"Ethmoid Bone","region":"Skull","type":"Irregular","features":{"parts":["Cribriform plate","Perpendicular plate","Lateral masses (labyrinths)"],"processes":["Crista galli","Middle nasal conchae","Superior nasal conchae"],"foramina":["Cribriform foramina (CN I olfactory)"],"articulations":["Frontal","Sphenoid","Nasal","Lacrimal","Maxilla","Inferior nasal concha","Vomer","Palatine"],"extra":"Forms part of nasal septum, nasal conchae, and medial orbital wall"}},{"id":"bone_frontal","name":"Frontal Bone","region":"Skull","type":"Flat","features":{"surfaces":["External surface","Internal surface (endocranial)"],"processes":["Zygomatic process","Nasal spine"],"foramina":["Supraorbital foramen/notch"],"parts":["Squamous part","Orbital plates","Nasal part"],"articulations":["Parietal (coronal suture)","Sphenoid","Nasal","Ethmoid","Lacrimal","Zygomatic","Maxilla"],"extra":"Forms anterior cranial fossa and roof of orbits"}},{"id":"bone_occipital","name":"Occipital Bone","region":"Skull","type":"Flat","features":{"parts":["Squamous part","Lateral parts (condylar)","Basilar part"],"foramina":["Foramen magnum","Hypoglossal canal","Jugular foramen"],"processes":["External occipital protuberance","Internal occipital protuberance"],"lines":["Superior nuchal line","Inferior nuchal line","External occipital crest"],"condyles":["Occipital condyles (articulate with C1 atlas)"],"articulations":["Parietal (lambdoid)","Temporal","Sphenoid","Atlas (C1)"],"extra":"Contains foramen magnum; articulates with atlas forming atlanto-occipital joint"}},{"id":"bone_parietal","name":"Parietal Bone","region":"Skull","type":"Flat","features":{"surfaces":["External surface","Internal (endocranial) surface"],"borders":["Sagittal border","Squamosal border","Frontal border","Occipital border"],"foramina":["Parietal foramen (emissary vein)"],"articulations":["Opposite parietal (sagittal suture)","Frontal (coronal)","Occipital (lambdoid)","Temporal (squamosal)","Sphenoid"],"extra":"Forms the sides and roof of the cranium; has superior and inferior temporal lines"}},{"id":"bone_sphenoid","name":"Sphenoid Bone","region":"Skull","type":"Irregular","features":{"parts":["Body","Greater wings","Lesser wings","Pterygoid processes"],"foramina":["Foramen ovale","Foramen rotundum","Foramen spinosum","Optic canal","Superior orbital fissure"],"fossa":["Sella turcica (pituitary fossa)","Pterygopalatine fossa","Infratemporal fossa"],"processes":["Pterygoid processes (medial & lateral plates)"],"articulations":["Frontal","Parietal","Temporal","Occipital","Ethmoid","Vomer","Palatine","Zygomatic"],"extra":"Keystone of the skull base; sella turcica houses the pituitary gland"}},{"id":"bone_temporal","name":"Temporal Bone","region":"Skull","type":"Irregular","features":{"parts":["Squamous part","Tympanic part","Petrous part","Mastoid part"],"processes":["Mastoid process","Styloid process","Zygomatic process"],"foramina":["External acoustic meatus","Internal acoustic meatus","Stylomastoid foramen","Carotid canal","Jugular foramen"],"fossa":["Mandibular fossa (TMJ)","Carotid canal"],"articulations":["Parietal","Occipital","Sphenoid","Zygomatic","Mandible (TMJ)"],"extra":"Houses middle and inner ear; contains the carotid canal and jugular foramen"}},{"id":"bone_inferior_nasal_concha","name":"Inferior Nasal Concha","region":"Face","type":"Irregular","features":{"processes":["Lacrimal process","Maxillary process","Ethmoidal process"],"articulations":["Ethmoid","Lacrimal","Maxilla","Palatine"],"extra":"Largest of the three nasal conchae; independent bone (not part of ethmoid)"}},{"id":"bone_lacrimal","name":"Lacrimal Bone","region":"Face","type":"Flat","features":{"features_list":["Lacrimal groove","Posterior lacrimal crest","Anterior lacrimal crest"],"articulations":["Frontal","Ethmoid","Maxilla","Inferior nasal concha"],"extra":"Smallest and most fragile facial bone; contains lacrimal groove for nasolacrimal duct"}},{"id":"bone_mandible","name":"Mandible","region":"Face","type":"Irregular","features":{"parts":["Body","Ramus (left & right)"],"processes":["Coronoid process","Condylar process (head & neck)","Alveolar process"],"foramina":["Mandibular foramen","Mental foramen"],"borders":["Base","Alveolar border","Oblique line","Mylohyoid line"],"articulations":["Temporal bone (TMJ) — only movable joint of skull"],"extra":"Only movable bone of the skull; mental foramen transmits mental nerve and vessels"}},{"id":"bone_maxilla","name":"Maxilla","region":"Face","type":"Irregular","features":{"processes":["Frontal process","Zygomatic process","Alveolar process","Palatine process"],"foramina":["Infraorbital foramen","Incisive foramen"],"surfaces":["Anterior (facial)","Posterior (infratemporal)","Superior (orbital)","Medial (nasal)"],"articulations":["Opposite maxilla","Frontal","Nasal","Ethmoid","Lacrimal","Inferior nasal concha","Palatine","Zygomatic","Vomer"],"extra":"Contains upper teeth; palatine processes form anterior hard palate"}},{"id":"bone_nasal","name":"Nasal Bone","region":"Face","type":"Flat","features":{"surfaces":["External","Internal"],"articulations":["Opposite nasal bone","Frontal","Maxilla","Ethmoid (perpendicular plate)"],"extra":"Paired bones forming the bridge of the nose"}},{"id":"bone_palatine","name":"Palatine Bone","region":"Face","type":"Irregular","features":{"parts":["Horizontal plate","Perpendicular plate"],"processes":["Pyramidal process","Orbital process","Sphenoidal process"],"foramina":["Greater palatine foramen","Lesser palatine foramen"],"articulations":["Opposite palatine","Maxilla","Sphenoid","Ethmoid","Inferior nasal concha","Vomer"],"extra":"Forms posterior hard palate and part of nasal cavity floor"}},{"id":"bone_vomer","name":"Vomer","region":"Face","type":"Flat","features":{"parts":["Alae (superior wings)","Vertical plate"],"articulations":["Sphenoid","Ethmoid","Palatine","Maxilla","Opposite maxilla"],"extra":"Forms the inferior and posterior nasal septum; unpaired midline bone"}},{"id":"bone_zygomatic","name":"Zygomatic Bone","region":"Face","type":"Irregular","features":{"processes":["Frontal process","Temporal process","Maxillary process"],"foramina":["Zygomaticofacial foramen","Zygomaticotemporal foramen"],"surfaces":["Lateral (facial)","Temporal","Orbital"],"articulations":["Frontal","Temporal (forms zygomatic arch)","Maxilla","Sphenoid"],"extra":"Forms the cheekbone and part of the lateral orbital wall and zygomatic arch"}},{"id":"bone_hyoid","name":"Hyoid Bone","region":"Neck","type":"Irregular","features":{"parts":["Body","Greater horns (cornua)","Lesser horns (cornua)"],"articulations":["No bony articulations — suspended by muscles and ligaments"],"extra":"Only bone in the body with no bony articulations; U-shaped; supports tongue"}},{"id":"bone_atlas","name":"Atlas (C1)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Anterior arch","Posterior arch","Lateral masses","Transverse processes"],"foramina":["Vertebral foramen","Transverse foramen","Groove for vertebral artery (posterior arch)"],"facets":["Superior articular facets (occipital condyles)","Inferior articular facets (C2 axis)","Facet for dens"],"articulations":["Occipital bone (atlanto-occipital)","Axis C2 (atlanto-axial)"],"extra":"No body, no spinous process; ring-shaped; allows head flexion/extension (yes joint)"}},{"id":"bone_axis","name":"Axis (C2)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Body","Dens (odontoid process)","Pedicles","Laminae","Spinous process"],"foramina":["Vertebral foramen","Transverse foramen"],"special":["Dens (odontoid process) — pivot for atlas rotation"],"articulations":["Atlas C1","C3 vertebra","Occiput (through atlas)"],"extra":"Pivot joint with C1; dens retained body of atlas; allows head rotation (no joint)"}},{"id":"bone_cervical_vertebra","name":"Cervical Vertebra (C3–C7)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Body","Pedicles","Laminae","Spinous process","Transverse processes","Articular processes"],"foramina":["Vertebral foramen (triangular, large)","Transverse foramen (vertebral artery)"],"special":["Bifid spinous process (C3–C6)","Uncinate processes (joints of Luschka)"],"articulations":["Adjacent vertebrae via intervertebral discs and zygapophyseal joints"],"extra":"Smallest vertebrae; transverse foramen transmits vertebral artery and veins (C1–C6)"}},{"id":"bone_coccyx","name":"Coccyx","region":"Vertebral Column","type":"Irregular","features":{"parts":["3–5 fused rudimentary vertebrae","Coccygeal cornua"],"articulations":["Sacrum (sacrococcygeal joint)"],"extra":"Vestigial tailbone; attachment for gluteus maximus, coccygeus, levator ani and anococcygeal ligament"}},{"id":"bone_lumbar_vertebra","name":"Lumbar Vertebra (L1–L5)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Large body (kidney-shaped)","Pedicles","Laminae","Short stout spinous process","Transverse processes","Mammillary processes"],"foramina":["Vertebral foramen (triangular)"],"articulations":["Adjacent vertebrae","Sacrum (L5–S1)"],"extra":"Largest vertebrae; no transverse foramina, no costal facets; bears greatest weight"}},{"id":"bone_sacrum","name":"Sacrum","region":"Vertebral Column","type":"Irregular","features":{"parts":["Base (S1 superior surface)","Apex","Lateral parts (alae)","Sacral canal"],"foramina":["Anterior sacral foramina (x4 pairs)","Posterior sacral foramina (x4 pairs)","Sacral hiatus","Sacral canal"],"processes":["Median sacral crest","Intermediate sacral crests","Lateral sacral crests","Sacral promontory","Auricular surface"],"articulations":["L5 (lumbosacral)","Ilium (sacroiliac joint — both sides)","Coccyx"],"extra":"5 fused vertebrae; wedge-shaped; forms posterior wall of pelvis; sacroiliac joints transmit weight to lower limbs"}},{"id":"bone_thoracic_vertebra","name":"Thoracic Vertebra (T1–T12)","region":"Vertebral Column","type":"Irregular","features":{"parts":["Body","Pedicles","Laminae","Long spinous process (downward)","Transverse processes"],"facets":["Superior & inferior articular facets","Costal facets on body (head of rib)","Costal facets on transverse process (T1–T10, tubercle of rib)"],"foramina":["Vertebral foramen (circular, smaller than cervical)"],"articulations":["Adjacent vertebrae","Ribs (costovertebral joints)"],"extra":"Unique costal facets for rib articulation; long spinous processes overlap inferiorly"}},{"id":"bone_rib","name":"Ribs (1–12)","region":"Thorax","type":"Flat","features":{"parts":["Head","Neck","Tubercle","Shaft (body)","Angle","Costal groove"],"types":["True ribs (1–7): articulate directly with sternum via costal cartilage","False ribs (8–10): costal cartilage joins 7th","Floating ribs (11–12): no anterior articulation"],"special_ribs":["Rib 1: shortest, most curved; groove for subclavian vessels","Rib 2: roughness for serratus anterior","Rib 10–12: single articular facet on head"],"articulations":["Vertebrae (costovertebral joints)","Sternum via costal cartilage (1–7)"],"extra":"12 pairs; costal groove on inferior border protects intercostal neurovascular bundle"}},{"id":"bone_sternum","name":"Sternum","region":"Thorax","type":"Flat","features":{"parts":["Manubrium","Body (gladiolus)","Xiphoid process"],"joints":["Sternal angle (angle of Louis) — manubriosternal joint","Xiphisternal joint"],"notches":["Jugular (suprasternal) notch","Clavicular notches","Costal notches (1–7)"],"articulations":["Clavicles (sternoclavicular)","Costal cartilages 1–7","Manubrium articulates with 1st & 2nd rib"],"extra":"Sternal angle marks T4/T5 disc, 2nd rib, aortic arch, carina; red marrow used for biopsy"}},{"id":"bone_capitate","name":"Capitate","region":"Upper Limb","type":"Short — Carpal","features":{"parts":["Head (proximal — rounded)","Neck","Body"],"surfaces":["Head articulates with lunate & scaphoid","Distal: 3rd metacarpal (primary)","Lateral: trapezoid","Medial: hamate"],"articulations":["Lunate & Scaphoid (proximal)","Trapezoid","Hamate","2nd, 3rd, 4th metacarpals"],"extra":"Largest carpal bone; central keystone of the wrist; 2nd most commonly dislocated (perilunate)"}},{"id":"bone_clavicle","name":"Clavicle","region":"Upper Limb","type":"Long","features":{"ends":["Sternal (medial) end — rounded","Acromial (lateral) end — flattened"],"surfaces":["Superior","Inferior"],"impressions":["Impression for costoclavicular ligament","Conoid tubercle","Trapezoid line"],"foramina":["Nutrient foramen"],"articulations":["Sternum (sternoclavicular joint)","Acromion (acromioclavicular joint)"],"extra":"Only long bone that lies horizontally; S-shaped; transmits forces from upper limb to axial skeleton; most commonly fractured bone"}},{"id":"bone_hamate","name":"Hamate","region":"Upper Limb","type":"Short — Carpal","features":{"hook":"Hook of hamate (hamulus) — projects palmarly; ulnar nerve (deep branch) and ulnar artery pass around it","surfaces":["Proximal (lunate)","Lateral (capitate)","Distal (4th & 5th metacarpals)","Medial (triquetrum)"],"articulations":["Lunate","Triquetrum","Capitate","4th & 5th metacarpals"],"extra":"Hook fracture: cyclists, golfers, racquet sports; ulnar nerve deep branch curves around hook — motor branch at risk; Guyon's canal lateral wall"}},{"id":"bone_humerus","name":"Humerus","region":"Upper Limb","type":"Long","features":{"proximal":["Head","Anatomical neck","Surgical neck","Greater tubercle","Lesser tubercle","Intertubercular (bicipital) groove"],"shaft":["Deltoid tuberosity","Radial groove (spiral groove) — radial nerve","Nutrient foramen"],"distal":["Capitulum","Trochlea","Medial epicondyle","Lateral epicondyle","Olecranon fossa","Coronoid fossa","Radial fossa","Medial supracondylar ridge","Lateral supracondylar ridge"],"articulations":["Scapula (glenohumeral)","Radius (humeroradial)","Ulna (humeroulnar)"],"extra":"Surgical neck — axillary nerve injury; radial groove — radial nerve injury; medial epicondyle — ulnar nerve"}},{"id":"bone_lunate","name":"Lunate","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal convex (radius & TFCC)","Distal concave (capitate & hamate)","Medial (triquetrum)","Lateral (scaphoid)","Palmar (larger)","Dorsal (smaller)"],"shape":"Crescent (lunate-shaped) on lateral view","articulations":["Radius","Scaphoid (laterally)","Triquetrum (medially)","Capitate (distally)","Hamate (distally, medially)"],"extra":"Perilunate dislocation & lunate dislocation — major wrist injuries; Kienböck's disease — avascular necrosis of lunate"}},{"id":"bone_metacarpals","name":"Metacarpal Bones","region":"Upper Limb","type":"Long","features":{"parts":["Base (proximal)","Shaft","Head (knuckle)"],"numbering":"1 (thumb) to 5 (little finger)","articulations":["Carpals (carpometacarpal)","Proximal phalanges (metacarpophalangeal)"],"extra":"5 bones; 1st metacarpal has saddle joint with trapezium allowing thumb opposition"}},{"id":"bone_phalanges_hand","name":"Phalanges (Hand)","region":"Upper Limb","type":"Long","features":{"arrangement":["Proximal phalanges (x5)","Middle phalanges (x4 — no middle in thumb)","Distal phalanges (x5)"],"parts":["Base","Shaft","Head","Tuberosity (distal)"],"articulations":["Metacarpals (MCP joints)","Interphalangeal joints (PIP, DIP)"],"extra":"14 phalanges per hand; thumb has only 2 (proximal + distal); distal phalanges have ungual tuberosity"}},{"id":"bone_pisiform","name":"Pisiform","region":"Upper Limb","type":"Short — Sesamoid Carpal","features":{"shape":"Pea-shaped sesamoid bone embedded in flexor carpi ulnaris tendon","surfaces":["Articular facet for triquetrum (dorsal)"],"articulations":["Triquetrum only"],"attachments":["Flexor carpi ulnaris (tendon)","Flexor retinaculum","Abductor digiti minimi","Pisohamate ligament","Pisometacarpal ligament"],"extra":"Sesamoid bone within FCU tendon; forms medial boundary of Guyon's canal (ulnar nerve & artery pass lateral to it)"}},{"id":"bone_radius","name":"Radius","region":"Upper Limb","type":"Long","features":{"proximal":["Head (disc-shaped)","Neck","Radial tuberosity (bicipital tuberosity)"],"shaft":["Anterior oblique line","Interosseous border"],"distal":["Styloid process","Dorsal tubercle (Lister's tubercle)","Ulnar notch","Carpal articular surface"],"articulations":["Humerus (humeroradial)","Ulna (proximal & distal radioulnar)","Scaphoid & lunate (radiocarpal)"],"extra":"Lateral bone of forearm; rotates around ulna in pronation/supination; bears most of wrist load"}},{"id":"bone_scaphoid","name":"Scaphoid","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal convex surface (articulates with radius)","Waist (narrowest — fracture site)","Distal surface","Palmar surface (tubercle)"],"tubercle":"Scaphoid tubercle — attachment of flexor retinaculum and abductor pollicis brevis","articulations":["Radius (radiocarpal joint)","Lunate (medially)","Trapezium & Trapezoid (distally)","Capitate (distally & medially)"],"blood_supply":"Dorsal branch of radial artery enters distally → waist fractures risk avascular necrosis of proximal pole","extra":"Most commonly fractured carpal bone (fall on outstretched hand); tenderness in anatomical snuffbox; proximal pole AVN risk if fracture untreated"}},{"id":"bone_scapula","name":"Scapula","region":"Upper Limb","type":"Flat","features":{"surfaces":["Costal (subscapular) fossa","Posterior: supraspinous fossa, infraspinous fossa"],"borders":["Superior border","Medial (vertebral) border","Lateral (axillary) border"],"angles":["Superior angle","Inferior angle","Lateral angle (glenoid cavity)"],"processes":["Acromion","Coracoid process","Spine of scapula"],"notches":["Suprascapular notch"],"articulations":["Clavicle (acromioclavicular)","Humerus (glenohumeral — ball and socket)"],"extra":"Triangular flat bone; coracoid process — 'bent finger' — attachment for biceps short head, coracobrachialis, pectoralis minor"}},{"id":"bone_trapezium","name":"Trapezium","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal (scaphoid)","Distal (1st metacarpal — saddle joint)","Medial (trapezoid & 2nd metacarpal)"],"groove":"Groove for flexor carpi radialis tendon on palmar surface","tubercle":"Trapezium tubercle — attachment of flexor retinaculum","articulations":["Scaphoid","Trapezoid","1st metacarpal (CMC1 — saddle joint)","2nd metacarpal"],"extra":"Saddle joint with 1st metacarpal allows thumb opposition; FCR tendon grooves its palmar surface; flexor retinaculum attaches to tubercle"}},{"id":"bone_trapezoid","name":"Trapezoid","region":"Upper Limb","type":"Short — Carpal","features":{"shape":"Wedge-shaped — smallest bone of distal carpal row","surfaces":["Proximal (scaphoid)","Distal (2nd metacarpal — tight fit)","Medial (capitate)","Lateral (trapezium)"],"articulations":["Scaphoid","2nd metacarpal","Capitate","Trapezium"],"extra":"Least commonly fractured carpal due to protected position; 2nd metacarpal tightly wedged — stable CMC joint"}},{"id":"bone_triquetrum","name":"Triquetrum","region":"Upper Limb","type":"Short — Carpal","features":{"surfaces":["Proximal (TFCC/ulnocarpal complex — no direct ulnar contact)","Hamate facet (distal)","Lunate facet (lateral)","Pisiform facet (palmar — oval)"],"articulations":["Lunate","Hamate","Pisiform"],"extra":"3rd most commonly fractured carpal; no direct articulation with ulna; pisiform sits on its palmar surface"}},{"id":"bone_ulna","name":"Ulna","region":"Upper Limb","type":"Long","features":{"proximal":["Olecranon","Coronoid process","Trochlear notch","Radial notch"],"shaft":["Interosseous border","Anterior surface","Posterior surface"],"distal":["Head","Styloid process"],"articulations":["Humerus (humeroulnar — primary elbow joint)","Radius (proximal & distal radioulnar)","Wrist — only via disc"],"extra":"Medial bone of forearm; olecranon — attachment of triceps; does not directly articulate with carpal bones"}},{"id":"bone_hip","name":"Hip Bone (Os Coxae)","region":"Pelvis","type":"Irregular","features":{"components":["Ilium (superior — blade)","Ischium (posteroinferior)","Pubis (anteroinferior)"],"landmarks_ilium":["Iliac crest","ASIS","AIIS","PSIS","PIIS","Iliac fossa","Auricular surface","Gluteal lines (anterior, posterior, inferior)"],"landmarks_ischium":["Ischial tuberosity","Ischial spine","Lesser sciatic notch","Ischial ramus"],"landmarks_pubis":["Pubic symphysis","Pubic tubercle","Pubic crest","Superior & inferior pubic rami","Obturator foramen"],"acetabulum":["Formed by ilium (2/5) + ischium (2/5) + pubis (1/5)","Acetabular notch","Lunate surface","Acetabular fossa"],"greater_sciatic_notch":"Between PIIS and ischial spine — piriformis exits here","articulations":["Sacrum (sacroiliac)","Opposite hip bone (pubic symphysis)","Femur (hip joint)"],"extra":"3 bones fused at acetabulum by age 16–17; obturator foramen — largest foramen in body"}},{"id":"bone_calcaneus","name":"Calcaneus","region":"Lower Limb","type":"Short — Tarsal","features":{"parts":["Body","Calcaneal tuberosity (posterior — Achilles tendon)","Sustentaculum tali","Anterior process","Peroneal trochlea"],"articular_surfaces":["Posterior talocalcaneal facet (largest)","Middle talocalcaneal facet (on sustentaculum tali)","Anterior talocalcaneal facet","Calcaneocuboid facet"],"grooves":["Groove for flexor hallucis longus (under sustentaculum tali)","Sinus tarsi — between posterior and middle facets"],"articulations":["Talus (subtalar joint — 3 facets)","Cuboid (calcaneocuboid joint)"],"extra":"Largest tarsal bone; sustentaculum tali supports talus head; Achilles inserts on posterior tuberosity; most commonly fractured tarsal (fall from height — 'lover's fracture'); Böhler's angle reduced in fracture"}},{"id":"bone_cuboid","name":"Cuboid","region":"Lower Limb","type":"Short — Tarsal","features":{"groove":"Groove for peroneus longus tendon on plantar surface","tuberosity":"Cuboid tuberosity — peroneus brevis insertion","surfaces":["Proximal (calcaneus)","Distal (4th & 5th metatarsals)","Medial (lateral cuneiform & navicular)","Plantar (groove for peroneus longus)"],"articulations":["Calcaneus","4th & 5th metatarsals","Lateral cuneiform","Navicular (inconstant)"],"extra":"Only tarsal bone articulating with 2 metatarsals; peroneus longus groove on plantar surface — key landmark; cuboid syndrome — subluxation causing lateral foot pain"}},{"id":"bone_femur","name":"Femur","region":"Lower Limb","type":"Long","features":{"proximal":["Head","Fovea capitis (ligamentum teres)","Neck","Greater trochanter","Lesser trochanter","Intertrochanteric line (anterior)","Intertrochanteric crest (posterior)","Trochanteric fossa"],"shaft":["Linea aspera (medial & lateral lips)","Gluteal tuberosity","Pectineal line","Nutrient foramen"],"distal":["Medial condyle","Lateral condyle","Medial epicondyle","Lateral epicondyle","Intercondylar fossa","Popliteal surface","Adductor tubercle"],"articulations":["Hip bone (hip joint — ball and socket)","Tibia (knee joint)","Patella"],"extra":"Longest and strongest bone; neck-shaft angle ~126°; angle of inclination; neck fracture → avascular necrosis; linea aspera = main posterior attachment ridge"}},{"id":"bone_fibula","name":"Fibula","region":"Lower Limb","type":"Long","features":{"proximal":["Head","Neck (common fibular nerve)","Apex of head"],"shaft":["Interosseous border","Anterior border","Posterior border","Nutrient foramen"],"distal":["Lateral malleolus","Articular facets","Malleolar fossa"],"articulations":["Tibia (proximal & distal tibiofibular — syndesmosis)","Talus (lateral part of ankle mortise)"],"extra":"Lateral bone of leg; non-weight bearing; common fibular nerve wraps around neck — vulnerable to injury; lateral malleolus extends more inferiorly than medial"}},{"id":"bone_intermediate_cuneiform","name":"Intermediate Cuneiform","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Smallest cuneiform; wedge with base dorsal (reversed vs medial)","articulations":["Navicular","2nd metatarsal","Medial cuneiform","Lateral cuneiform"],"extra":"Smallest and most recessed cuneiform; 2nd metatarsal recessed into mortise between cuneiforms — makes CMC2 most stable; Lisfranc ligament attaches between medial cuneiform and 2nd metatarsal base"}},{"id":"bone_lateral_cuneiform","name":"Lateral Cuneiform","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Intermediate size; wedge with base dorsal","articulations":["Navicular","3rd metatarsal","Cuboid","Intermediate cuneiform","4th metatarsal (partial)"],"attachments":["Tibialis posterior (partial)","Flexor hallucis brevis (partial)"],"extra":"Articulates with both navicular and cuboid; forms lateral part of Lisfranc joint; 3rd TMT joint more mobile than 1st and 2nd"}},{"id":"bone_medial_cuneiform","name":"Medial Cuneiform","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Largest cuneiform; wedge-shaped with base plantar","articulations":["Navicular (proximally)","1st metatarsal (distally)","Intermediate cuneiform (laterally)","2nd metatarsal (partial)"],"attachments":["Tibialis anterior (plantar base)","Tibialis posterior (partial)","Peroneus longus (partial)","1st metatarsal joint capsule"],"extra":"Base is plantar — wider plantarly, contributes to medial longitudinal arch; key bone of Lisfranc joint complex"}},{"id":"bone_metatarsals","name":"Metatarsal Bones","region":"Lower Limb","type":"Long","features":{"parts":["Base (proximal)","Shaft","Head (distal)"],"special":["1st metatarsal — shortest, widest; 2 sesamoid bones under head","5th metatarsal — styloid process (peroneus brevis insertion); commonly fractured (Jones fracture)"],"numbering":"1 (big toe) to 5 (little toe)","articulations":["Tarsals (tarsometatarsal)","Proximal phalanges (metatarsophalangeal)"],"extra":"5 bones; 1st bears most weight; 5th base Jones fracture common; transverse arch at heads"}},{"id":"bone_navicular","name":"Navicular","region":"Lower Limb","type":"Short — Tarsal","features":{"shape":"Boat-shaped (navicular = little boat)","tuberosity":"Navicular tuberosity (medial) — tibialis posterior insertion; palpable medially","surfaces":["Proximal concave (talus head)","Distal (3 cuneiform facets)","Plantar (rough — ligaments)"],"articulations":["Talus (talonavicular)","Medial, intermediate, lateral cuneiforms"],"extra":"Tibialis posterior main insertion; accessory navicular (os naviculare) common variant; stress fractures in athletes; Köhler's disease — AVN in children"}},{"id":"bone_patella","name":"Patella","region":"Lower Limb","type":"Sesamoid","features":{"surfaces":["Anterior (subcutaneous)","Posterior (articular — medial & lateral facets)"],"borders":["Base (superior)","Apex (inferior)"],"articulations":["Femur (patellofemoral joint)"],"extra":"Largest sesamoid bone; embedded in quadriceps tendon; protects knee joint; increases leverage of quadriceps"}},{"id":"bone_phalanges_foot","name":"Phalanges (Foot)","region":"Lower Limb","type":"Long","features":{"arrangement":["Proximal phalanges (x5)","Middle phalanges (x4 — hallux has none)","Distal phalanges (x5)"],"parts":["Base","Shaft","Head","Tuberosity (distal)"],"articulations":["Metatarsals (MTP joints)","Interphalangeal joints (PIP, DIP)"],"extra":"14 phalanges per foot; hallux has 2; hammer toe — PIP flexion deformity; claw toe — MTP hyperextension"}},{"id":"bone_talus","name":"Talus","region":"Lower Limb","type":"Short — Tarsal","features":{"parts":["Head","Neck","Body","Trochlea (superior articular surface)","Medial & lateral tubercles","Posterior process"],"articular_surfaces":["Superior trochlea (tibia)","Medial facet (medial malleolus)","Lateral facet (lateral malleolus)","Head (navicular)","3 calcaneal facets (inferior)"],"sulcus_tali":"Sinus tarsi — groove between posterior and middle calcaneal facets","articulations":["Tibia & fibula (talocrural — ankle mortise)","Calcaneus (subtalar joint)","Navicular (talonavicular joint)"],"blood_supply":"Tenuous — from artery of tarsal sinus & posterior tibial artery; neck fractures → AVN risk","extra":"No muscle attachments; transmits entire body weight; second most commonly fractured tarsal; AVN risk after neck fracture (Hawkins classification)"}},{"id":"bone_tibia","name":"Tibia","region":"Lower Limb","type":"Long","features":{"proximal":["Medial condyle","Lateral condyle","Tibial plateau","Intercondylar eminence (spines)","Gerdy's tubercle","Fibular facet"],"shaft":["Tibial tuberosity (patellar ligament)","Anterior border (shin)","Medial surface (subcutaneous)","Soleal line","Interosseous border","Nutrient foramen"],"distal":["Medial malleolus","Fibular notch","Inferior articular surface","Groove for tibialis posterior"],"articulations":["Femur (knee)","Fibula (proximal & distal tibiofibular)","Talus (ankle mortise)"],"extra":"Medial bone of leg; bears ~85% of body weight; medial malleolus — deltoid ligament; anterior border subcutaneous — stress fractures"}}];
+let bonesData = JSON.parse(localStorage.getItem('musclequiz_bones') || 'null') || BUNDLED_BONES;
+// Always sync from bundle (update features if app updates)
+function syncBones() {
+  const map = new Map(BUNDLED_BONES.map(b => [b.id, b]));
+  bonesData = BUNDLED_BONES; // always use latest
+  localStorage.setItem('musclequiz_bones', JSON.stringify(bonesData));
+}
+syncBones();
+
+
+
 // ── Core utility — defined first so all functions can use it ─────────────────
 function esc(s) {
   if (s == null) return '';
@@ -1134,6 +1286,9 @@ function switchPanel(name) {
   if (name === 'list')   { populateFilters(); renderList(); }
   if (name === 'stats')  { renderStats(); }
   if (name === 'artery') { initArteryMap(); }
+  if (name === 'bones')  { initBones(); }
+  if (name === 'bones-recall') { initBonesRecall(); }
+  if (name === 'bones-mcq')   { initBonesMCQ(); }
   if (name === 'quiz')   { populateFilters(); }
   if (name === 'recall') { populateRecallFilters(); }
   if (name === 'cards')  { initCards(); }
@@ -2939,6 +3094,342 @@ function initArteryPanZoom() {
   vp.style.cursor = 'grab';
 }
 
+
+
+// ── BONES RECALL ──────────────────────────────────────────────────────────────
+let brecallPool = [], brecallFound = new Set(), brecallIndex = [];
+
+function initBonesRecall() {
+  const regions = [...new Set(bonesData.map(b => b.region))].sort();
+  const container = document.getElementById('brecall-region-checks');
+  if (!container || container.children.length > 0) return;
+  regions.forEach(r => {
+    const color = brc(r), count = bonesData.filter(b => b.region === r).length;
+    const lbl = document.createElement('label');
+    lbl.className = 'recall-region-chip checked';
+    lbl.innerHTML = '<input type="checkbox" value="' + r + '" checked onchange="this.closest(&quot;label&quot;).classList.toggle(&quot;checked&quot;,this.checked)" style="display:none"><span class="region-dot" style="background:' + color + '"></span><span>' + esc(r) + '</span><span class="recall-chip-count">' + count + '</span>';
+    container.appendChild(lbl);
+  });
+}
+function brecallSelectAll()  { document.querySelectorAll('#brecall-region-checks input').forEach(cb => { cb.checked=true;  cb.closest('label').classList.add('checked'); }); }
+function brecallSelectNone() { document.querySelectorAll('#brecall-region-checks input').forEach(cb => { cb.checked=false; cb.closest('label').classList.remove('checked'); }); }
+
+function startBonesRecall() {
+  const sel = [...document.querySelectorAll('#brecall-region-checks input:checked')].map(c => c.value);
+  if (!sel.length) { toast('Select at least one region!'); return; }
+  brecallPool = bonesData.filter(b => sel.includes(b.region));
+  brecallFound = new Set();
+  brecallIndex = brecallPool.map((b, i) => ({
+    bone: b, idx: i,
+    canonical: b.name.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()
+  }));
+  document.getElementById('brecall-setup').style.display   = 'none';
+  document.getElementById('brecall-session').style.display = 'block';
+  document.getElementById('brecall-total').textContent     = brecallPool.length;
+  document.getElementById('brecall-found').textContent     = '0';
+  document.getElementById('brecall-progress').style.width  = '0%';
+  buildBrecallGrid();
+  setTimeout(() => document.getElementById('brecall-input').focus(), 50);
+}
+
+function buildBrecallGrid() {
+  const regions = [...new Set(brecallPool.map(b => b.region))].sort();
+  document.getElementById('brecall-grid').innerHTML = regions.map(r => {
+    const bones = brecallPool.filter(b => b.region === r);
+    const color = brc(r);
+    const cells = bones.map(b => {
+      const idx = brecallPool.indexOf(b);
+      return '<td class="recall-cell" id="brcell-' + idx + '"><span class="recall-cell-blank"><span class="recall-cell-len">' + b.name.length + '</span></span><span class="recall-cell-name" style="display:none">' + esc(b.name) + '</span></td>';
+    }).join('');
+    return '<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px"><span class="region-dot" style="background:' + color + '"></span><span style="color:' + color + '">' + esc(r) + '</span><span style="opacity:.5">' + bones.length + '</span></div><table class="recall-table"><tbody><tr>' + cells + '</tr></tbody></table></div>';
+  }).join('');
+}
+
+function onBrecallInput() {
+  const inp = document.getElementById('brecall-input');
+  const answer = inp.value.toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  if (answer.length < 2) return;
+  let matched = null;
+  for (const entry of brecallIndex) {
+    if (brecallFound.has(entry.bone.id)) continue;
+    if (answer === entry.canonical) { matched = entry; break; }
+    if (answer.length >= entry.canonical.length && damerauLev(answer, entry.canonical) <= 1) { matched = entry; break; }
+  }
+  if (matched) {
+    brecallFound.add(matched.bone.id);
+    inp.value = '';
+    const cell = document.getElementById('brcell-' + matched.idx);
+    if (cell) { cell.classList.add('found'); cell.querySelector('.recall-cell-blank').style.display='none'; cell.querySelector('.recall-cell-name').style.display='block'; }
+    const count = brecallFound.size;
+    document.getElementById('brecall-found').textContent    = count;
+    document.getElementById('brecall-progress').style.width = (count / brecallPool.length * 100) + '%';
+    const fb = document.getElementById('brecall-feedback');
+    if (fb) { fb.textContent = '\u2713 ' + matched.bone.name; fb.style.color = 'var(--ok)'; }
+    if (count === brecallPool.length) setTimeout(() => toast('All bones found!'), 300);
+  }
+}
+
+function giveUpBonesRecall() {
+  brecallIndex.forEach(e => {
+    if (brecallFound.has(e.bone.id)) return;
+    const cell = document.getElementById('brcell-' + e.idx);
+    if (cell) { cell.classList.add('missed'); cell.querySelector('.recall-cell-blank').style.display='none'; cell.querySelector('.recall-cell-name').style.display='block'; }
+  });
+}
+function stopBonesRecall() {
+  document.getElementById('brecall-session').style.display = 'none';
+  document.getElementById('brecall-setup').style.display   = 'block';
+}
+
+// ── BONES MCQ ─────────────────────────────────────────────────────────────────
+let bmcqPool = [], bmcqIdx = 0, bmcqCorrect = 0, bmcqWrong = 0, bmcqAnswered = false;
+const BMCQ_LABELS = { articulations:'Articulations', foramina:'Foramina', processes:'Processes', extra:'Clinical note', parts:'Parts', surfaces:'Surfaces', special:'Special', tubercle:'Tubercle', groove:'Groove', hook:'Hook', shape:'Shape', tuberosity:'Tuberosity', blood_supply:'Blood supply' };
+
+function initBonesMCQ() {
+  const regions = [...new Set(bonesData.map(b => b.region))].sort();
+  const container = document.getElementById('bmcq-region-checks');
+  if (!container || container.children.length > 0) return;
+  regions.forEach(r => {
+    const color = brc(r), count = bonesData.filter(b => b.region === r).length;
+    const lbl = document.createElement('label');
+    lbl.className = 'recall-region-chip checked';
+    lbl.innerHTML = '<input type="checkbox" value="' + r + '" checked onchange="this.closest(&quot;label&quot;).classList.toggle(&quot;checked&quot;,this.checked)" style="display:none"><span class="region-dot" style="background:' + color + '"></span><span>' + esc(r) + '</span><span class="recall-chip-count">' + count + '</span>';
+    container.appendChild(lbl);
+  });
+}
+function bmcqSelectAll()  { document.querySelectorAll('#bmcq-region-checks input').forEach(cb => { cb.checked=true;  cb.closest('label').classList.add('checked'); }); }
+function bmcqSelectNone() { document.querySelectorAll('#bmcq-region-checks input').forEach(cb => { cb.checked=false; cb.closest('label').classList.remove('checked'); }); }
+function getBmcqFeatures() { return [...document.querySelectorAll('#bmcq-feature-picks input:checked')].map(cb => cb.value); }
+
+function startBonesMCQ() {
+  const selRegions = [...document.querySelectorAll('#bmcq-region-checks input:checked')].map(cb => cb.value);
+  const selFeats   = getBmcqFeatures();
+  const countSel   = document.getElementById('bmcq-count').value;
+  const order      = document.getElementById('bmcq-order').value;
+  if (!selRegions.length) { toast('Select at least one region!'); return; }
+  if (!selFeats.length)   { toast('Select at least one feature!'); return; }
+  let pool = bonesData.filter(b => selRegions.includes(b.region) && selFeats.some(f => b.features[f] && (Array.isArray(b.features[f]) ? b.features[f].length : b.features[f])));
+  if (pool.length < 4) { toast('Need at least 4 bones with data!'); return; }
+  if (order === 'random') shuffle(pool); else pool.sort((a,b) => a.name.localeCompare(b.name));
+  const count = countSel === 'all' ? pool.length : Math.min(parseInt(countSel), pool.length);
+  bmcqPool = pool.slice(0, count);
+  bmcqIdx = 0; bmcqCorrect = 0; bmcqWrong = 0; bmcqAnswered = false;
+  document.getElementById('bmcq-setup').style.display   = 'none';
+  document.getElementById('bmcq-end').style.display     = 'none';
+  document.getElementById('bmcq-session').style.display = 'block';
+  document.getElementById('bmcq-q-total').textContent   = bmcqPool.length;
+  renderBonesMCQ();
+}
+
+function renderBonesMCQ() {
+  if (bmcqIdx >= bmcqPool.length) { showBMCQEnd(); return; }
+  bmcqAnswered = false;
+  const bone = bmcqPool[bmcqIdx];
+  const color = brc(bone.region);
+  const feats = getBmcqFeatures().filter(f => bone.features[f] && (Array.isArray(bone.features[f]) ? bone.features[f].length : bone.features[f]));
+  if (!feats.length) { bmcqIdx++; renderBonesMCQ(); return; }
+  const feat   = feats[Math.floor(Math.random() * feats.length)];
+  const val    = bone.features[feat];
+  const valStr = Array.isArray(val) ? val.slice(0,3).join(' / ') : String(val);
+  const label  = BMCQ_LABELS[feat] || feat;
+  document.getElementById('bmcq-q-num').textContent    = bmcqIdx + 1;
+  document.getElementById('bmcq-progress').style.width = (bmcqIdx / bmcqPool.length * 100) + '%';
+  document.getElementById('bmcq-ok').textContent       = bmcqCorrect + ' \u2713';
+  document.getElementById('bmcq-err').textContent      = bmcqWrong  + ' \u2717';
+  const same   = bonesData.filter(b => b.id !== bone.id && b.region === bone.region);
+  const others = bonesData.filter(b => b.id !== bone.id && b.region !== bone.region);
+  shuffle(same); shuffle(others);
+  const options = shuffle([{name:bone.name,correct:true},...[...same,...others].slice(0,3).map(d=>({name:d.name,correct:false}))]);
+  document.getElementById('bmcq-card').innerHTML =
+    '<div class="anat-muscle-header"><div class="fc-region-bar" style="background:' + color + ';border-radius:var(--r-lg) var(--r-lg) 0 0;margin:-1px -1px 0;"></div>'
+    + '<div class="anat-muscle-inner"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(bone.region) + '</span>'
+    + '<h2 class="mcqr-question-title">Which bone has this <strong>' + esc(label.toLowerCase()) + '</strong>?</h2>'
+    + '</div></div>'
+    + '<div class="mcqr-clues"><div class="mcqr-clue-row"><div class="mcqr-clue-label">' + esc(label) + '</div>'
+    + '<div class="mcqr-clue-val">' + esc(valStr.length > 200 ? valStr.slice(0,198) + '...' : valStr) + '</div></div></div>'
+    + '<div class="mcq-options-grid" id="bmcq-opts">'
+    + options.map((o,i) => '<button class="mcq-anat-opt" id="bmcqopt-' + i + '" data-correct="' + o.correct + '" onclick="checkBonesMCQ(' + i + ',' + o.correct + ')"><span class="mcq-opt-letter">' + 'ABCD'[i] + '</span><span class="mcq-opt-text">' + esc(o.name) + '</span></button>').join('')
+    + '</div><div class="mcq-anat-feedback" id="bmcq-feedback" style="display:none"></div>';
+}
+
+function checkBonesMCQ(idx, isCorrect) {
+  if (bmcqAnswered) return;
+  bmcqAnswered = true;
+  const opts = document.querySelectorAll('#bmcq-opts .mcq-anat-opt');
+  opts.forEach(b => b.disabled = true);
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) { opts.forEach(b => { if (b.dataset.correct === 'true') b.classList.add('correct'); }); bmcqWrong++; }
+  else bmcqCorrect++;
+  document.getElementById('bmcq-ok').textContent  = bmcqCorrect + ' \u2713';
+  document.getElementById('bmcq-err').textContent = bmcqWrong  + ' \u2717';
+  const bone = bmcqPool[bmcqIdx];
+  const fb = document.getElementById('bmcq-feedback');
+  fb.style.display = 'block';
+  fb.innerHTML = '<div class="mcq-fb-row"><span class="mcq-fb-icon ' + (isCorrect?'ok':'err') + '">' + (isCorrect?'\u2713':'\u2717') + '</span><span class="mcq-fb-text">' + (isCorrect ? 'Correct!' : 'Wrong - it was <strong>' + esc(bone.name) + '</strong>') + '</span><button class="btn btn-primary" style="margin-left:auto" onclick="nextBonesMCQ()">' + (bmcqIdx+1 < bmcqPool.length ? 'Next \u2192' : 'Results') + '</button></div>';
+  if (isCorrect) setTimeout(() => { if (bmcqAnswered) nextBonesMCQ(); }, 1200);
+}
+function nextBonesMCQ() { bmcqIdx++; renderBonesMCQ(); }
+function showBMCQEnd() {
+  document.getElementById('bmcq-session').style.display = 'none';
+  document.getElementById('bmcq-end').style.display     = 'flex';
+  const pct = bmcqPool.length ? Math.round(bmcqCorrect/bmcqPool.length*100) : 0;
+  document.getElementById('bmcq-end-emoji').textContent = pct>=80?'\uD83C\uDF89':pct>=60?'\uD83D\uDCAA':'\uD83D\uDCDA';
+  document.getElementById('bmcq-end-title').textContent = pct>=80?'Excellent!':pct>=60?'Good work!':'Keep practicing!';
+  document.getElementById('bmcq-end-sub').textContent   = pct + '% correct over ' + bmcqPool.length + ' questions';
+  document.getElementById('bmcq-end-scores').innerHTML  = '<div class="end-score-box ok"><div class="val">' + bmcqCorrect + '</div><div class="lbl">Correct</div></div><div class="end-score-box err"><div class="val">' + bmcqWrong + '</div><div class="lbl">Wrong</div></div><div class="end-score-box"><div class="val">' + pct + '%</div><div class="lbl">Rate</div></div>';
+}
+function showBMCQSetup() {
+  document.getElementById('bmcq-session').style.display = 'none';
+  document.getElementById('bmcq-end').style.display     = 'none';
+  document.getElementById('bmcq-setup').style.display   = 'block';
+}
+function stopBonesMCQ() {
+  showModal('Stop?', '<p>Progress will be lost.</p>', [
+    { label: 'Stop',     cls: 'btn btn-danger',  action: () => { hideModal(); showBMCQSetup(); } },
+    { label: 'Continue', cls: 'btn btn-primary',  action: hideModal },
+  ]);
+}
+
+// ── BONES CARDS ───────────────────────────────────────────────────────────────
+let cardsType = 'muscle';
+function setCardsType(type) {
+  cardsType = type;
+  document.querySelectorAll('.cards-type-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('cards-type-' + type);
+  if (btn) btn.classList.add('active');
+  initCards();
+}
+
+// ── BONES PANEL ───────────────────────────────────────────────────────────────
+
+const BONE_REGION_COLORS = {
+  'Skull':            '#8B7355',
+  'Face':             '#A0896B',
+  'Neck':             '#6B8E8E',
+  'Vertebral Column': '#7B9E7B',
+  'Thorax':           '#7B8E9E',
+  'Upper Limb':       '#9E7B8E',
+  'Pelvis':           '#8E9E7B',
+  'Lower Limb':       '#7B7B9E',
+};
+function brc(region) { return BONE_REGION_COLORS[region] || '#888'; }
+
+function initBones() {
+  // Populate region filter
+  const regions = [...new Set(bonesData.map(b => b.region))].sort();
+  const sel = document.getElementById('bones-region-filter');
+  if (sel && sel.options.length === 1) {
+    regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; sel.appendChild(o); });
+  }
+  renderBonesList();
+}
+
+function renderBonesList() {
+  const q      = (document.getElementById('bones-search')?.value || '').toLowerCase().trim();
+  const region = document.getElementById('bones-region-filter')?.value || '';
+  const list   = document.getElementById('bones-list');
+  if (!list) return;
+
+  let filtered = bonesData.filter(b => {
+    if (region && b.region !== region) return false;
+    if (q && !b.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<p style="color:var(--text3);font-style:italic;padding:1rem;">No bones found.</p>';
+    return;
+  }
+
+  // Group by region
+  const groups = {};
+  filtered.forEach(b => { if (!groups[b.region]) groups[b.region] = []; groups[b.region].push(b); });
+
+  list.innerHTML = Object.keys(groups).sort().map(r => {
+    const color = brc(r);
+    const items = groups[r].map(b => {
+      const featureCount = Object.keys(b.features || {}).length;
+      return '<div class="bone-card" data-bid="' + b.id + '" onclick="openBoneDetail(this.getAttribute(\"data-bid\"))">'
+        + '<div class="bone-card-bar" style="background:' + color + '"></div>'
+        + '<div class="bone-card-body">'
+        + '<div class="bone-card-name">' + esc(b.name) + '</div>'
+        + '<div class="bone-card-meta">'
+        + '<span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(b.type) + '</span>'
+        + '<span style="font-size:11px;color:var(--text3)">' + featureCount + ' feature groups</span>'
+        + '</div>'
+        + '</div>'
+        + '<div class="bone-card-arrow">›</div>'
+        + '</div>';
+    }).join('');
+    return '<div class="bones-region-group">'
+      + '<div class="bones-region-header"><span class="region-dot" style="background:' + color + '"></span>' + esc(r) + '</div>'
+      + '<div class="bones-region-items">' + items + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function openBoneDetail(id) {
+  const bone = bonesData.find(b => b.id === id);
+  if (!bone) return;
+  const color = brc(bone.region);
+  const f = bone.features || {};
+
+  const FEATURE_LABELS = {
+    surfaces:'Surfaces', processes:'Processes', foramina:'Foramina', parts:'Parts',
+    articulations:'Articulations', extra:'Clinical notes', borders:'Borders',
+    lines:'Lines', condyles:'Condyles', fossa:'Fossae', special:'Special features',
+    facets:'Facets', notches:'Notches', proximal:'Proximal end', shaft:'Shaft',
+    distal:'Distal end', ends:'Ends', impressions:'Impressions', types:'Types',
+    components:'Components', landmarks_ilium:'Ilium landmarks',
+    landmarks_ischium:'Ischium landmarks', landmarks_pubis:'Pubis landmarks',
+    acetabulum:'Acetabulum', special_ribs:'Special ribs',
+    proximal_row:'Proximal row', distal_row:'Distal row', mnemonic:'Mnemonic',
+    numbering:'Numbering', arrangement:'Arrangement', bones:'Bones',
+    calcaneus_features:'Calcaneus', talus_features:'Talus',
+    greater_sciatic_notch:'Greater sciatic notch', features_list:'Features',
+    special:'Special', joints:'Joints', joint:'Joint',
+  };
+
+  const FEATURE_ICONS = {
+    surfaces:'🔲', processes:'⬆', foramina:'⭕', parts:'🔷', articulations:'🔗',
+    extra:'🩺', borders:'📐', lines:'📏', condyles:'⚫', fossa:'🕳',
+    special:'⭐', facets:'💎', notches:'🔻', proximal:'⬆', shaft:'📊',
+    distal:'⬇', ends:'↔', impressions:'📍', types:'📋', components:'🔵',
+    landmarks_ilium:'📍', landmarks_ischium:'📍', landmarks_pubis:'📍',
+    acetabulum:'⚪', special_ribs:'⭐', proximal_row:'⬆', distal_row:'⬇',
+    mnemonic:'💡', numbering:'🔢', arrangement:'📐', bones:'🦴',
+    calcaneus_features:'🦶', talus_features:'🦶', joints:'🔗',
+  };
+
+  const featureHTML = Object.entries(f).map(([key, val]) => {
+    const label = FEATURE_LABELS[key] || key.replace(/_/g,' ');
+    const icon  = FEATURE_ICONS[key] || '•';
+    let content = '';
+    if (Array.isArray(val)) {
+      content = '<ul class="bone-feature-list">' + val.map(v => '<li>' + esc(v) + '</li>').join('') + '</ul>';
+    } else {
+      content = '<p class="bone-feature-text">' + esc(val) + '</p>';
+    }
+    return '<div class="bone-feature-section">'
+      + '<div class="bone-feature-header"><span class="bone-feature-icon">' + icon + '</span><span class="bone-feature-label">' + esc(label) + '</span></div>'
+      + content + '</div>';
+  }).join('');
+
+  document.getElementById('bones-detail-content').innerHTML =
+    '<div class="bone-detail-top" style="border-top:4px solid ' + color + '">'
+    + '<div class="bone-detail-region" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(bone.region) + '</div>'
+    + '<h2 class="bone-detail-name">' + esc(bone.name) + '</h2>'
+    + '<span class="badge" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(bone.type) + '</span>'
+    + '</div>'
+    + '<div class="bone-features-grid">' + featureHTML + '</div>';
+
+  document.getElementById('bones-detail-overlay').style.display = 'flex';
+}
+
+function closeBoneDetail() {
+  document.getElementById('bones-detail-overlay').style.display = 'none';
+}
+
 // ── ARTERIAL PATHWAYS ─────────────────────────────────────────────────────────
 
 const ARTERY_TREE = {
@@ -3654,7 +4145,50 @@ function onCardsSearch() {
   drop.style.display = 'block';
 }
 
+
+function initBoneCards() {
+  const rfEl = document.getElementById('cards-region-filter');
+  const boneRegions = [...new Set(bonesData.map(b => b.region))].sort();
+  rfEl.innerHTML = '<option value="">All regions</option>';
+  boneRegions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; rfEl.appendChild(o); });
+  const fReg = rfEl.value;
+  let pool = bonesData.filter(b => !fReg || b.region === fReg);
+  const order = document.getElementById('cards-order').value;
+  if (order === 'random') shuffle(pool); else pool.sort((a,b) => a.name.localeCompare(b.name));
+  cardDeck = pool; cardIdx = 0; cardFlipped = false;
+  renderCard();
+  const counter = document.getElementById('cards-counter');
+  if (counter) counter.textContent = '1 / ' + cardDeck.length;
+}
+
+function renderBoneCard() {
+  const stage = document.getElementById('cards-stage');
+  if (!cardDeck.length) { stage.innerHTML = '<p>No cards.</p>'; return; }
+  const b = cardDeck[cardIdx];
+  const color = brc(b.region);
+  const FEAT_LABELS = { articulations:'Articulations', foramina:'Foramina', processes:'Processes', parts:'Parts', surfaces:'Surfaces', extra:'Clinical notes', special:'Special', tubercle:'Tubercle', groove:'Groove', hook:'Hook', shape:'Shape', tuberosity:'Tuberosity', blood_supply:'Blood supply', borders:'Borders', lines:'Lines', condyles:'Condyles', fossa:'Fossae', facets:'Facets', notches:'Notches', proximal:'Proximal', shaft:'Shaft', distal:'Distal', ends:'Ends' };
+  const counter = document.getElementById('cards-counter');
+  if (counter) counter.textContent = (cardIdx+1) + ' / ' + cardDeck.length;
+  const featureRows = Object.entries(b.features).map(([k,v]) => {
+    const lbl = FEAT_LABELS[k] || k.replace(/_/g,' ');
+    const content = Array.isArray(v) ? '<ul class="bone-feature-list" style="margin:2px 0 0 20px">' + v.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>' : '<p class="bone-feature-text" style="padding-left:20px;margin:2px 0">' + esc(String(v)) + '</p>';
+    return '<div class="fc-field" style="margin-bottom:.75rem"><div class="fc-field-head"><span class="fc-field-label">' + esc(lbl) + '</span></div>' + content + '</div>';
+  }).join('');
+  stage.innerHTML =
+    '<div class="flashcard-wrap"><div class="flashcard' + (cardFlipped ? ' flipped' : '') + '" id="flashcard" onclick="flipCard()">'
+    + '<div class="flashcard-front"><div class="fc-region-bar" style="background:' + color + '"></div>'
+    + '<div class="fc-front-body"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span>'
+    + '<h2 class="fc-muscle-name">' + esc(b.name) + '</h2>'
+    + '<span class="fc-depth-badge">' + esc(b.type) + '</span>'
+    + '<p style="color:var(--text3);font-size:12px;margin-top:1rem">Tap to reveal features</p>'
+    + '</div></div>'
+    + '<div class="flashcard-back"><div class="fc-back-header"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span><h3 class="fc-back-name">' + esc(b.name) + '</h3></div>'
+    + '<div class="fc-back-fields">' + featureRows + '</div>'
+    + '</div></div></div>';
+}
+
 function initCards() {
+  if (typeof cardsType !== 'undefined' && cardsType === 'bone') { initBoneCards(); return; }
   const fReg   = document.getElementById('cards-region-filter').value;
   const fDepth = document.getElementById('cards-depth-filter').value;
   const order  = document.getElementById('cards-order').value;
