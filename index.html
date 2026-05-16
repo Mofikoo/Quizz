@@ -1420,27 +1420,52 @@ function startLigsRecall() {
 
 function buildLrecallGrid() {
   const regions = [...new Set(lrecallPool.map(l => l.region))].sort();
-  const grid = document.getElementById('lrecall-grid');
-  grid.style.display = 'flex';
-  grid.style.flexWrap = 'wrap';
-  grid.style.gap = '1.5rem';
-  grid.style.alignItems = 'flex-start';
-  grid.innerHTML = regions.map(r => {
-    const ligs = lrecallPool.filter(l => l.region === r);
+  const groups  = {};
+  regions.forEach(r => { groups[r] = lrecallPool.filter(l => l.region === r); });
+  const maxLen  = Math.max(...regions.map(r => groups[r].length));
+  const container = document.getElementById('lrecall-grid');
+  container.innerHTML = '';
+
+  const table = document.createElement('table');
+  table.className = 'recall-table';
+
+  // Header row
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  regions.forEach(r => {
     const color = lrc(r);
-    const cells = ligs.map(l => {
-      const idx = lrecallPool.indexOf(l);
-      return '<div class="recall-cell" id="lrcell-' + idx + '" style="margin-bottom:4px">'
-        + '<span class="recall-cell-blank"><span class="recall-cell-len">' + l.name.length + '</span></span>'
-        + '<span class="recall-cell-name" style="display:none">' + esc(l.name) + '</span></div>';
-    }).join('');
-    return '<div class="recall-region-col">'
-      + '<div class="recall-col-header" style="color:' + color + '">'
-      + '<span class="region-dot" style="background:' + color + '"></span>' + esc(r)
-      + ' <span class="recall-chip-count">' + ligs.length + '</span></div>'
-      + '<div style="display:flex;flex-direction:column">' + cells + '</div>'
-      + '</div>';
-  }).join('');
+    const th = document.createElement('th');
+    th.className = 'recall-col-header';
+    th.style.setProperty('--rc', color);
+    th.innerHTML = '<span class="recall-col-title">' + esc(r) + '</span>'
+      + '<span class="recall-region-count" id="lrcount-' + r.replace(/[^a-z0-9]/gi,'-') + '">0 / ' + groups[r].length + '</span>';
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Body rows
+  const tbody = document.createElement('tbody');
+  for (let i = 0; i < maxLen; i++) {
+    const tr = document.createElement('tr');
+    regions.forEach(r => {
+      const td = document.createElement('td');
+      const l  = groups[r][i];
+      if (l) {
+        const pidx = lrecallPool.indexOf(l);
+        td.className = 'recall-cell';
+        td.id = 'lrcell-' + pidx;
+        td.innerHTML = '<span class="recall-cell-blank"><span class="recall-cell-len">' + l.name.length + '</span></span>'
+          + '<span class="recall-cell-name" style="display:none">' + esc(l.name) + '</span>';
+      } else {
+        td.className = 'recall-cell recall-cell--empty';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
 }
 
 function onLrecallInput() {
@@ -1612,6 +1637,7 @@ function initLigCards() {
 }
 
 function renderLigCard() {
+  cardFlipped = false;
   const stage = document.getElementById('cards-stage');
   if (!cardDeck.length) { stage.innerHTML = '<p>No cards.</p>'; return; }
   const l = cardDeck[cardIdx];
@@ -1619,29 +1645,36 @@ function renderLigCard() {
   const counter = document.getElementById('cards-counter');
   if (counter) counter.textContent = (cardIdx+1) + ' / ' + cardDeck.length;
 
-  const FEAT_LABELS = { origin:'Origin', insertion:'Insertion', function:'Function', type:'Type', notes:'Clinical notes', components:'Components' };
-  const FEAT_ICONS  = { origin:'\uD83D\uDCCD', insertion:'\uD83C\uDFAF', function:'\u26A1', type:'\uD83D\uDD37', notes:'\uD83E\uDE7A', components:'\uD83D\uDD37' };
+  const FEAT_LABELS = {
+    origin:'Origin', insertion:'Insertion', function:'Function',
+    type:'Type', notes:'Clinical notes', components:'Components', special:'Special'
+  };
   const ORDER = ['origin','insertion','function','type','components','notes'];
 
   const featureRows = ORDER.filter(k => l.features[k]).map(k => {
-    const lbl  = FEAT_LABELS[k] || k;
-    const ico  = FEAT_ICONS[k]  || '\u2022';
-    const val  = l.features[k];
+    const lbl = FEAT_LABELS[k] || k;
+    const val = l.features[k];
     const content = Array.isArray(val)
-      ? '<ul class="bone-feature-list" style="margin:2px 0 0 20px">' + val.map(v => '<li>' + esc(v) + '</li>').join('') + '</ul>'
-      : '<p class="bone-feature-text" style="padding-left:20px;margin:2px 0">' + esc(String(val)) + '</p>';
-    return '<div class="fc-field" style="margin-bottom:.75rem"><div class="fc-field-head"><span class="fc-field-icon">' + ico + '</span><span class="fc-field-label">' + esc(lbl) + '</span></div>' + content + '</div>';
+      ? '<ul class="fc-list">' + val.map(v => '<li>' + esc(v) + '</li>').join('') + '</ul>'
+      : '<p class="fc-text">' + esc(String(val)) + '</p>';
+    return '<div class="fc-field"><div class="fc-field-head">'
+      + '<span class="fc-field-label">' + esc(lbl) + '</span></div>' + content + '</div>';
   }).join('');
 
   stage.innerHTML =
-    '<div class="flashcard-wrap"><div class="flashcard' + (cardFlipped ? ' flipped' : '') + '" id="flashcard" onclick="flipCard()">'
-    + '<div class="flashcard-front"><div class="fc-region-bar" style="background:' + color + '"></div>'
-    + '<div class="fc-front-body"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span>'
-    + '<h2 class="fc-muscle-name" style="font-size:clamp(16px,2.5vw,22px)">' + esc(l.name) + '</h2>'
+    '<div class="flashcard-wrap"><div class="flashcard" id="flashcard" onclick="flipCard()">'
+    + '<div class="flashcard-front">'
+    + '<div class="fc-region-bar" style="background:' + color + '"></div>'
+    + '<div class="fc-front-body">'
+    + '<span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span>'
+    + '<h2 class="fc-muscle-name" style="font-size:clamp(13px,2vw,20px)">' + esc(l.name) + '</h2>'
     + '<span class="fc-depth-badge">' + esc(l.joint) + '</span>'
-    + '<p style="color:var(--text3);font-size:12px;margin-top:1rem">Tap to reveal details</p>'
+    + '<p class="fc-tap-hint">Tap to see details</p>'
     + '</div></div>'
-    + '<div class="flashcard-back"><div class="fc-back-header"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span><h3 class="fc-back-name">' + esc(l.name) + '</h3></div>'
+    + '<div class="flashcard-back">'
+    + '<div class="fc-back-header">'
+    + '<span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span>'
+    + '<h3 class="fc-back-name">' + esc(l.name) + '</h3></div>'
     + '<div class="fc-back-fields">' + featureRows + '</div>'
     + '</div></div></div>';
 }
@@ -3659,27 +3692,52 @@ function startBonesRecall() {
 
 function buildBrecallGrid() {
   const regions = [...new Set(brecallPool.map(b => b.region))].sort();
-  const grid = document.getElementById('brecall-grid');
-  grid.style.display = 'flex';
-  grid.style.flexWrap = 'wrap';
-  grid.style.gap = '1.5rem';
-  grid.style.alignItems = 'flex-start';
-  grid.innerHTML = regions.map(r => {
-    const bones = brecallPool.filter(b => b.region === r);
+  const groups  = {};
+  regions.forEach(r => { groups[r] = brecallPool.filter(b => b.region === r); });
+  const maxLen  = Math.max(...regions.map(r => groups[r].length));
+  const container = document.getElementById('brecall-grid');
+  container.innerHTML = '';
+
+  const table = document.createElement('table');
+  table.className = 'recall-table';
+
+  // Header row
+  const thead = document.createElement('thead');
+  const headerRow = document.createElement('tr');
+  regions.forEach(r => {
     const color = brc(r);
-    const cells = bones.map(b => {
-      const idx = brecallPool.indexOf(b);
-      return '<div class="recall-cell" id="brcell-' + idx + '" style="margin-bottom:4px">'
-        + '<span class="recall-cell-blank"><span class="recall-cell-len">' + b.name.length + '</span></span>'
-        + '<span class="recall-cell-name" style="display:none">' + esc(b.name) + '</span></div>';
-    }).join('');
-    return '<div class="recall-region-col">'
-      + '<div class="recall-col-header" style="color:' + color + '">'
-      + '<span class="region-dot" style="background:' + color + '"></span>' + esc(r)
-      + ' <span class="recall-chip-count">' + bones.length + '</span></div>'
-      + '<div style="display:flex;flex-direction:column">' + cells + '</div>'
-      + '</div>';
-  }).join('');
+    const th = document.createElement('th');
+    th.className = 'recall-col-header';
+    th.style.setProperty('--rc', color);
+    th.innerHTML = '<span class="recall-col-title">' + esc(r) + '</span>'
+      + '<span class="recall-region-count" id="brcount-' + r.replace(/\s/g,'-') + '">0 / ' + groups[r].length + '</span>';
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // Body rows
+  const tbody = document.createElement('tbody');
+  for (let i = 0; i < maxLen; i++) {
+    const tr = document.createElement('tr');
+    regions.forEach(r => {
+      const td = document.createElement('td');
+      const b  = groups[r][i];
+      if (b) {
+        const pidx = brecallPool.indexOf(b);
+        td.className = 'recall-cell';
+        td.id = 'brcell-' + pidx;
+        td.innerHTML = '<span class="recall-cell-blank"><span class="recall-cell-len">' + b.name.length + '</span></span>'
+          + '<span class="recall-cell-name" style="display:none">' + esc(b.name) + '</span>';
+      } else {
+        td.className = 'recall-cell recall-cell--empty';
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
 }
 
 function onBrecallInput() {
@@ -3831,9 +3889,14 @@ function stopBonesMCQ() {
 let cardsType = 'muscle';
 function setCardsType(type) {
   cardsType = type;
+  cardIdx = 0;
+  cardFlipped = false;
   document.querySelectorAll('.cards-type-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('cards-type-' + type);
   if (btn) btn.classList.add('active');
+  // Reset region filter to "All"
+  const rf = document.getElementById('cards-region-filter');
+  if (rf) rf.value = '';
   initCards();
 }
 
@@ -4699,27 +4762,52 @@ function initBoneCards() {
 }
 
 function renderBoneCard() {
+  cardFlipped = false;
   const stage = document.getElementById('cards-stage');
   if (!cardDeck.length) { stage.innerHTML = '<p>No cards.</p>'; return; }
   const b = cardDeck[cardIdx];
   const color = brc(b.region);
-  const FEAT_LABELS = { articulations:'Articulations', foramina:'Foramina', processes:'Processes', parts:'Parts', surfaces:'Surfaces', extra:'Clinical notes', special:'Special', tubercle:'Tubercle', groove:'Groove', hook:'Hook', shape:'Shape', tuberosity:'Tuberosity', blood_supply:'Blood supply', borders:'Borders', lines:'Lines', condyles:'Condyles', fossa:'Fossae', facets:'Facets', notches:'Notches', proximal:'Proximal', shaft:'Shaft', distal:'Distal', ends:'Ends' };
   const counter = document.getElementById('cards-counter');
   if (counter) counter.textContent = (cardIdx+1) + ' / ' + cardDeck.length;
+
+  const FEAT_LABELS = {
+    articulations:'Articulations', foramina:'Foramina', processes:'Processes',
+    parts:'Parts', surfaces:'Surfaces', extra:'Clinical notes', special:'Special',
+    tubercle:'Tubercle', groove:'Groove', hook:'Hook', shape:'Shape',
+    tuberosity:'Tuberosity', blood_supply:'Blood supply', borders:'Borders',
+    lines:'Lines', condyles:'Condyles', fossa:'Fossae', facets:'Facets',
+    notches:'Notches', proximal:'Proximal', shaft:'Shaft', distal:'Distal', ends:'Ends',
+    joint:'Joint', joints:'Joints', special_ribs:'Special ribs', mnemonic:'Mnemonic',
+    numbering:'Numbering', arrangement:'Arrangement', bones:'Bones', components:'Components',
+    landmarks_ilium:'Ilium', landmarks_ischium:'Ischium', landmarks_pubis:'Pubis',
+    acetabulum:'Acetabulum', calcaneus_features:'Calcaneus', talus_features:'Talus',
+    greater_sciatic_notch:'Greater sciatic notch', proximal_row:'Proximal row',
+    distal_row:'Distal row', types:'Types', impressions:'Impressions', fossa:'Fossae',
+  };
+
   const featureRows = Object.entries(b.features).map(([k,v]) => {
     const lbl = FEAT_LABELS[k] || k.replace(/_/g,' ');
-    const content = Array.isArray(v) ? '<ul class="bone-feature-list" style="margin:2px 0 0 20px">' + v.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>' : '<p class="bone-feature-text" style="padding-left:20px;margin:2px 0">' + esc(String(v)) + '</p>';
-    return '<div class="fc-field" style="margin-bottom:.75rem"><div class="fc-field-head"><span class="fc-field-label">' + esc(lbl) + '</span></div>' + content + '</div>';
+    const content = Array.isArray(v)
+      ? '<ul class="fc-list">' + v.map(item => '<li>' + esc(item) + '</li>').join('') + '</ul>'
+      : '<p class="fc-text">' + esc(String(v)) + '</p>';
+    return '<div class="fc-field"><div class="fc-field-head">'
+      + '<span class="fc-field-label">' + esc(lbl) + '</span></div>' + content + '</div>';
   }).join('');
+
   stage.innerHTML =
-    '<div class="flashcard-wrap"><div class="flashcard' + (cardFlipped ? ' flipped' : '') + '" id="flashcard" onclick="flipCard()">'
-    + '<div class="flashcard-front"><div class="fc-region-bar" style="background:' + color + '"></div>'
-    + '<div class="fc-front-body"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span>'
+    '<div class="flashcard-wrap"><div class="flashcard" id="flashcard" onclick="flipCard()">'
+    + '<div class="flashcard-front">'
+    + '<div class="fc-region-bar" style="background:' + color + '"></div>'
+    + '<div class="fc-front-body">'
+    + '<span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span>'
     + '<h2 class="fc-muscle-name">' + esc(b.name) + '</h2>'
     + '<span class="fc-depth-badge">' + esc(b.type) + '</span>'
-    + '<p style="color:var(--text3);font-size:12px;margin-top:1rem">Tap to reveal features</p>'
+    + '<p class="fc-tap-hint">Tap to see features</p>'
     + '</div></div>'
-    + '<div class="flashcard-back"><div class="fc-back-header"><span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span><h3 class="fc-back-name">' + esc(b.name) + '</h3></div>'
+    + '<div class="flashcard-back">'
+    + '<div class="fc-back-header">'
+    + '<span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span>'
+    + '<h3 class="fc-back-name">' + esc(b.name) + '</h3></div>'
     + '<div class="fc-back-fields">' + featureRows + '</div>'
     + '</div></div></div>';
 }
@@ -4843,7 +4931,7 @@ function renderCard() {
 function flipCard() {
   cardFlipped = !cardFlipped;
   const fc = document.getElementById('flashcard');
-  fc.classList.toggle('flipped', cardFlipped);
+  if (fc) fc.classList.toggle('flipped', cardFlipped);
 }
 
 function nextCard() {
