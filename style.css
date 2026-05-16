@@ -2960,66 +2960,205 @@ select { cursor: pointer; }
   border-color: #8B7355;
 }
 
-/* ── Ligament quiz launcher accent ───────────────────────────────── */
-.quiz-launcher-card[style*="60aa78"]:hover {
-  background: #60aa7811;
-}
 
-/* ── Ligament recall cells (longer names → smaller text) ─────────── */
-#lrecall-grid .recall-cell-name {
-  font-size: 9.5px;
-  line-height: 1.3;
-  padding: 2px 3px;
-  word-break: break-word;
-  white-space: normal;
-}
-#lrecall-grid .recall-table td {
-  min-width: 130px;
-  max-width: 180px;
-  vertical-align: top;
-}
-
-/* ── Ligament / Bone card fixes ───────────────────────────────────── */
-
-/* Front: bigger name for ligaments */
-.fc-muscle-name {
-  font-size: clamp(16px, 2.8vw, 28px);
-  line-height: 1.2;
-}
-
-/* Back: field header — icon and label always on one line */
-.fc-field-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: nowrap;
-  white-space: nowrap;
-  margin-bottom: 3px;
-}
-.fc-field-icon {
-  font-size: 14px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-.fc-field-label {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  white-space: nowrap;
-}
-
-/* Quiz section containers */
+/* ══════════════════════════════════════════════════════════════
+   QUIZ SECTION LABELS
+   ══════════════════════════════════════════════════════════════ */
 .quiz-section-label {
   font-size: 11px;
   font-weight: 700;
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: 0.09em;
+  padding: 6px 0 8px;
+  margin-top: 1.5rem;
+  border-bottom: 1px solid var(--border);
   margin-bottom: 10px;
-  padding: 8px 12px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BONES & LIGAMENTS PANELS — same identity as muscles
+   ══════════════════════════════════════════════════════════════ */
+
+/* List grid */
+.bones-list { display: flex; flex-direction: column; gap: 1.25rem; }
+.bones-region-group {}
+.bones-region-header {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+.bones-region-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+/* Bone/lig card — reuses same structure as muscle card */
+.bone-card {
+  display: flex; align-items: center;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-sm);
+  border-radius: var(--r);
+  cursor: pointer;
+  overflow: hidden;
+  transition: box-shadow .15s, transform .12s;
+}
+.bone-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+.bone-card-bar { width: 4px; min-height: 56px; align-self: stretch; flex-shrink: 0; }
+.bone-card-body { flex: 1; padding: 10px 12px; }
+.bone-card-name { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
+.bone-card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bone-card-arrow { font-size: 18px; color: var(--text4); padding: 0 10px; }
+.bone-card:hover .bone-card-arrow { color: var(--text2); }
+
+/* Detail overlay — same as muscle edit modal */
+.bones-detail-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+.bones-detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  max-width: 680px; width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.bones-detail-close {
+  position: sticky; top: 12px; float: right;
+  margin: 12px 12px 0 0; z-index: 2;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 50%; width: 30px; height: 30px;
+  font-size: 14px; cursor: pointer; color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+}
+.bones-detail-close:hover { background: var(--err-bg); color: var(--err); }
+
+.bone-detail-top {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.bone-detail-region {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-bottom: 6px;
+}
+.bone-detail-name {
+  font-family: var(--serif); font-size: clamp(20px, 3vw, 26px);
+  font-weight: 400; color: var(--text); margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.bone-features-grid {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.bone-feature-section {
+  border-left: 3px solid var(--border-mid);
+  padding-left: 12px;
+}
+.bone-feature-header {
+  display: flex; align-items: center; gap: 6px;
+  margin-bottom: 4px;
+}
+.bone-feature-icon { font-size: 14px; flex-shrink: 0; }
+.bone-feature-label {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.bone-feature-list {
+  margin: 0; padding-left: 1.1rem;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.bone-feature-list li { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.bone-feature-text { font-size: 13px; color: var(--text2); line-height: 1.55; margin: 0; }
+
+/* ── Flashcard field head — icon + label on one line ─────────────── */
+.fc-field-head {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: nowrap; margin-bottom: 3px;
+}
+.fc-field-icon { font-size: 14px; flex-shrink: 0; line-height: 1; }
+.fc-field-label {
+  font-size: 10.5px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.07em; white-space: nowrap;
+}
+
+/* ── Flashcard name — adaptive size for long names ───────────────── */
+.fc-muscle-name {
+  font-family: var(--serif);
+  font-size: clamp(15px, 2.5vw, 26px);
+  font-style: italic;
+  color: var(--text);
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+/* ── Cards toggle buttons ─────────────────────────────────────────── */
+.cards-type-btn {
+  background: var(--surface);
+  border: 1.5px solid var(--border-mid);
+  color: var(--text2); font-size: 12.5px;
+  padding: 6px 14px; border-radius: var(--r-sm);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.cards-type-btn.active {
+  background: var(--accent-light);
+  border-color: var(--accent-mid);
+  color: var(--accent-text); font-weight: 500;
+}
+.cards-type-btn:hover:not(.active) { border-color: var(--border-strong); color: var(--text); }
+
+/* ── Cards search bar ─────────────────────────────────────────────── */
+.cards-search-wrap { position: relative; flex: 1; max-width: 240px; }
+.cards-search-wrap input {
+  width: 100%; padding: 8px 12px;
+  border: 1.5px solid var(--border-mid); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--text);
+  font-family: var(--sans); font-size: 13.5px;
+  transition: border-color .15s, box-shadow .15s; box-sizing: border-box;
+}
+.cards-search-wrap input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(42,92,66,.10);
+}
+.cards-search-wrap input::placeholder { color: var(--text4); }
+.cards-search-dropdown {
+  display: none; position: absolute; top: calc(100% + 4px);
+  left: 0; right: 0; background: var(--surface);
+  border: 1px solid var(--border-mid); border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg); z-index: 200; overflow: hidden;
+}
+.cards-search-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; font-size: 13px; color: var(--text);
+  cursor: pointer; transition: background .1s;
+}
+.cards-search-item:hover { background: var(--accent-light); }
+
+/* ── Recall region columns (bones & ligs use same class) ─────────── */
+.recall-region-col {
+  min-width: 160px;
+}
+.recall-col-header {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .07em;
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .bones-region-items { grid-template-columns: 1fr; }
+  .bone-detail-top { padding: 1rem 1rem .75rem; }
+  .bone-features-grid { padding: .75rem 1rem 1rem; }
+  .cards-search-wrap { max-width: 100%; }
+  .recall-region-col { min-width: 130px; }
 }

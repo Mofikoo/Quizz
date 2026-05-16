@@ -183,7 +183,9 @@
       </div>
 
       <!-- ── Priority launchers ── -->
-      <div class="quiz-launchers">
+            <!-- ── Muscle quizzes ── -->
+      <div class="quiz-section-label">&#128137; Muscle quizzes</div>
+      <div class="quiz-launchers" style="margin-bottom:1.5rem">
         <div class="quiz-launcher-card" onclick="switchPanel('recall')">
           <div class="ql-icon">&#128302;</div>
           <div class="ql-body">
@@ -226,45 +228,44 @@
         </div>
       </div>
 
-
-      <div class="quiz-section-label" style="margin-top:0">&#128137; Muscle quizzes</div>
-
-      <div class="quiz-section-label" style="margin-top:1.5rem">&#129460; Bone quizzes</div>
+      <!-- ── Bone quizzes ── -->
+      <div class="quiz-section-label">&#129460; Bone quizzes</div>
       <div class="quiz-launchers" style="margin-bottom:1.5rem">
         <div class="quiz-launcher-card" style="border-color:#8B735588" onclick="switchPanel('bones-recall')">
           <div class="ql-icon">&#128302;</div>
-          <div class="ql-body"><div class="ql-title">Recall - Bone names</div><div class="ql-sub">Name every bone from memory, grouped by region.</div></div>
+          <div class="ql-body">
+            <div class="ql-title">Recall — Bone names</div>
+            <div class="ql-sub">Name every bone from memory, grouped by region.</div>
+          </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
         <div class="quiz-launcher-card" style="border-color:#8B735588" onclick="switchPanel('bones-mcq')">
           <div class="ql-icon">&#9673;</div>
-          <div class="ql-body"><div class="ql-title">MCQ - Bone features</div><div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div></div>
+          <div class="ql-body">
+            <div class="ql-title">MCQ — Bone features</div>
+            <div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div>
+          </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
       </div>
 
-      <div class="quiz-section-label" style="margin-top:0">&#129513; Ligament quizzes</div>
+      <!-- ── Ligament quizzes ── -->
+      <div class="quiz-section-label">&#129513; Ligament quizzes</div>
       <div class="quiz-launchers" style="margin-bottom:1.5rem">
         <div class="quiz-launcher-card" style="border-color:#60aa7888" onclick="switchPanel('ligs-recall')">
           <div class="ql-icon">&#128302;</div>
-          <div class="ql-body"><div class="ql-title">Recall - Ligament names</div><div class="ql-sub">Name every ligament from memory, grouped by region.</div></div>
+          <div class="ql-body">
+            <div class="ql-title">Recall — Ligament names</div>
+            <div class="ql-sub">Name every ligament from memory, grouped by region.</div>
+          </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
         <div class="quiz-launcher-card" style="border-color:#60aa7888" onclick="switchPanel('ligs-mcq')">
           <div class="ql-icon">&#9673;</div>
-          <div class="ql-body"><div class="ql-title">MCQ - Ligament features</div><div class="ql-sub">Given origin, insertion or function, identify the correct ligament.</div></div>
-          <div class="ql-arrow">&#8594;</div>
-        </div>
-      </div>
-      <div class="quiz-launchers" style="margin-bottom:1.5rem">
-        <div class="quiz-launcher-card quiz-launcher-card--bones" onclick="switchPanel('bones-recall')">
-          <div class="ql-icon">&#128302;</div>
-          <div class="ql-body"><div class="ql-title">Recall - Bone names</div><div class="ql-sub">Name every bone from memory, grouped by region.</div></div>
-          <div class="ql-arrow">&#8594;</div>
-        </div>
-        <div class="quiz-launcher-card quiz-launcher-card--bones" onclick="switchPanel('bones-mcq')">
-          <div class="ql-icon">&#9673;</div>
-          <div class="ql-body"><div class="ql-title">MCQ - Bone features</div><div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div></div>
+          <div class="ql-body">
+            <div class="ql-title">MCQ — Ligament features</div>
+            <div class="ql-sub">Given origin, insertion or function, identify the correct ligament.</div>
+          </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
       </div>
@@ -1419,14 +1420,26 @@ function startLigsRecall() {
 
 function buildLrecallGrid() {
   const regions = [...new Set(lrecallPool.map(l => l.region))].sort();
-  document.getElementById('lrecall-grid').innerHTML = regions.map(r => {
+  const grid = document.getElementById('lrecall-grid');
+  grid.style.display = 'flex';
+  grid.style.flexWrap = 'wrap';
+  grid.style.gap = '1.5rem';
+  grid.style.alignItems = 'flex-start';
+  grid.innerHTML = regions.map(r => {
     const ligs = lrecallPool.filter(l => l.region === r);
     const color = lrc(r);
     const cells = ligs.map(l => {
       const idx = lrecallPool.indexOf(l);
-      return '<td class="recall-cell" id="lrcell-' + idx + '" style="min-width:140px"><span class="recall-cell-blank"><span class="recall-cell-len">' + l.name.length + '</span></span><span class="recall-cell-name" style="display:none;font-size:10px;padding:2px 4px">' + esc(l.name) + '</span></td>';
+      return '<div class="recall-cell" id="lrcell-' + idx + '" style="margin-bottom:4px">'
+        + '<span class="recall-cell-blank"><span class="recall-cell-len">' + l.name.length + '</span></span>'
+        + '<span class="recall-cell-name" style="display:none">' + esc(l.name) + '</span></div>';
     }).join('');
-    return '<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:' + color + ';text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px"><span class="region-dot" style="background:' + color + '"></span>' + esc(r) + ' <span style="opacity:.5;color:var(--text3)">' + ligs.length + '</span></div><table class="recall-table"><tbody><tr>' + cells + '</tr></tbody></table></div>';
+    return '<div class="recall-region-col">'
+      + '<div class="recall-col-header" style="color:' + color + '">'
+      + '<span class="region-dot" style="background:' + color + '"></span>' + esc(r)
+      + ' <span class="recall-chip-count">' + ligs.length + '</span></div>'
+      + '<div style="display:flex;flex-direction:column">' + cells + '</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -3646,14 +3659,26 @@ function startBonesRecall() {
 
 function buildBrecallGrid() {
   const regions = [...new Set(brecallPool.map(b => b.region))].sort();
-  document.getElementById('brecall-grid').innerHTML = regions.map(r => {
+  const grid = document.getElementById('brecall-grid');
+  grid.style.display = 'flex';
+  grid.style.flexWrap = 'wrap';
+  grid.style.gap = '1.5rem';
+  grid.style.alignItems = 'flex-start';
+  grid.innerHTML = regions.map(r => {
     const bones = brecallPool.filter(b => b.region === r);
     const color = brc(r);
     const cells = bones.map(b => {
       const idx = brecallPool.indexOf(b);
-      return '<td class="recall-cell" id="brcell-' + idx + '"><span class="recall-cell-blank"><span class="recall-cell-len">' + b.name.length + '</span></span><span class="recall-cell-name" style="display:none">' + esc(b.name) + '</span></td>';
+      return '<div class="recall-cell" id="brcell-' + idx + '" style="margin-bottom:4px">'
+        + '<span class="recall-cell-blank"><span class="recall-cell-len">' + b.name.length + '</span></span>'
+        + '<span class="recall-cell-name" style="display:none">' + esc(b.name) + '</span></div>';
     }).join('');
-    return '<div style="margin-bottom:1rem"><div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px"><span class="region-dot" style="background:' + color + '"></span><span style="color:' + color + '">' + esc(r) + '</span><span style="opacity:.5">' + bones.length + '</span></div><table class="recall-table"><tbody><tr>' + cells + '</tr></tbody></table></div>';
+    return '<div class="recall-region-col">'
+      + '<div class="recall-col-header" style="color:' + color + '">'
+      + '<span class="region-dot" style="background:' + color + '"></span>' + esc(r)
+      + ' <span class="recall-chip-count">' + bones.length + '</span></div>'
+      + '<div style="display:flex;flex-direction:column">' + cells + '</div>'
+      + '</div>';
   }).join('');
 }
 
