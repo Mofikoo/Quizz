@@ -227,11 +227,23 @@
       </div>
 
 
-      <div class="quiz-section-label" style="margin-top:0">Muscle quizzes</div>
+      <div class="quiz-section-label" style="margin-top:0">&#128137; Muscle quizzes</div>
 
-      <div class="quiz-section-label" style="margin-top:1.5rem">Bone quizzes</div>
+      <div class="quiz-section-label" style="margin-top:1.5rem">&#129460; Bone quizzes</div>
+      <div class="quiz-launchers" style="margin-bottom:1.5rem">
+        <div class="quiz-launcher-card" style="border-color:#8B735588" onclick="switchPanel('bones-recall')">
+          <div class="ql-icon">&#128302;</div>
+          <div class="ql-body"><div class="ql-title">Recall - Bone names</div><div class="ql-sub">Name every bone from memory, grouped by region.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" style="border-color:#8B735588" onclick="switchPanel('bones-mcq')">
+          <div class="ql-icon">&#9673;</div>
+          <div class="ql-body"><div class="ql-title">MCQ - Bone features</div><div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+      </div>
 
-      <div class="quiz-section-label" style="margin-top:1.5rem">Ligament quizzes</div>
+      <div class="quiz-section-label" style="margin-top:0">&#129513; Ligament quizzes</div>
       <div class="quiz-launchers" style="margin-bottom:1.5rem">
         <div class="quiz-launcher-card" style="border-color:#60aa7888" onclick="switchPanel('ligs-recall')">
           <div class="ql-icon">&#128302;</div>
@@ -1082,6 +1094,8 @@
   </div>
 
   <!-- ══ BONES PANEL ══ -->
+    </div><!-- /.panel-artery -->
+
   <div class="panel" id="panel-bones">
     <div class="page-title">
       <h1>Bones</h1>
