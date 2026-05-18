@@ -1823,7 +1823,7 @@ function renderSchemaCard() {
 
 function nextSchema() {
   sqIdx++;
-  const rb = document.getElementById('sq-reveal-btn'); if(rb) rb.style.display='none';
+  document.querySelectorAll('.sq-correction').forEach(el => el.remove());
   renderSchemaCard();
 }
 
@@ -1838,29 +1838,45 @@ function checkSchemaAnswers() {
   for (let n = 1; n <= s.count; n++) {
     const inp = document.getElementById('sq-inp-' + n);
     if (!inp) continue;
-    const userVal = inp.value.trim().toLowerCase();
-    const correctVal = (s.answers[String(n)] || '').toLowerCase();
-    const row = document.getElementById('sq-row-' + n);
+    const userVal    = inp.value.trim().toLowerCase();
+    const correctVal = (s.answers[String(n)] || '');
+    const correctLow = correctVal.toLowerCase();
+
+    // Remove any previous correction label
+    const prev = document.getElementById('sq-corr-' + n);
+    if (prev) prev.remove();
+
+    const isCorrect = userVal && (
+      userVal === correctLow ||
+      correctLow.includes(userVal) ||
+      userVal.includes(correctLow.split(' ')[0])
+    );
+
     if (!userVal) {
       empty++;
       inp.style.borderColor = 'var(--border-mid)';
-    } else if (
-      userVal === correctVal ||
-      correctVal.includes(userVal) ||
-      userVal.includes(correctVal.split(' ')[0].toLowerCase())
-    ) {
+      inp.style.background  = '';
+    } else if (isCorrect) {
       correct++;
       inp.style.borderColor = 'var(--ok)';
-      inp.style.background  = 'var(--ok-bg, rgba(40,160,80,.1))';
+      inp.style.background  = 'rgba(40,160,80,.08)';
     } else {
       wrong++;
       inp.style.borderColor = 'var(--err)';
-      inp.style.background  = 'var(--err-bg, rgba(180,40,40,.1))';
+      inp.style.background  = 'rgba(180,40,40,.08)';
+    }
+
+    // Add correction label below input (always show correct answer)
+    if (!isCorrect || !userVal) {
+      const label = document.createElement('div');
+      label.id = 'sq-corr-' + n;
+      label.className = 'sq-correction';
+      label.textContent = correctVal || '—';
+      inp.parentElement.appendChild(label);
     }
   }
-  // Show reveal button
   document.getElementById('sq-reveal-btn').style.display = 'inline-flex';
-  toast('\u2713 ' + correct + '  \u2717 ' + wrong + '  \u25cb ' + empty + ' empty');
+  toast('\u2713 ' + correct + '   \u2717 ' + wrong + '   \u25cb ' + empty + ' empty');
 }
 
 function revealSchemaAnswers() {
@@ -1870,7 +1886,16 @@ function revealSchemaAnswers() {
     const inp = document.getElementById('sq-inp-' + n);
     if (!inp) continue;
     const correctVal = s.answers[String(n)] || '?';
-    inp.value = correctVal;
+    // Remove previous label if any
+    const prev = document.getElementById('sq-corr-' + n);
+    if (prev) prev.remove();
+    // Add correction label
+    const label = document.createElement('div');
+    label.id = 'sq-corr-' + n;
+    label.className = 'sq-correction sq-correction--reveal';
+    label.textContent = correctVal;
+    inp.parentElement.appendChild(label);
+    // Color border green
     inp.style.borderColor = 'var(--accent)';
     inp.style.background  = '';
   }
@@ -1882,7 +1907,9 @@ function clearSchemaInputs() {
     inp.style.borderColor = '';
     inp.style.background  = '';
   });
-  document.getElementById('sq-reveal-btn').style.display = 'none';
+  document.querySelectorAll('.sq-correction').forEach(el => el.remove());
+  const rb = document.getElementById('sq-reveal-btn');
+  if (rb) rb.style.display = 'none';
   const first = document.getElementById('sq-inp-1');
   if (first) first.focus();
 }
