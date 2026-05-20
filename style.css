@@ -2977,105 +2977,6 @@ select { cursor: pointer; }
   margin-bottom: 10px;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   BONES & LIGAMENTS — identical identity to muscles
-   ══════════════════════════════════════════════════════════════ */
-
-.bones-list { display: flex; flex-direction: column; gap: 1.25rem; }
-
-.bones-region-header {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11px; font-weight: 600; color: var(--text3);
-  text-transform: uppercase; letter-spacing: .08em;
-  margin-bottom: 8px;
-}
-.bones-region-items {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 8px;
-}
-
-/* bone-card = same visual as muscle card in list */
-.bone-card {
-  display: flex; align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  cursor: pointer; overflow: hidden;
-  transition: box-shadow .15s, transform .12s;
-}
-.bone-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-.bone-card-bar   { width: 4px; min-height: 56px; align-self: stretch; flex-shrink: 0; }
-.bone-card-body  { flex: 1; padding: 10px 12px; }
-.bone-card-name  { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
-.bone-card-meta  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.bone-card-arrow { font-size: 18px; color: var(--text4); padding: 0 10px; flex-shrink: 0; }
-.bone-card:hover .bone-card-arrow { color: var(--text2); }
-
-/* Detail overlay */
-.bones-detail-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.6);
-  z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  padding: 1rem;
-  backdrop-filter: blur(2px);
-}
-.bones-detail-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-xl);
-  max-width: 680px; width: 100%;
-  max-height: 85vh; overflow-y: auto;
-  position: relative;
-  box-shadow: 0 20px 60px rgba(0,0,0,.4);
-}
-.bones-detail-close {
-  position: sticky; top: 12px; float: right;
-  margin: 12px 12px 0 0; z-index: 2;
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 50%; width: 30px; height: 30px;
-  font-size: 14px; cursor: pointer; color: var(--text2);
-  display: flex; align-items: center; justify-content: center;
-}
-.bones-detail-close:hover { background: var(--err-bg); color: var(--err); }
-
-.bone-detail-top {
-  padding: 1.5rem 1.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-.bone-detail-region {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 600;
-  text-transform: uppercase; letter-spacing: .07em;
-  margin-bottom: 6px;
-}
-.bone-detail-name {
-  font-family: var(--serif);
-  font-size: clamp(18px, 3vw, 26px);
-  font-weight: 400; color: var(--text);
-  margin-bottom: 8px; letter-spacing: -0.01em;
-}
-.bone-features-grid {
-  padding: 1rem 1.5rem 1.5rem;
-  display: flex; flex-direction: column; gap: 1rem;
-}
-.bone-feature-section {
-  border-left: 3px solid var(--border-mid);
-  padding-left: 12px;
-}
-.bone-feature-header {
-  display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
-}
-.bone-feature-icon  { font-size: 14px; flex-shrink: 0; }
-.bone-feature-label {
-  font-size: 11px; font-weight: 600; color: var(--text3);
-  text-transform: uppercase; letter-spacing: .07em;
-}
-.bone-feature-list  { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 2px; }
-.bone-feature-list li { font-size: 13px; color: var(--text2); line-height: 1.5; }
-.bone-feature-text  { font-size: 13px; color: var(--text2); line-height: 1.55; margin: 0; }
-
 /* ── Flashcard field head — icon + label always one line ─────────── */
 .fc-field-head {
   display: flex; align-items: center; gap: 6px;
@@ -3362,3 +3263,7 @@ select { cursor: pointer; }
   font-weight: 500;
   flex-shrink: 0;
 }
+
+/* Bones & ligs table — always show preview column */
+#bones-list .col-notes,
+#ligs-list .col-notes { display: table-cell; }

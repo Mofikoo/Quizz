@@ -1114,10 +1114,10 @@
 
     <!-- Toolbar -->
     <div class="list-toolbar">
-      <div class="search-wrap">
+      <div class="search-wrap" style="flex:1;max-width:320px">
         <input type="search" id="bones-search" placeholder="Search bones..." oninput="renderBonesList()" />
       </div>
-      <div class="select-wrap" style="max-width:180px;flex:1">
+      <div class="select-wrap" style="max-width:200px;flex:1">
         <select id="bones-region-filter" onchange="renderBonesList()">
           <option value="">All regions</option>
         </select>
@@ -1125,8 +1125,8 @@
     </div>
 
     <!-- List -->
-    <div class="card card--flush">
-      <div id="bones-list" class="list-container"></div>
+    <div class="card card--flush" style="overflow-x:auto">
+      <div id="bones-list"></div>
     </div>
 
     <!-- Detail modal -->
@@ -1231,17 +1231,17 @@
       <p>Articular ligaments — origin, insertion, function and clinical notes.</p>
     </div>
     <div class="list-toolbar">
-      <div class="search-wrap">
+      <div class="search-wrap" style="flex:1;max-width:320px">
         <input type="search" id="ligs-search" placeholder="Search ligaments..." oninput="renderLigsList()" />
       </div>
-      <div class="select-wrap" style="max-width:180px;flex:1">
+      <div class="select-wrap" style="max-width:200px;flex:1">
         <select id="ligs-region-filter" onchange="renderLigsList()">
           <option value="">All regions</option>
         </select>
       </div>
     </div>
-    <div class="card card--flush">
-      <div id="ligs-list" class="list-container"></div>
+    <div class="card card--flush" style="overflow-x:auto">
+      <div id="ligs-list"></div>
     </div>
     <div class="bones-detail-overlay" id="ligs-detail-overlay" style="display:none" onclick="closeLigDetail()">
       <div class="bones-detail-card" onclick="event.stopPropagation()">
@@ -2290,41 +2290,46 @@ function initLigaments() {
 function renderLigsList() {
   const q      = (document.getElementById('ligs-search')?.value || '').toLowerCase().trim();
   const region = document.getElementById('ligs-region-filter')?.value || '';
-  const listEl = document.getElementById('ligs-list');
-  if (!listEl) return;
+  const container = document.getElementById('ligs-list');
+  if (!container) return;
 
-  let filtered = ligsData.filter(l => {
+  let list = ligsData.filter(l => {
     if (region && l.region !== region) return false;
     if (q && !l.name.toLowerCase().includes(q)) return false;
     return true;
   });
 
-  if (!filtered.length) {
-    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129513;</div><div class="empty-title">No ligaments found</div></div>';
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129513;</div><div class="empty-title">No ligaments found</div></div>';
     return;
   }
 
   const groups = {};
-  filtered.forEach(l => { if (!groups[l.region]) groups[l.region] = []; groups[l.region].push(l); });
+  list.forEach(l => { if (!groups[l.region]) groups[l.region] = []; groups[l.region].push(l); });
 
-  listEl.innerHTML = Object.keys(groups).sort().map(r => {
+  const ligRow = l => {
+    const color = lrc(l.region);
+    const fn = l.features?.function;
+    const preview = (Array.isArray(fn) ? fn[0] : fn || l.features?.origin || '').toString().substring(0,110);
+    return '<tr onclick="openLigDetail(\'' + l.id + '\')" style="cursor:pointer">'
+      + '<td><div class="muscle-name">' + esc(l.name) + '</div>'
+      + (l.joint ? '<div class="muscle-alt">' + esc(l.joint) + '</div>' : '')
+      + '</td>'
+      + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(l.region) + '</span></td>'
+      + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + (esc(preview) || '<span style="color:var(--text4)">—</span>') + '</span></div></td>'
+      + '</tr>';
+  };
+
+  container.innerHTML = Object.keys(groups).sort().map(r => {
     const color = lrc(r);
-    const rows = groups[r].map(l => {
-      const preview = l.features?.function || l.features?.origin || '';
-      return '<tr class="bone-row" data-lid="' + l.id + '" onclick="openLigDetail(this.dataset.lid)" style="cursor:pointer">'
-        + '<td><div class="muscle-name">' + esc(l.name) + '</div></td>'
-        + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(l.region) + '</span></td>'
-        + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + esc((Array.isArray(preview) ? preview[0] : preview).substring(0,100) || '—') + '</span></div></td>'
-        + '</tr>';
-    }).join('');
-
     return '<div class="region-group-header">'
       + '<span class="region-dot" style="background:' + color + '"></span>'
       + esc(r) + ' <span class="region-group-count">(' + groups[r].length + ')</span>'
       + '</div>'
-      + '<table class="muscle-table"><thead><tr>'
-      + '<th>Ligament</th><th>Region</th><th class="col-notes">Function preview</th>'
-      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      + '<table class="muscle-table">'
+      + '<thead><tr><th>Ligament</th><th>Region</th><th class="col-notes">Function preview</th></tr></thead>'
+      + '<tbody>' + groups[r].map(ligRow).join('') + '</tbody>'
+      + '</table>';
   }).join('');
 }
 
@@ -4520,46 +4525,46 @@ function initBones() {
 function renderBonesList() {
   const q      = (document.getElementById('bones-search')?.value || '').toLowerCase().trim();
   const region = document.getElementById('bones-region-filter')?.value || '';
-  const listEl = document.getElementById('bones-list');
-  if (!listEl) return;
+  const container = document.getElementById('bones-list');
+  if (!container) return;
 
-  let filtered = bonesData.filter(b => {
+  let list = bonesData.filter(b => {
     if (region && b.region !== region) return false;
     if (q && !b.name.toLowerCase().includes(q)) return false;
     return true;
   });
 
-  if (!filtered.length) {
-    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129460;</div><div class="empty-title">No bones found</div></div>';
+  if (!list.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129460;</div><div class="empty-title">No bones found</div></div>';
     return;
   }
 
   // Group by region
   const groups = {};
-  filtered.forEach(b => { if (!groups[b.region]) groups[b.region] = []; groups[b.region].push(b); });
+  list.forEach(b => { if (!groups[b.region]) groups[b.region] = []; groups[b.region].push(b); });
 
-  listEl.innerHTML = Object.keys(groups).sort().map(r => {
+  const boneRow = b => {
+    const color = brc(b.region);
+    const featKeys = Object.keys(b.features || {});
+    const preview = (b.features?.articulations?.[0] || b.features?.extra || '').toString().substring(0,110);
+    return '<tr onclick="openBoneDetail(\'' + b.id + '\')" style="cursor:pointer">'
+      + '<td><div class="muscle-name">' + esc(b.name) + '</div></td>'
+      + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(b.region) + '</span></td>'
+      + '<td><span class="badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)">' + esc(b.type) + '</span></td>'
+      + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + (esc(preview) || '<span style="color:var(--text4)">—</span>') + '</span></div></td>'
+      + '</tr>';
+  };
+
+  container.innerHTML = Object.keys(groups).sort().map(r => {
     const color = brc(r);
-    const rows = groups[r].map(b => {
-      const featNecknt = Object.keys(b.features || {}).length;
-      const preview = Object.entries(b.features || {})
-        .filter(([k]) => k === 'extra' || k === 'articulations')
-        .map(([,v]) => Array.isArray(v) ? v[0] : v).filter(Boolean)[0] || '';
-      return '<tr class="bone-row" data-bid="' + b.id + '" onclick="openBoneDetail(this.dataset.bid)" style="cursor:pointer">'
-        + '<td><div class="muscle-name">' + esc(b.name) + '</div></td>'
-        + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(b.region) + '</span></td>'
-        + '<td><span class="badge" style="background:var(--bg2);color:var(--text3);border-color:var(--border)">' + esc(b.type) + '</span></td>'
-        + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + esc(preview.substring(0,100) || '—') + '</span></div></td>'
-        + '</tr>';
-    }).join('');
-
     return '<div class="region-group-header">'
       + '<span class="region-dot" style="background:' + color + '"></span>'
       + esc(r) + ' <span class="region-group-count">(' + groups[r].length + ')</span>'
       + '</div>'
-      + '<table class="muscle-table"><thead><tr>'
-      + '<th>Bone</th><th>Region</th><th>Type</th><th class="col-notes">Feature preview</th>'
-      + '</tr></thead><tbody>' + rows + '</tbody></table>';
+      + '<table class="muscle-table">'
+      + '<thead><tr><th>Bone</th><th>Region</th><th>Type</th><th class="col-notes">Feature preview</th></tr></thead>'
+      + '<tbody>' + groups[r].map(boneRow).join('') + '</tbody>'
+      + '</table>';
   }).join('');
 }
 
