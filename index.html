@@ -2298,6 +2298,7 @@ function renderLigsList() {
     if (q && !l.name.toLowerCase().includes(q)) return false;
     return true;
   });
+  list.sort((a,b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
 
   if (!list.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129513;</div><div class="empty-title">No ligaments found</div></div>';
@@ -2307,30 +2308,33 @@ function renderLigsList() {
   const groups = {};
   list.forEach(l => { if (!groups[l.region]) groups[l.region] = []; groups[l.region].push(l); });
 
-  const ligRow = l => {
-    const color = lrc(l.region);
-    const fn = l.features?.function;
-    const preview = (Array.isArray(fn) ? fn[0] : fn || l.features?.origin || '').toString().substring(0,110);
-    return '<tr onclick="openLigDetail(\'' + l.id + '\')" style="cursor:pointer">'
-      + '<td><div class="muscle-name">' + esc(l.name) + '</div>'
-      + (l.joint ? '<div class="muscle-alt">' + esc(l.joint) + '</div>' : '')
-      + '</td>'
-      + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(l.region) + '</span></td>'
-      + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + (esc(preview) || '<span style="color:var(--text4)">—</span>') + '</span></div></td>'
-      + '</tr>';
-  };
-
-  container.innerHTML = Object.keys(groups).sort().map(r => {
+  let rows = '';
+  Object.keys(groups).sort().forEach(r => {
     const color = lrc(r);
-    return '<div class="region-group-header">'
+    rows += '<tr class="region-separator-row">'
+      + '<td colspan="3">'
       + '<span class="region-dot" style="background:' + color + '"></span>'
-      + esc(r) + ' <span class="region-group-count">(' + groups[r].length + ')</span>'
-      + '</div>'
-      + '<table class="muscle-table">'
-      + '<thead><tr><th>Ligament</th><th>Region</th><th class="col-notes">Function preview</th></tr></thead>'
-      + '<tbody>' + groups[r].map(ligRow).join('') + '</tbody>'
-      + '</table>';
-  }).join('');
+      + '<span style="color:' + color + ';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">' + esc(r) + '</span>'
+      + '<span class="region-group-count" style="margin-left:6px">(' + groups[r].length + ')</span>'
+      + '</td></tr>';
+    groups[r].forEach(l => {
+      const fn  = l.features?.function;
+      const preview = (Array.isArray(fn) ? fn[0] : fn || l.features?.origin || '').toString().substring(0,120);
+      rows += '<tr onclick="openLigDetail(\'' + l.id + '\')" style="cursor:pointer">'
+        + '<td><div class="muscle-name">' + esc(l.name) + '</div>'
+        + (l.joint ? '<div class="muscle-alt">' + esc(l.joint) + '</div>' : '') + '</td>'
+        + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(r) + '</span></td>'
+        + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + (esc(preview) || '<span style="color:var(--text4)">—</span>') + '</span></div></td>'
+        + '</tr>';
+    });
+  });
+
+  container.innerHTML =
+    '<table class="muscle-table">'
+    + '<colgroup><col style="width:35%"><col style="width:16%"><col></colgroup>'
+    + '<thead><tr><th>Ligament</th><th>Region</th><th class="col-notes">Function preview</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>';
 }
 
 function openLigDetail(id) {
@@ -4533,39 +4537,43 @@ function renderBonesList() {
     if (q && !b.name.toLowerCase().includes(q)) return false;
     return true;
   });
+  list.sort((a,b) => a.region.localeCompare(b.region) || a.name.localeCompare(b.name));
 
   if (!list.length) {
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#129460;</div><div class="empty-title">No bones found</div></div>';
     return;
   }
 
-  // Group by region
+  // Build single table with inline region separator rows
   const groups = {};
   list.forEach(b => { if (!groups[b.region]) groups[b.region] = []; groups[b.region].push(b); });
 
-  const boneRow = b => {
-    const color = brc(b.region);
-    const featKeys = Object.keys(b.features || {});
-    const preview = (b.features?.articulations?.[0] || b.features?.extra || '').toString().substring(0,110);
-    return '<tr onclick="openBoneDetail(\'' + b.id + '\')" style="cursor:pointer">'
-      + '<td><div class="muscle-name">' + esc(b.name) + '</div></td>'
-      + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(b.region) + '</span></td>'
-      + '<td><span class="badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border)">' + esc(b.type) + '</span></td>'
-      + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + (esc(preview) || '<span style="color:var(--text4)">—</span>') + '</span></div></td>'
-      + '</tr>';
-  };
-
-  container.innerHTML = Object.keys(groups).sort().map(r => {
+  let rows = '';
+  Object.keys(groups).sort().forEach(r => {
     const color = brc(r);
-    return '<div class="region-group-header">'
+    rows += '<tr class="region-separator-row">'
+      + '<td colspan="4">'
       + '<span class="region-dot" style="background:' + color + '"></span>'
-      + esc(r) + ' <span class="region-group-count">(' + groups[r].length + ')</span>'
-      + '</div>'
-      + '<table class="muscle-table">'
-      + '<thead><tr><th>Bone</th><th>Region</th><th>Type</th><th class="col-notes">Feature preview</th></tr></thead>'
-      + '<tbody>' + groups[r].map(boneRow).join('') + '</tbody>'
-      + '</table>';
-  }).join('');
+      + '<span style="color:' + color + ';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">' + esc(r) + '</span>'
+      + '<span class="region-group-count" style="margin-left:6px">(' + groups[r].length + ')</span>'
+      + '</td></tr>';
+    groups[r].forEach(b => {
+      const preview = (b.features?.articulations?.[0] || b.features?.extra || '').toString().substring(0,120);
+      rows += '<tr onclick="openBoneDetail(\'' + b.id + '\')" style="cursor:pointer">'
+        + '<td><div class="muscle-name">' + esc(b.name) + '</div></td>'
+        + '<td><span class="badge badge-region" style="background:' + color + '22;color:' + color + ';border-color:' + color + '55">' + esc(r) + '</span></td>'
+        + '<td><span class="badge" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);white-space:nowrap">' + esc(b.type) + '</span></td>'
+        + '<td class="col-notes"><div class="muscle-notes-cell"><span>' + (esc(preview) || '<span style="color:var(--text4)">—</span>') + '</span></div></td>'
+        + '</tr>';
+    });
+  });
+
+  container.innerHTML =
+    '<table class="muscle-table">'
+    + '<colgroup><col style="width:30%"><col style="width:14%"><col style="width:14%"><col></colgroup>'
+    + '<thead><tr><th>Bone</th><th>Region</th><th>Type</th><th class="col-notes">Feature preview</th></tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table>';
 }
 
 function openBoneDetail(id) {

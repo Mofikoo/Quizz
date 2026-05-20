@@ -3267,3 +3267,23 @@ select { cursor: pointer; }
 /* Bones & ligs table — always show preview column */
 #bones-list .col-notes,
 #ligs-list .col-notes { display: table-cell; }
+
+/* ── Region separator row (bones & ligs tables) ──────────────── */
+.region-separator-row td {
+  padding: 8px 14px 6px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  border-top: 2px solid var(--border);
+}
+.region-separator-row:first-child td {
+  border-top: none;
+}
+
+/* Bones & ligs — always show col-notes */
+#bones-list .col-notes,
+#ligs-list  .col-notes { display: table-cell !important; }
+
+/* col-notes: takes remaining space, truncates */
+.muscle-table .col-notes .muscle-notes-cell {
+  max-width: none;
+}
