@@ -17,17 +17,15 @@
       <span class="logo-sub">— anatomy</span>
     </div>
     <nav class="header-nav">
-      <button class="nav-btn" data-panel="add"   onclick="switchPanel('add')">+ Add</button>
-      <button class="nav-btn active" data-panel="list"  onclick="switchPanel('list')">
-        Muscles <span class="nav-badge" id="nav-count">0</span>
-      </button>
-      <button class="nav-btn" data-panel="quiz"   onclick="switchPanel('quiz')">Quiz</button>
-      <button class="nav-btn" data-panel="cards"  onclick="switchPanel('cards')">Cards</button>
-      <button class="nav-btn" data-panel="nerves" onclick="switchPanel('nerves')">Nerves</button>
-      <button class="nav-btn" data-panel="arteries" onclick="switchPanel('arteries')">Arteries</button>
+      <button class="nav-btn" data-panel="add"       onclick="switchPanel('add')">+ Add</button>
+      <button class="nav-btn active" data-panel="list" onclick="switchPanel('list')">Muscles <span class="nav-badge" id="nav-count">179</span></button>
+      <button class="nav-btn" data-panel="bones"     onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
       <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge">58</span></button>
-      <button class="nav-btn" data-panel="bones"  onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
-      <button class="nav-btn" data-panel="stats"  onclick="switchPanel('stats')">Stats</button>
+      <button class="nav-btn" data-panel="arteries"  onclick="switchPanel('arteries')">Arteries <span class="nav-badge">102</span></button>
+      <button class="nav-btn" data-panel="nerves"    onclick="switchPanel('nerves')">Nerves <span class="nav-badge">62</span></button>
+      <button class="nav-btn" data-panel="cards"     onclick="switchPanel('cards')">Cards</button>
+      <button class="nav-btn" data-panel="quiz"      onclick="switchPanel('quiz')">Quiz</button>
+      <button class="nav-btn" data-panel="stats"     onclick="switchPanel('stats')">Stats</button>
     </nav>
   </div>
 </header>
@@ -2202,12 +2200,12 @@ function openNerveDetail(idx) {
     '<span class="nerve-level-badge nerve-level-badge--lg" style="background:' + nlc(l) + ';color:#fff;">' + esc(l) + '</span>'
   ).join('');
 
-  // Build muscle list with links to their detail
   const muscleRows = n.muscles.map(mName => {
     const m = muscles.find(x => x.name === mName);
     const region = m ? m.region : '';
     const color  = m ? rc(region) : '#888';
-    return '<div class="nerve-muscle-row" onclick="closeNerveDetail();switchPanel(\'list\');setTimeout(()=>openMuscleDetailByName(' + JSON.stringify(mName) + '),100)">'
+    const safeName = mName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return '<div class="nerve-muscle-row" onclick="jumpToMuscleCard(\'' + safeName + '\')">'
       + '<span class="region-dot" style="background:' + color + '"></span>'
       + '<span class="nerve-muscle-name">' + esc(mName) + '</span>'
       + (region ? '<span class="nerve-muscle-region" style="color:' + color + '">' + esc(region) + '</span>' : '')
@@ -2235,16 +2233,18 @@ function openNerveDetail(idx) {
 
 
 function jumpToMuscleCard(muscleName) {
-  closeNerveDetail();
-  // Set cardsType to muscle, find index in cardDeck, navigate
+  // Close any open detail modal
+  const nerveOverlay = document.getElementById('nerves-detail-overlay');
+  if (nerveOverlay) nerveOverlay.style.display = 'none';
+  const arteryOverlay = document.getElementById('arteries-detail-overlay');
+  if (arteryOverlay) arteryOverlay.style.display = 'none';
+
   cardsType = 'muscle';
   document.querySelectorAll('.cards-type-btn').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('cards-type-muscle');
   if (btn) btn.classList.add('active');
 
-  // Switch to cards panel, then find the card
   switchPanel('cards');
-  // initCards rebuilds cardDeck — after that find the muscle
   setTimeout(() => {
     const idx = cardDeck.findIndex(m => m.name === muscleName);
     if (idx !== -1) {
@@ -2252,7 +2252,7 @@ function jumpToMuscleCard(muscleName) {
       cardFlipped = false;
       renderCard();
     } else {
-      toast('Card not found for: ' + muscleName);
+      toast('Card not found: ' + muscleName);
     }
   }, 80);
 }
@@ -5636,13 +5636,36 @@ function seedBundledData() {
       let changed = false;
       if (b.image && m.image !== b.image) { m.image = b.image; changed = true; }
       const n = m.notes || {}; const bn = b.notes || {};
-      ['origin','insertion','function','innervation','blood_supply'].forEach(f => {
+      ['origin','insertion','function','innervation','blood_supply','extra'].forEach(f => {
         if (!n[f] && bn[f]) { n[f] = bn[f]; changed = true; }
       });
       m.notes = n;
       if (changed) patched++;
     });
-    if (patched > 0) saveMuscles(muscles);
+    // Add any new bundled muscles not yet in localStorage
+    const existingNames = new Set(muscles.map(m => m.name));
+    let added = 0;
+    BUNDLED_MUSCLES.forEach(b => {
+      if (existingNames.has(b.name) || !b.name || !b.region) return;
+      const n = b.notes || {};
+      muscles.push({
+        id:        b.id || (Date.now() + Math.random()),
+        name:      b.name, region: b.region, depth: b.depth || '',
+        synonyms:  Array.isArray(b.synonyms) ? b.synonyms : [],
+        notes: {
+          origin:       n.origin       || '',
+          insertion:    n.insertion    || '',
+          function:     n.function     || '',
+          innervation:  n.innervation  || '',
+          blood_supply: n.blood_supply || '',
+          extra:        n.extra        || '',
+        },
+        image:     b.image || '',
+        createdAt: Date.now(),
+      });
+      added++;
+    });
+    if (patched > 0 || added > 0) saveMuscles(muscles);
   }
 }
 
