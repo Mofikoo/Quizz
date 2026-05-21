@@ -3287,3 +3287,14 @@ select { cursor: pointer; }
 .muscle-table .col-notes .muscle-notes-cell {
   max-width: none;
 }
+
+/* ── Nerve parent label ───────────────────────────────────────────── */
+.nerve-row-parent {
+  margin-bottom: 1px;
+}
+.nerve-parent-label {
+  font-size: 10.5px;
+  color: var(--text4);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
