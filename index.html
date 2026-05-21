@@ -2177,12 +2177,18 @@ function renderNervesList() {
     return;
   }
 
-  listEl.innerHTML = filtered.map((n, i) => {
+  // Keep original NERVE_DATA index for each filtered nerve
+  const filteredWithIdx = filtered.map(n => ({
+    ...n,
+    _origIdx: NERVE_DATA.findIndex(x => x.name === n.name)
+  }));
+
+  listEl.innerHTML = filteredWithIdx.map(n => {
     const levelBadges = n.levels.map(l =>
       '<span class="nerve-level-badge" style="background:' + nlc(l) + '22;color:' + nlc(l) + ';border-color:' + nlc(l) + '55">' + esc(l) + '</span>'
     ).join('');
     const muscleCount = n.muscles.length;
-    return '<div class="nerve-row" data-nidx="' + i + '" onclick="openNerveDetail(' + i + ')">'
+    return '<div class="nerve-row" onclick="openNerveDetail(' + n._origIdx + ',\'' + (region||'') + '\')">'
       + '<div class="nerve-row-main">'
       + '<div class="nerve-row-name">' + esc(n.name) + '</div>'
       + '<div class="nerve-row-meta">' + (levelBadges || '<span style="color:var(--text4);font-size:11px">no level data</span>') + '</div>'
@@ -2193,7 +2199,7 @@ function renderNervesList() {
   }).join('');
 }
 
-function openNerveDetail(idx) {
+function openNerveDetail(idx, regionFilter) {
   const n = NERVE_DATA[idx];
   if (!n) return;
 
@@ -2201,7 +2207,15 @@ function openNerveDetail(idx) {
     '<span class="nerve-level-badge nerve-level-badge--lg" style="background:' + nlc(l) + ';color:#fff;">' + esc(l) + '</span>'
   ).join('');
 
-  const muscleRows = n.muscles.map(mName => {
+  // Filter muscles by region if filter is active
+  const regionMuscleNames = regionFilter
+    ? new Set(muscles.filter(m => m.region === regionFilter).map(m => m.name))
+    : null;
+  const displayMuscles = regionMuscleNames
+    ? n.muscles.filter(m => regionMuscleNames.has(m))
+    : n.muscles;
+
+  const muscleRows = displayMuscles.map(mName => {
     const m = muscles.find(x => x.name === mName);
     const region = m ? m.region : '';
     const color  = m ? rc(region) : '#888';
