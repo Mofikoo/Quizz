@@ -19,7 +19,6 @@
     </div>
     <nav class="header-nav">
       <button class="nav-btn" data-panel="add"       onclick="switchPanel('add')">+ Add</button>
-      <button class="nav-btn" data-panel="fsrs-review" onclick="switchPanel('fsrs-review')">Review <span class="nav-badge" id="fsrs-due-badge" style="background:#e74c3c;display:none">0</span></button>
       <button class="nav-btn active" data-panel="list" onclick="switchPanel('list')">Muscles <span class="nav-badge" id="nav-count">179</span></button>
       <button class="nav-btn" data-panel="bones"     onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
       <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge">58</span></button>
@@ -534,10 +533,13 @@
 
     <!-- Toolbar -->
     <div class="cards-toolbar">
-      <div style="display:flex;gap:6px;flex-shrink:0;">
+      <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
         <button class="btn btn-sm cards-type-btn active" id="cards-type-muscle" onclick="setCardsType('muscle')">Muscles</button>
         <button class="btn btn-sm cards-type-btn" id="cards-type-bone" onclick="setCardsType('bone')">Bones</button>
         <button class="btn btn-sm cards-type-btn" id="cards-type-lig" onclick="setCardsType('lig')">Ligaments</button>
+        <button class="btn btn-sm" id="cards-due-btn" onclick="toggleDueMode()" style="border-color:#e74c3c;color:#e74c3c;position:relative">
+          Due <span id="cards-due-count" style="font-size:10px;background:#e74c3c;color:#fff;border-radius:99px;padding:0 5px;margin-left:3px">0</span>
+        </button>
       </div>
       <div class="cards-search-wrap">
         <input type="text" id="cards-search" placeholder="Search muscle..."
@@ -1455,14 +1457,7 @@
     </div>
   </div>
 
-  <!-- ══ FSRS REVIEW PANEL ══ -->
-  <div class="panel" id="panel-fsrs-review">
-    <div class="page-title">
-      <h1>Review</h1>
-      <p>Spaced repetition with FSRS-5 — cards are scheduled based on your memory.</p>
-    </div>
-    <div id="fsrs-container" style="max-width:640px;margin:0 auto"></div>
-  </div>
+  
 
 </main>
 
@@ -1824,7 +1819,7 @@ function fsrsRate(G, muscleId) {
   if (G === AGAIN) fsrsSession.again++;
 
   // Update due badge
-  updateFSRSBadge();
+  updateFSRSDueBadge();
 
   fsrsQueueIdx++;
   if (fsrsQueueIdx >= fsrsQueue.length) {
@@ -1833,7 +1828,7 @@ function fsrsRate(G, muscleId) {
   renderFSRSQueue();
 }
 
-function updateFSRSBadge() {
+function updateFSRSDueBadge() {
   const count = fsrsDueCount();
   const badge = document.getElementById('fsrs-due-badge');
   if (badge) {
@@ -2811,7 +2806,7 @@ function switchPanel(name) {
   if (name === 'bones')       { initBones(); }
   if (name === 'ligaments')   { initLigaments(); }
   if (name === 'nerves')      { initNerves(); }
-  if (name === 'fsrs-review') { initFSRS(); updateFSRSBadge(); }
+  if (name === 'fsrs-review') { initFSRS(); updateFSRSDueBadge(); }
   if (name === 'arteries')    { initArteries(); }
   if (name === 'ligs-recall')   { initLigsRecall(); }
   if (name === 'schema-quiz')   { startSchemaQuizDirect(); }
@@ -5810,6 +5805,27 @@ function renderBoneCard() {
 function initCards() {
   if (typeof cardsType !== 'undefined' && cardsType === 'bone') { initBoneCards(); return; }
   if (typeof cardsType !== 'undefined' && cardsType === 'lig')  { initLigCards(); return; }
+
+  // Due mode: only show due/new muscles
+  if (cardsDueMode) {
+    const store = fsrsLoad();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dueDeck = muscles.filter(m => {
+      const card = store[m.id];
+      return !card || new Date(card.due) <= today;
+    });
+    if (!dueDeck.length) {
+      cardsDueMode = false;
+      const db = document.getElementById('cards-due-btn');
+      if (db) { db.style.background=''; db.style.color='#e74c3c'; db.style.borderColor='#e74c3c'; }
+      toast('No due cards right now! ??');
+    } else {
+      cardDeck = dueDeck; cardIdx = 0; cardFlipped = false;
+      renderCard(); renderCardDots(); updateCardNav(); updateFSRSDueBadge();
+      return;
+    }
+  }
+
   const fReg   = document.getElementById('cards-region-filter').value;
   const fDepth = document.getElementById('cards-depth-filter').value;
   const order  = document.getElementById('cards-order').value;
@@ -5906,6 +5922,10 @@ function renderCard() {
       </div>`).join('')
     : '<p class="fc-no-data">No anatomy data for this muscle yet.<br>Edit it in the Muscles tab.</p>';
 
+  // Build FSRS rating buttons
+  const fsrsCard = fsrsGetCard(m.id);
+  const fsrsButtons = buildFSRSButtons(m.id, fsrsCard);
+
   document.getElementById('fc-back').innerHTML = `
     <div class="fc-region-bar" style="background:${color}"></div>
     <div class="fc-back-header">
@@ -5916,11 +5936,97 @@ function renderCard() {
       <h2 class="fc-muscle-name">${esc(m.name)}</h2>
     </div>
     <div class="fc-back-fields">${fieldsHTML}</div>
+    <div class="fc-fsrs-row">${fsrsButtons}</div>
   `;
 
   // Dots
   renderCardDots();
   updateCardNav();
+}
+
+
+// ── FSRS Cards Integration ────────────────────────────────────────
+let cardsDueMode = false;
+
+function buildFSRSButtons(muscleId, card) {
+  function preview(G) {
+    if (!card) {
+      return G === 1 ? '1d' : G === 2 ? '1d' : G === 3 ? '3d' : '5d';
+    }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const t = Math.max(0, (today - new Date(card.lastReview)) / 86400000);
+    const R = fsrsR(t, card.S);
+    const D = card.D, S = card.S;
+    let newS = G === 1 ? fsrsSf(D,S,R) : fsrsSr(D,S,R,G);
+    let i = Math.max(1, fsrsInterval(0.9, newS));
+    if (G === 2) i = Math.max(1, Math.round(i * 0.5));
+    if (G === 4) i = Math.max(1, Math.round(i * 1.3));
+    if (G === 1) i = 1;
+    return i >= 30 ? Math.round(i/30) + 'mo' : i >= 7 ? Math.round(i/7) + 'w' : i + 'd';
+  }
+  const btns = [
+    { G:1, label:'Again', color:'#e74c3c' },
+    { G:2, label:'Hard',  color:'#e67e22' },
+    { G:3, label:'Good',  color:'#27ae60' },
+    { G:4, label:'Easy',  color:'#3498db' },
+  ];
+  return btns.map(b =>
+    '<button class="fc-fsrs-btn" style="border-color:' + b.color + ';color:' + b.color + '"'
+    + ' onclick="onFSRSRate(' + b.G + ',\'' + muscleId + '\')">'
+    + '<span class="fc-fsrs-label">' + b.label + '</span>'
+    + '<span class="fc-fsrs-hint">' + preview(b.G) + '</span>'
+    + '</button>'
+  ).join('');
+}
+
+function onFSRSRate(G, muscleId) {
+  fsrsReview(muscleId, G);
+  updateFSRSDueBadge();
+
+  // In due mode: skip to next due card or show done
+  if (cardsDueMode) {
+    // Rebuild deck of due cards (may have changed)
+    const wasIdx = cardIdx;
+    initCards();
+    // If no more due, exit due mode
+    if (!cardDeck.length) {
+      cardsDueMode = false;
+      document.getElementById('cards-due-btn').classList.remove('active');
+      document.getElementById('cards-due-btn').style.borderColor = '#e74c3c';
+      document.getElementById('cards-due-btn').style.color = '#e74c3c';
+      toast('All due cards reviewed! 🎉');
+      setCardsType('muscle');
+      return;
+    }
+  } else {
+    nextCard();
+  }
+}
+
+function toggleDueMode() {
+  cardsDueMode = !cardsDueMode;
+  const btn = document.getElementById('cards-due-btn');
+  if (cardsDueMode) {
+    btn.classList.add('active');
+    btn.style.background = '#e74c3c';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#e74c3c';
+    setCardsType('muscle'); // trigger initCards with due filter
+  } else {
+    btn.classList.remove('active');
+    btn.style.background = '';
+    btn.style.color = '#e74c3c';
+    btn.style.borderColor = '#e74c3c';
+    initCards();
+  }
+}
+
+function updateFSRSDueBadge() {
+  const count = fsrsDueCount();
+  const badge = document.getElementById('cards-due-count');
+  if (badge) badge.textContent = count;
+  // Also hide badge if 0
+  if (badge) badge.style.display = count > 0 ? 'inline' : 'none';
 }
 
 function flipCard() {
@@ -6058,10 +6164,29 @@ function seedBundledData() {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 seedBundledData();
-  setTimeout(updateFSRSBadge, 200);
+  setTimeout(updateFSRSDueBadge, 200);
 updateNavNecknt();
 populateFilters();
 renderList();
 </script>
 </body>
-</html>
+</html  // Due mode: only show due cards
+  if (cardsDueMode && cardsType === 'muscle') {
+    const store = fsrsLoad();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dueDeck = muscles.filter(m => {
+      const card = store[m.id];
+      return !card || new Date(card.due) <= today;
+    });
+    if (!dueDeck.length) {
+      cardsDueMode = false;
+      const db = document.getElementById('cards-due-btn');
+      if (db) { db.style.background=''; db.style.color='#e74c3c'; db.style.borderColor='#e74c3c'; }
+      toast('No due cards right now! ??');
+    } else {
+      cardDeck = dueDeck; cardIdx = 0; cardFlipped = false;
+      renderCard(); renderCardDots(); updateCardNav(); updateFSRSDueBadge();
+      return;
+    }
+  }
+>
