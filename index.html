@@ -6170,23 +6170,4 @@ populateFilters();
 renderList();
 </script>
 </body>
-</html  // Due mode: only show due cards
-  if (cardsDueMode && cardsType === 'muscle') {
-    const store = fsrsLoad();
-    const today = new Date(); today.setHours(0,0,0,0);
-    const dueDeck = muscles.filter(m => {
-      const card = store[m.id];
-      return !card || new Date(card.due) <= today;
-    });
-    if (!dueDeck.length) {
-      cardsDueMode = false;
-      const db = document.getElementById('cards-due-btn');
-      if (db) { db.style.background=''; db.style.color='#e74c3c'; db.style.borderColor='#e74c3c'; }
-      toast('No due cards right now! ??');
-    } else {
-      cardDeck = dueDeck; cardIdx = 0; cardFlipped = false;
-      renderCard(); renderCardDots(); updateCardNav(); updateFSRSDueBadge();
-      return;
-    }
-  }
->
+</html>
