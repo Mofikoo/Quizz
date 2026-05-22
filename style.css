@@ -3298,3 +3298,133 @@ select { cursor: pointer; }
   font-weight: 500;
   letter-spacing: 0.02em;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   FSRS REVIEW PANEL
+   ══════════════════════════════════════════════════════════════════ */
+
+.fsrs-progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 99px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+.fsrs-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width .3s ease;
+}
+
+.fsrs-badge-new    { background:#27ae6022;color:#27ae60;border:1px solid #27ae6055;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.06em }
+.fsrs-badge-review { background:#3498db22;color:#3498db;border:1px solid #3498db55;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.06em }
+
+.fsrs-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.fsrs-card-region {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #fff;
+  padding: 6px 16px;
+}
+.fsrs-card-name {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 700;
+  padding: 18px 20px 4px;
+  color: var(--text);
+}
+.fsrs-card-alt {
+  font-size: 13px;
+  color: var(--text3);
+  font-style: italic;
+  padding: 0 20px 12px;
+}
+.fsrs-reveal-area {
+  padding: 20px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.fsrs-show-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border-mid);
+  color: var(--text2);
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.fsrs-show-btn:hover { background: var(--bg2); border-color: var(--text3); }
+
+/* Answer fields */
+.fsrs-answer-fields {
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.fsrs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.fsrs-field:last-child { border-bottom: none; }
+.fsrs-field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text3);
+}
+.fsrs-field-val {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Rating buttons */
+.fsrs-ratings { margin-top: 0; }
+.fsrs-rating-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+}
+.fsrs-rating-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border: 2px solid;
+  border-radius: var(--r);
+  background: transparent;
+  cursor: pointer;
+  transition: background .12s;
+}
+.fsrs-rating-btn:hover { background: var(--bg2); }
+.fsrs-rating-label { font-size: 13px; font-weight: 700; }
+.fsrs-rating-hint  { font-size: 11px; opacity: .7; }
+
+/* Done state */
+.fsrs-done {
+  text-align: center;
+  padding: 3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.fsrs-done-icon  { font-size: 48px; }
+.fsrs-done-title { font-size: 22px; font-weight: 700; color: var(--text); }

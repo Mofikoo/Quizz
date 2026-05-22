@@ -19,6 +19,7 @@
     </div>
     <nav class="header-nav">
       <button class="nav-btn" data-panel="add"       onclick="switchPanel('add')">+ Add</button>
+      <button class="nav-btn" data-panel="fsrs-review" onclick="switchPanel('fsrs-review')">Review <span class="nav-badge" id="fsrs-due-badge" style="background:#e74c3c;display:none">0</span></button>
       <button class="nav-btn active" data-panel="list" onclick="switchPanel('list')">Muscles <span class="nav-badge" id="nav-count">179</span></button>
       <button class="nav-btn" data-panel="bones"     onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
       <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge">58</span></button>
@@ -1454,6 +1455,15 @@
     </div>
   </div>
 
+  <!-- ══ FSRS REVIEW PANEL ══ -->
+  <div class="panel" id="panel-fsrs-review">
+    <div class="page-title">
+      <h1>Review</h1>
+      <p>Spaced repetition with FSRS-5 — cards are scheduled based on your memory.</p>
+    </div>
+    <div id="fsrs-container" style="max-width:640px;margin:0 auto"></div>
+  </div>
+
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -1506,6 +1516,332 @@
 
 <script>
 'use strict';
+
+// ══════════════════════════════════════════════════════════════════
+// FSRS-5 Spaced Repetition Engine
+// Based on https://github.com/open-spaced-repetition/fsrs4anki
+// MIT License — Free Spaced Repetition Scheduler
+// ══════════════════════════════════════════════════════════════════
+
+const FSRS_W = [
+  0.40255, 1.18385, 3.173, 15.69105,  // w0-w3: initial stability per grade
+  7.1949,  0.5345,  1.4604, 0.0046,   // w4-w7: difficulty
+  1.54575, 0.1192,  1.01925, 1.9395,  // w8-w11: recall stability
+  0.11,    0.29605, 2.2698,            // w12-w14: lapse stability
+  0.2315,  2.9898,  0.51655, 0.6621   // w15-w18: same-day & hard/easy
+];
+
+const FSRS_DECAY  = -0.5;
+const FSRS_FACTOR = 19 / 81;  // ensures R(S,S)=0.9
+
+// Rating constants
+const AGAIN = 1, HARD = 2, GOOD = 3, EASY = 4;
+
+// Retrievability: probability of recall after t days
+function fsrsR(t, S) {
+  return Math.pow(1 + FSRS_FACTOR * t / S, FSRS_DECAY);
+}
+
+// Next interval given target retention r and stability S
+function fsrsInterval(r, S) {
+  return Math.round(S / FSRS_FACTOR * (Math.pow(r, 1 / FSRS_DECAY) - 1));
+}
+
+// Initial stability after first rating
+function fsrsS0(G) {
+  return Math.max(0.1, FSRS_W[G - 1]);
+}
+
+// Initial difficulty after first rating
+function fsrsD0(G) {
+  return Math.min(10, Math.max(1, FSRS_W[4] - Math.exp(FSRS_W[5] * (G - 1)) + 1));
+}
+
+// New difficulty after review (FSRS-5 linear damping)
+function fsrsNewD(D, G) {
+  const dD = -FSRS_W[6] * (G - 3);
+  const Dp = D + dD * (10 - D) / 9;
+  // Mean reversion towards D0(4)
+  return Math.min(10, Math.max(1, FSRS_W[7] * fsrsD0(4) + (1 - FSRS_W[7]) * Dp));
+}
+
+// New stability after successful recall
+function fsrsSr(D, S, R, G) {
+  const hardPenalty = G === HARD ? FSRS_W[15] : 1;
+  const easyBonus   = G === EASY ? FSRS_W[16] : 1;
+  return Math.max(S, S * (
+    Math.exp(FSRS_W[8]) *
+    (11 - D) *
+    Math.pow(S, -FSRS_W[9]) *
+    (Math.exp(FSRS_W[10] * (1 - R)) - 1) *
+    hardPenalty * easyBonus + 1
+  ));
+}
+
+// New stability after forgetting
+function fsrsSf(D, S, R) {
+  return Math.max(0.1,
+    FSRS_W[11] *
+    Math.pow(D, -FSRS_W[12]) *
+    (Math.pow(S + 1, FSRS_W[13]) - 1) *
+    Math.exp(FSRS_W[14] * (1 - R))
+  );
+}
+
+// ── FSRS State Storage ────────────────────────────────────────────
+const FSRS_KEY = 'musclequiz_fsrs_v1';
+
+function fsrsLoad() {
+  try { return JSON.parse(localStorage.getItem(FSRS_KEY)) || {}; } catch { return {}; }
+}
+function fsrsSave(data) { localStorage.setItem(FSRS_KEY, JSON.stringify(data)); }
+
+// Get card state: { S, D, R, reps, lapses, due, lastReview }
+function fsrsGetCard(id) {
+  const store = fsrsLoad();
+  return store[id] || null;
+}
+
+function fsrsDueCount() {
+  const store = fsrsLoad();
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Object.values(store).filter(c => new Date(c.due) <= today).length;
+}
+
+// Process a review and compute next state
+function fsrsReview(id, G, targetRetention = 0.9) {
+  const store = fsrsLoad();
+  const now = new Date();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let card = store[id];
+  let S, D, R, interval;
+
+  if (!card) {
+    // First review
+    S = fsrsS0(G);
+    D = fsrsD0(G);
+    R = 1;
+    card = { S, D, R, reps: 0, lapses: 0 };
+  } else {
+    S = card.S;
+    D = card.D;
+    const lastReview = new Date(card.lastReview);
+    const t = Math.max(0, (today - lastReview) / 86400000);
+    R = fsrsR(t, S);
+
+    if (G === AGAIN) {
+      card.lapses++;
+      S = fsrsSf(D, S, R);
+    } else {
+      S = fsrsSr(D, S, R, G);
+    }
+    D = fsrsNewD(D, G);
+  }
+
+  // Compute next interval
+  if (G === AGAIN) {
+    interval = 1; // relearn in 1 day
+  } else {
+    interval = Math.max(1, fsrsInterval(targetRetention, S));
+    if (G === HARD)  interval = Math.max(1, Math.round(interval * 0.5));
+    if (G === EASY)  interval = Math.max(1, Math.round(interval * 1.3));
+  }
+
+  const due = new Date(today);
+  due.setDate(due.getDate() + interval);
+
+  card.S = S;
+  card.D = D;
+  card.R = R;
+  card.reps = (card.reps || 0) + 1;
+  card.lastReview = now.toISOString();
+  card.due = due.toISOString();
+  card.lastGrade = G;
+  card.lastInterval = interval;
+
+  store[id] = card;
+  fsrsSave(store);
+  return { S, D, R, interval, due };
+}
+
+// ── FSRS Review Panel ─────────────────────────────────────────────
+let fsrsQueue = [];
+let fsrsQueueIdx = 0;
+let fsrsSession = { reviewed: 0, again: 0 };
+
+function initFSRS() {
+  loadFSRSQueue();
+  renderFSRSQueue();
+}
+
+function loadFSRSQueue() {
+  const store = fsrsLoad();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // All due muscles
+  fsrsQueue = muscles.filter(m => {
+    const card = store[m.id];
+    if (!card) return true; // new card
+    return new Date(card.due) <= today;
+  });
+
+  // New cards first (no card data), then by due date
+  fsrsQueue.sort((a, b) => {
+    const ca = store[a.id], cb = store[b.id];
+    if (!ca && !cb) return a.name.localeCompare(b.name);
+    if (!ca) return -1;
+    if (!cb) return 1;
+    return new Date(ca.due) - new Date(cb.due);
+  });
+
+  fsrsQueueIdx = 0;
+  fsrsSession = { reviewed: 0, again: 0 };
+}
+
+function renderFSRSQueue() {
+  const container = document.getElementById('fsrs-container');
+  if (!container) return;
+
+  const total = fsrsQueue.length;
+
+  if (total === 0) {
+    const store = fsrsLoad();
+    // Find next due
+    const upcoming = Object.entries(store)
+      .filter(([,c]) => c.due)
+      .map(([id, c]) => ({ id, due: new Date(c.due) }))
+      .sort((a,b) => a.due - b.due);
+    const next = upcoming[0];
+    const nextStr = next
+      ? `Next review: ${next.due.toLocaleDateString('en', {weekday:'short', month:'short', day:'numeric'})}`
+      : 'No cards scheduled yet.';
+
+    container.innerHTML =
+      '<div class="fsrs-done">'
+      + '<div class="fsrs-done-icon">🎉</div>'
+      + '<div class="fsrs-done-title">All caught up!</div>'
+      + '<p style="color:var(--text3);font-size:14px;margin:0">' + esc(nextStr) + '</p>'
+      + (fsrsSession.reviewed > 0 ? '<p style="color:var(--text3);font-size:13px;margin-top:8px">Session: ' + fsrsSession.reviewed + ' reviewed, ' + fsrsSession.again + ' again</p>' : '')
+      + '</div>';
+    return;
+  }
+
+  const m = fsrsQueue[fsrsQueueIdx];
+  if (!m) { loadFSRSQueue(); renderFSRSQueue(); return; }
+
+  const store = fsrsLoad();
+  const card  = store[m.id];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const isNew = !card;
+  const t = card ? Math.max(0, (today - new Date(card.lastReview)) / 86400000) : 0;
+  const R = card ? Math.round(fsrsR(t, card.S) * 100) : null;
+
+  const remaining = total - fsrsQueueIdx;
+  const progress = Math.round((fsrsQueueIdx / total) * 100);
+
+  container.innerHTML =
+    '<div class="fsrs-progress-bar"><div class="fsrs-progress-fill" style="width:' + progress + '%"></div></div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
+    + '<span style="font-size:12px;color:var(--text3)">'
+    + (isNew ? '<span class="fsrs-badge-new">NEW</span>' : '<span class="fsrs-badge-review">REVIEW</span>')
+    + '</span>'
+    + '<span style="font-size:12px;color:var(--text3)">' + remaining + ' remaining</span>'
+    + '</div>'
+
+    // Card front
+    + '<div class="fsrs-card">'
+    + '<div class="fsrs-card-region" style="background:' + rc(m.region) + '">' + esc(m.region) + ' · ' + esc(m.depth || '') + '</div>'
+    + '<div class="fsrs-card-name">' + esc(m.name) + '</div>'
+    + (m.synonyms?.length ? '<div class="fsrs-card-alt">' + esc((m.synonyms||[]).join(', ')) + '</div>' : '')
+    + '<div id="fsrs-reveal-area" class="fsrs-reveal-area">'
+    + '<button class="btn fsrs-show-btn" onclick="fsrsReveal()">Show answer</button>'
+    + '</div>'
+    + '</div>'
+
+    // Ratings (hidden until revealed)
+    + '<div id="fsrs-ratings" class="fsrs-ratings" style="display:none">'
+    + fsrsRatingButtons(m, card)
+    + '</div>';
+}
+
+function fsrsRatingButtons(m, card) {
+  // Preview intervals for each rating
+  const S = card ? card.S : null;
+  const D = card ? card.D : null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const t = card ? Math.max(0, (today - new Date(card.lastReview)) / 86400000) : 0;
+  const R = card ? fsrsR(t, S) : 1;
+
+  function previewInterval(G) {
+    if (!card) return G === AGAIN ? '1d' : G === HARD ? '1d' : G === GOOD ? '3d' : '4d';
+    const newS = G === AGAIN ? fsrsSf(D, S, R) : fsrsSr(D, S, R, G);
+    let i = Math.max(1, fsrsInterval(0.9, newS));
+    if (G === HARD) i = Math.max(1, Math.round(i * 0.5));
+    if (G === EASY) i = Math.max(1, Math.round(i * 1.3));
+    if (G === AGAIN) i = 1;
+    return i >= 30 ? Math.round(i/30) + 'mo' : i >= 7 ? Math.round(i/7) + 'w' : i + 'd';
+  }
+
+  const muscle_fields = m.notes || {};
+  const fields = [
+    { key:'origin',      label:'Origin',       val: muscle_fields.origin },
+    { key:'insertion',   label:'Insertion',    val: muscle_fields.insertion },
+    { key:'function',    label:'Function',     val: muscle_fields.function },
+    { key:'innervation', label:'Innervation',  val: muscle_fields.innervation },
+    { key:'blood_supply',label:'Blood supply', val: muscle_fields.blood_supply },
+  ].filter(f => f.val);
+
+  return '<div class="fsrs-answer-fields">'
+    + fields.map(f =>
+        '<div class="fsrs-field"><span class="fsrs-field-label">' + esc(f.label) + '</span>'
+        + '<span class="fsrs-field-val">' + esc(f.val) + '</span></div>'
+      ).join('')
+    + '</div>'
+    + '<div class="fsrs-rating-row">'
+    + [
+        { G: AGAIN, label: 'Again',  color: '#e74c3c', hint: previewInterval(AGAIN) },
+        { G: HARD,  label: 'Hard',   color: '#e67e22', hint: previewInterval(HARD)  },
+        { G: GOOD,  label: 'Good',   color: '#27ae60', hint: previewInterval(GOOD)  },
+        { G: EASY,  label: 'Easy',   color: '#3498db', hint: previewInterval(EASY)  },
+      ].map(r =>
+        '<button class="fsrs-rating-btn" style="border-color:' + r.color + ';color:' + r.color + '" onclick="fsrsRate(' + r.G + ',' + JSON.stringify(m.id) + ')">'
+        + '<span class="fsrs-rating-label">' + r.label + '</span>'
+        + '<span class="fsrs-rating-hint">' + r.hint + '</span>'
+        + '</button>'
+      ).join('')
+    + '</div>';
+}
+
+function fsrsReveal() {
+  document.getElementById('fsrs-reveal-area').style.display = 'none';
+  document.getElementById('fsrs-ratings').style.display = 'block';
+}
+
+function fsrsRate(G, muscleId) {
+  fsrsReview(muscleId, G);
+  fsrsSession.reviewed++;
+  if (G === AGAIN) fsrsSession.again++;
+
+  // Update due badge
+  updateFSRSBadge();
+
+  fsrsQueueIdx++;
+  if (fsrsQueueIdx >= fsrsQueue.length) {
+    loadFSRSQueue();
+  }
+  renderFSRSQueue();
+}
+
+function updateFSRSBadge() {
+  const count = fsrsDueCount();
+  const badge = document.getElementById('fsrs-due-badge');
+  if (badge) {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+}
+
 const NERVE_DATA = [{"name":"Accessory nerve","levels":["CN XI"],"muscles":[{"name":"Sternocleidomastoid","levels":[]},{"name":"Trapezius","levels":[]}]},{"name":"Ansa cervicalis","levels":["C1–C3"],"muscles":[{"name":"Omohyoid","levels":["C1–C3"]},{"name":"Sternohyoid","levels":["C1–C3"]},{"name":"Sternothyroid","levels":["C1–C3"]}],"parent":"Cervical plexus (C1–C3)"},{"name":"Anterior interosseous nerve","levels":["C7–C8"],"muscles":[{"name":"Flexor Pollicis Longus","levels":["C7–C8"]},{"name":"Pronator Quadratus","levels":["C7–C8"]}],"parent":"Median nerve"},{"name":"Anterior interosseous nerve and ulnar nerve","levels":["C8–T1"],"muscles":[{"name":"Flexor Digitorum Profundus","levels":["C8–T1"]}]},{"name":"Anterior rami","levels":["C3–C8","L1–L4","T9–T12"],"muscles":[{"name":"Anterior Scalene","levels":["C4–C6"]},{"name":"Middle Scalene","levels":["C3–C8"]},{"name":"Posterior Scalene","levels":["C6–C8"]},{"name":"Psoas Major","levels":["L1–L3"]},{"name":"Quadratus Lumborum","levels":["L1–L4","T12"]},{"name":"Serratus Posterior Inferior","levels":["T9–T12"]}]},{"name":"Anterior ramus","levels":["L1"],"muscles":[{"name":"Psoas Minor","levels":["L1"]}]},{"name":"Axillary nerve","levels":["C5–C6"],"muscles":[{"name":"Deltoid","levels":["C5–C6"]},{"name":"Teres Minor","levels":["C5–C6"]}]},{"name":"CN V","levels":[],"muscles":[{"name":"Lateral Pterygoid","levels":[]},{"name":"Masseter","levels":[]},{"name":"Medial Pterygoid","levels":[]},{"name":"Temporalis","levels":[]}]},{"name":"CN VII","levels":["CN VII"],"muscles":[{"name":"Buccinator","levels":[]},{"name":"Corrugator Supercilii","levels":[]},{"name":"Depressor Anguli Oris","levels":[]},{"name":"Depressor Labii Inferioris","levels":[]},{"name":"Frontalis","levels":[]},{"name":"Levator Anguli Oris","levels":[]},{"name":"Levator Labii Superioris","levels":[]},{"name":"Levator Labii Superioris Alaeque Nasi","levels":[]},{"name":"Mentalis","levels":[]},{"name":"Nasalis","levels":[]},{"name":"Occipitalis","levels":[]},{"name":"Occipitofrontalis","levels":[]},{"name":"Orbicularis Oculi","levels":[]},{"name":"Orbicularis Oris","levels":[]},{"name":"Platysma","levels":[]},{"name":"Procerus","levels":[]},{"name":"Risorius","levels":[]},{"name":"Temporoparietalis","levels":[]},{"name":"Zygomaticus Major","levels":[]},{"name":"Zygomaticus Minor","levels":[]}]},{"name":"CN XI","levels":["CN XI"],"muscles":[{"name":"Sternocleidomastoid","levels":[]},{"name":"Trapezius","levels":[]}]},{"name":"CN XII","levels":["CN XII"],"muscles":[{"name":"Thyrohyoid","levels":[]}]},{"name":"Deep branch of lateral plantar nerve","levels":["S2–S3"],"muscles":[{"name":"Adductor Hallucis","levels":["S2–S3"]}],"parent":"Lateral plantar nerve"},{"name":"Deep branch of ulnar nerve","levels":["C8–T1"],"muscles":[{"name":"Abductor Digiti Minimi (Hand)","levels":["C8–T1"]},{"name":"Adductor Pollicis","levels":["C8–T1"]},{"name":"Dorsal Interossei (Hand)","levels":["C8–T1"]},{"name":"Flexor Digiti Minimi Brevis (Hand)","levels":["C8–T1"]},{"name":"Flexor Pollicis Brevis","levels":["C8–T1"]},{"name":"Opponens Digiti Minimi","levels":["C8–T1"]},{"name":"Palmar Interossei (Hand)","levels":["C8–T1"]}],"parent":"Ulnar nerve"},{"name":"Deep fibular (peroneal) nerve","levels":["L4–L5"],"muscles":[{"name":"Extensor Digitorum Longus","levels":["L5–S1"]},{"name":"Extensor Hallucis Longus","levels":["L5–S1"]},{"name":"Fibularis Tertius","levels":["L5–S1"]},{"name":"Tibialis Anterior","levels":["L4–L5"]}],"parent":"Common fibular nerve"},{"name":"Dorsal rami","levels":["C1–C8"],"muscles":[{"name":"Longissimus Capitis","levels":["C4–T4"]},{"name":"Semispinalis Capitis","levels":["C1–T6"]},{"name":"Semispinalis Cervicis","levels":["C2–C8"]},{"name":"Splenius Capitis","levels":["C3–C4"]},{"name":"Splenius Cervicis","levels":["C4–C8"]}]},{"name":"Dorsal rami of cervical and thoracic spinal nerve","levels":[],"muscles":[{"name":"Longissimus Cervicis","levels":[]}]},{"name":"Dorsal rami of cervical and upper thoracic spinal nerve","levels":[],"muscles":[{"name":"Spinalis Capitis","levels":[]}]},{"name":"Dorsal rami of lower cervical spinal nerve","levels":[],"muscles":[{"name":"Spinalis Cervicis","levels":[]}]},{"name":"Dorsal rami of spinal nerve","levels":["C6–C8","L1–L3","T1–T12"],"muscles":[{"name":"Iliocostalis Cervicis","levels":["C6–C8"]},{"name":"Iliocostalis Lumborum","levels":["L1–L3"]},{"name":"Iliocostalis Thoracis","levels":["T1–T12"]},{"name":"Interspinales","levels":[]},{"name":"Multifidus","levels":[]},{"name":"Rotatores","levels":[]}]},{"name":"Dorsal rami of thoracic spinal nerve","levels":["T1–T11"],"muscles":[{"name":"Levatores Costarum","levels":["T1–T11"]},{"name":"Longissimus Thoracis","levels":[]},{"name":"Semispinalis Thoracis","levels":[]},{"name":"Spinalis Thoracis","levels":[]}]},{"name":"Dorsal scapular nerve","levels":["C3–C5"],"muscles":[{"name":"Levator Scapulae","levels":["C3–C5"]},{"name":"Rhomboid Major","levels":["C4–C5"]},{"name":"Rhomboid Minor","levels":["C4–C5"]}],"parent":"Brachial plexus (C4–C5)"},{"name":"Facial nerve","levels":["CN VII"],"muscles":[{"name":"Buccinator","levels":[]},{"name":"Corrugator Supercilii","levels":[]},{"name":"Depressor Anguli Oris","levels":[]},{"name":"Depressor Labii Inferioris","levels":[]},{"name":"Frontalis","levels":[]},{"name":"Levator Anguli Oris","levels":[]},{"name":"Levator Labii Superioris","levels":[]},{"name":"Levator Labii Superioris Alaeque Nasi","levels":[]},{"name":"Mentalis","levels":[]},{"name":"Nasalis","levels":[]},{"name":"Occipitalis","levels":[]},{"name":"Occipitofrontalis","levels":[]},{"name":"Orbicularis Oculi","levels":[]},{"name":"Orbicularis Oris","levels":[]},{"name":"Platysma","levels":[]},{"name":"Procerus","levels":[]},{"name":"Risorius","levels":[]},{"name":"Temporoparietalis","levels":[]},{"name":"Zygomaticus Major","levels":[]},{"name":"Zygomaticus Minor","levels":[]}]},{"name":"Femoral nerve","levels":["L2–L4"],"muscles":[{"name":"Iliacus","levels":["L2–L4"]},{"name":"Pectineus","levels":["L2–L3"]},{"name":"Rectus Femoris","levels":["L2–L4"]},{"name":"Sartorius","levels":["L2–L3"]},{"name":"Vastus Intermedius","levels":["L2–L4"]},{"name":"Vastus Lateralis","levels":["L2–L4"]},{"name":"Vastus Medialis","levels":["L2–L4"]}],"parent":"Lumbar plexus"},{"name":"Hypoglossal nerve","levels":["CN XII"],"muscles":[{"name":"Thyrohyoid","levels":[]}]},{"name":"Inferior gluteal nerve","levels":["L5–S2"],"muscles":[{"name":"Gluteus Maximus","levels":["L5–S2"]}],"parent":"Sacral plexus"},{"name":"Inferior rectal nerve","levels":["S2–S4"],"muscles":[{"name":"External Anal Sphincter","levels":["S2–S4"]}],"parent":"Pudendal nerve"},{"name":"Intercostal nerve","levels":["T1–T12"],"muscles":[{"name":"External Intercostals","levels":["T1–T11"]},{"name":"External Oblique","levels":["T7–T12"]},{"name":"Internal Intercostals","levels":["T1–T11"]},{"name":"Internal Oblique","levels":["T7–T12"]},{"name":"Rectus Abdominis","levels":["T7–T12"]},{"name":"Serratus Posterior Superior","levels":["T1–T4"]},{"name":"Subcostales","levels":["T1–T11"]},{"name":"Transversus Abdominis","levels":["T7–T12"]},{"name":"Transversus Thoracis","levels":["T2–T6"]}]},{"name":"Lateral plantar nerve","levels":["S1–S3"],"muscles":[{"name":"Abductor Digiti Minimi (Foot)","levels":["S1–S3"]},{"name":"Dorsal Interossei (Foot)","levels":["S2–S3"]},{"name":"Flexor Digiti Minimi Brevis (Foot)","levels":["S2–S3"]},{"name":"Quadratus Plantae","levels":["S1–S3"]}],"parent":"Tibial nerve"},{"name":"Long thoracic nerve","levels":["C5–C7"],"muscles":[{"name":"Serratus Anterior","levels":["C5–C7"]}],"parent":"Brachial plexus (C5–C7)"},{"name":"lumbar plexus","levels":["L1–L3"],"muscles":[{"name":"Psoas Major","levels":["L1–L3"]}]},{"name":"Mandibular nerve","levels":["CN V3"],"muscles":[{"name":"Lateral Pterygoid","levels":[]},{"name":"Masseter","levels":[]},{"name":"Medial Pterygoid","levels":[]},{"name":"Temporalis","levels":[]}]},{"name":"Medial and lateral plantar nerve","levels":["S2–S3"],"muscles":[{"name":"Lumbricals (Foot)","levels":["S2–S3"]}]},{"name":"Medial pectoral nerve","levels":["C8–T1"],"muscles":[{"name":"Pectoralis Minor","levels":["C8–T1"]}],"parent":"Medial cord (brachial plexus)"},{"name":"Medial plantar nerve","levels":["S1–S2"],"muscles":[{"name":"Abductor Hallucis","levels":["L5–S1"]},{"name":"Flexor Digitorum Brevis","levels":["L5–S1"]},{"name":"Flexor Hallucis Brevis","levels":["S1–S2"]}],"parent":"Tibial nerve"},{"name":"Median nerve","levels":["C6–C7"],"muscles":[{"name":"Flexor Carpi Radialis","levels":["C6–C7"]},{"name":"Flexor Digitorum Superficialis","levels":["C7–T1"]},{"name":"Lumbricales (Hand)","levels":["C6–T1"]},{"name":"Palmaris Longus","levels":["C7–T1"]},{"name":"Pronator Teres","levels":["C6–C7"]}]},{"name":"Musculocutaneous nerve","levels":["C5–C7"],"muscles":[{"name":"Biceps Brachii","levels":["C5–C6"]},{"name":"Brachialis","levels":["C5–C6"]},{"name":"Coracobrachialis","levels":["C6–C7"]}]},{"name":"Nerve to obturator internus","levels":["L5–S2"],"muscles":[{"name":"Obturator Internus","levels":["L5–S2"]},{"name":"Superior Gemellus","levels":["L5–S2"]}],"parent":"Sacral plexus (L5–S2)"},{"name":"Nerve to piriformis","levels":["S1–S2"],"muscles":[{"name":"Piriformis","levels":["S1–S2"]}],"parent":"Sacral plexus (S1–S2)"},{"name":"Nerve to quadratus femoris","levels":["L4–S1"],"muscles":[{"name":"Inferior Gemellus","levels":["L4–S1"]},{"name":"Quadratus Femoris","levels":["L4–S1"]}],"parent":"Sacral plexus (L4–S1)"},{"name":"Nerve to subclavius","levels":["C5–C6"],"muscles":[{"name":"Subclavius","levels":["C5–C6"]}],"parent":"Brachial plexus (C5–C6)"},{"name":"Obturator nerve","levels":["L2–L4"],"muscles":[{"name":"Adductor Brevis","levels":["L2–L4"]},{"name":"Adductor Longus","levels":["L2–L4"]},{"name":"Adductor Magnus","levels":["L2–L4"]},{"name":"Gracilis","levels":["L2–L3"]},{"name":"Obturator Externus","levels":["L3–L4"]}],"parent":"Lumbar plexus"},{"name":"Pectoral nerve","levels":["C5–T1"],"muscles":[{"name":"Pectoralis Major","levels":["C5–T1"]}]},{"name":"Phrenic nerve","levels":["C3–C5"],"muscles":[{"name":"Diaphragm","levels":["C3–C5"]}],"parent":"Cervical plexus (C3–C5)"},{"name":"Posterior interosseous nerve","levels":["C6–C8"],"muscles":[{"name":"Abductor Pollicis Longus","levels":["C7–C8"]},{"name":"Extensor Carpi Radialis Brevis","levels":["C7–C8"]},{"name":"Extensor Carpi Ulnaris","levels":["C7–C8"]},{"name":"Extensor Digiti Minimi","levels":["C7–C8"]},{"name":"Extensor Digitorum","levels":["C7–C8"]},{"name":"Extensor Indicis","levels":["C7–C8"]},{"name":"Extensor Pollicis Brevis","levels":["C7–C8"]},{"name":"Extensor Pollicis Longus","levels":["C7–C8"]},{"name":"Supinator","levels":["C6–C7"]}],"parent":"Radial nerve"},{"name":"Pudendal nerve","levels":["S2–S4"],"muscles":[{"name":"Bulbospongiosus","levels":["S2–S4"]},{"name":"Compressor Urethrae","levels":["S2–S4"]},{"name":"Deep Transverse Perineal","levels":["S2–S4"]},{"name":"External Urethral Sphincter","levels":["S2–S4"]},{"name":"Iliococcygeus","levels":["S3–S4"]},{"name":"Ischiocavernosus","levels":["S2–S4"]},{"name":"Pubococcygeus","levels":["S3–S4"]},{"name":"Puborectalis","levels":["S3–S4"]},{"name":"Sphincter Urethrovaginalis","levels":["S2–S4"]},{"name":"Superficial Transverse Perineal","levels":["S2–S4"]}],"parent":"Sacral plexus"},{"name":"Radial nerve","levels":["C5–C8"],"muscles":[{"name":"Anconeus","levels":["C7–C8"]},{"name":"Brachioradialis","levels":["C5–C6"]},{"name":"Extensor Carpi Radialis Longus","levels":["C6–C7"]},{"name":"Triceps Brachii","levels":["C6–C8"]}]},{"name":"Recurrent branch of median nerve","levels":["C8–T1"],"muscles":[{"name":"Abductor Pollicis Brevis","levels":["C8–T1"]},{"name":"Flexor Pollicis Brevis","levels":["C8–T1"]},{"name":"Opponens Pollicis","levels":["C8–T1"]}],"parent":"Median nerve"},{"name":"Sciatic nerve","levels":["L5–S2"],"muscles":[{"name":"Biceps Femoris","levels":["L5–S2"]}]},{"name":"Subcostal nerve","levels":["T12"],"muscles":[{"name":"Pyramidalis","levels":["T12"]}]},{"name":"Suboccipital nerve (dorsal ramus","levels":["C1"],"muscles":[{"name":"Obliquus Capitis Inferior","levels":["C1"]},{"name":"Obliquus Capitis Superior","levels":["C1"]},{"name":"Rectus Capitis Posterior Major","levels":["C1"]},{"name":"Rectus Capitis Posterior Minor","levels":["C1"]}]},{"name":"Subscapular nerve","levels":["C5–C7"],"muscles":[{"name":"Subscapularis","levels":["C5–C7"]},{"name":"Teres Major","levels":["C5–C7"]}],"parent":"Posterior cord (brachial plexus)"},{"name":"Superficial fibular (peroneal) nerve","levels":["L5–S1"],"muscles":[{"name":"Fibularis Brevis","levels":["L5–S1"]},{"name":"Fibularis Longus","levels":["L5–S1"]}],"parent":"Common fibular nerve"},{"name":"Superior gluteal nerve","levels":["L4–S1"],"muscles":[{"name":"Gluteus Medius","levels":["L4–S1"]},{"name":"Gluteus Minimus","levels":["L4–S1"]},{"name":"Tensor Fasciae Latae","levels":["L4–S1"]}],"parent":"Sacral plexus"},{"name":"Suprascapular nerve","levels":["C4–C6"],"muscles":[{"name":"Infraspinatus","levels":["C5–C6"]},{"name":"Supraspinatus","levels":["C4–C6"]}],"parent":"Brachial plexus (C5–C6)"},{"name":"Thoracodorsal nerve","levels":["C6–C8"],"muscles":[{"name":"Latissimus Dorsi","levels":["C6–C8"]}],"parent":"Posterior cord (brachial plexus)"},{"name":"Tibial division of sciatic nerve","levels":["L5–S2"],"muscles":[{"name":"Adductor Magnus","levels":["L4"]},{"name":"Semimembranosus","levels":["L5–S2"]},{"name":"Semitendinosus","levels":["L5–S2"]}],"parent":"Sciatic nerve"},{"name":"tibial nerve","levels":["L2–L5","S1–S2"],"muscles":[{"name":"Flexor Digitorum Longus","levels":["L5–S1"]},{"name":"Flexor Hallucis Longus","levels":["L5–S2"]},{"name":"Gastrocnemius (Medial & Lateral Head)","levels":["S1–S2"]},{"name":"Plantaris","levels":["S1–S2"]},{"name":"Popliteus","levels":["L4–S1"]},{"name":"Soleus","levels":["S1–S2"]},{"name":"Tibialis Posterior","levels":["L4–L5"]}],"parent":"Sciatic nerve"},{"name":"Ulnar nerve","levels":["C7–C8"],"muscles":[{"name":"Flexor Carpi Ulnaris","levels":["C7–C8"]},{"name":"Lumbricales (Hand)","levels":["C6–T1"]}]},{"name":"Ventral and dorsal rami of adjacent spinal nerve","levels":[],"muscles":[{"name":"Intertransversarii","levels":[]}]},{"name":"ventral rami","levels":["S4–S5"],"muscles":[{"name":"Coccygeus (Ischiococcygeus)","levels":["S4-S5"]}]}];
 const ARTERY_DATA = [{"name":"Angular artery","muscles":["Procerus"]},{"name":"anterior circumflex humeral artery","muscles":["Biceps Brachii","Brachialis","Coracobrachialis"]},{"name":"anterior intercostal arteries","muscles":["Pectoralis Major"]},{"name":"anterior interosseous artery","muscles":["Abductor Pollicis Longus","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Quadratus"]},{"name":"Anterior tibial artery","muscles":["Extensor Digitorum Longus","Extensor Hallucis Longus","Fibularis Longus","Fibularis Tertius","Tibialis Anterior"]},{"name":"ascending cervical artery","muscles":["Anterior Scalene","Levator Scapulae","Middle Scalene","Posterior Scalene"]},{"name":"Brachial artery","muscles":["Biceps Brachii","Brachialis","Coracobrachialis"]},{"name":"branch of internal pudendal artery","muscles":["External Anal Sphincter"]},{"name":"branches of popliteal artery","muscles":["Gastrocnemius (Medial & Lateral Head)"]},{"name":"Buccal artery","muscles":["Buccinator"]},{"name":"circumflex scapular artery","muscles":["Infraspinatus","Teres Major","Teres Minor"]},{"name":"Clavicular branch of thoracoacromial artery","muscles":["Subclavius"]},{"name":"common palmar digital arteries","muscles":["Lumbricales (Hand)"]},{"name":"Deep brachial artery","muscles":["Triceps Brachii"]},{"name":"deep circumflex iliac artery","muscles":["External Oblique","Internal Oblique","Transversus Abdominis"]},{"name":"Deep femoral artery","muscles":["Adductor Brevis","Adductor Longus","Adductor Magnus"]},{"name":"deep palmar arch","muscles":["Adductor Pollicis","Dorsal Interossei (Hand)","Flexor Digiti Minimi Brevis (Hand)","Palmar Interossei (Hand)"]},{"name":"Deep temporal arteries","muscles":["Temporalis"]},{"name":"deltoid branch","muscles":["Deltoid"]},{"name":"descending branch","muscles":["Rectus Femoris"]},{"name":"descending genicular artery","muscles":["Vastus Medialis"]},{"name":"Dorsal metacarpal arteries","muscles":["Dorsal Interossei (Hand)"]},{"name":"Dorsal metatarsal arteries","muscles":["Dorsal Interossei (Foot)"]},{"name":"dorsal nasal artery","muscles":["Procerus"]},{"name":"dorsal scapular artery","muscles":["Levator Scapulae","Rhomboid Major","Rhomboid Minor","Supraspinatus","Trapezius"]},{"name":"facial artery","muscles":["Buccinator","Depressor Anguli Oris","Depressor Labii Inferioris","Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi","Masseter","Nasalis","Orbicularis Oculi","Orbicularis Oris","Risorius","Zygomaticus Major","Zygomaticus Minor"]},{"name":"Femoral artery","muscles":["Sartorius","Vastus Medialis"]},{"name":"Fibular (peroneal) artery","muscles":["Fibularis Brevis","Fibularis Longus","Flexor Hallucis Longus","Soleus","Tibialis Posterior"]},{"name":"first perforating artery","muscles":["Gluteus Maximus"]},{"name":"Iliac branches of iliolumbar artery","muscles":["Iliacus"]},{"name":"iliolumbar artery","muscles":["Psoas Major","Quadratus Lumborum"]},{"name":"inferior alveolar artery","muscles":["Mentalis"]},{"name":"inferior epigastric artery","muscles":["Pyramidalis","Transversus Abdominis"]},{"name":"inferior genicular arteries","muscles":["Popliteus"]},{"name":"Inferior gluteal artery","muscles":["Coccygeus (Ischiococcygeus)","Gluteus Maximus","Inferior Gemellus","Obturator Internus","Piriformis","Quadratus Femoris","Superior Gemellus"]},{"name":"Inferior labial artery","muscles":["Depressor Labii Inferioris"]},{"name":"inferior phrenic arteries","muscles":["Diaphragm"]},{"name":"Inferior rectal artery","muscles":["External Anal Sphincter","Internal Anal Sphincter"]},{"name":"inferior thyroid artery","muscles":["Sternohyoid","Sternothyroid"]},{"name":"infraorbital artery","muscles":["Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi"]},{"name":"Internal pudendal artery","muscles":["Bulbospongiosus","Coccygeus (Ischiococcygeus)","Compressor Urethrae","Deep Transverse Perineal","External Urethral Sphincter","Iliococcygeus","Ischiocavernosus","Obturator Internus","Pubococcygeus","Puborectalis","Sphincter Urethrovaginalis","Superficial Transverse Perineal"]},{"name":"Internal thoracic artery","muscles":["Transversus Thoracis"]},{"name":"lateral circumflex femoral artery","muscles":["Rectus Femoris","Sartorius","Tensor Fasciae Latae","Vastus Intermedius","Vastus Lateralis"]},{"name":"Lateral plantar artery","muscles":["Abductor Digiti Minimi (Foot)","Adductor Hallucis","Flexor Digiti Minimi Brevis (Foot)","Quadratus Plantae"]},{"name":"Lateral sacral artery","muscles":["Iliocostalis Lumborum","Multifidus"]},{"name":"lateral thoracic artery","muscles":["Pectoralis Major","Pectoralis Minor","Serratus Anterior","Subscapularis"]},{"name":"Lingual artery","muscles":["Omohyoid"]},{"name":"Lower posterior intercostal arteries","muscles":["External Oblique","Internal Oblique","Transversus Abdominis"]},{"name":"lumbar arteries","muscles":["Iliocostalis Lumborum","Interspinales","Intertransversarii","Longissimus Thoracis","Multifidus","Psoas Major","Psoas Minor","Quadratus Lumborum","Rotatores"]},{"name":"Masseteric artery","muscles":["Masseter"]},{"name":"maxillary artery","muscles":["Buccinator","Masseter","Temporalis"]},{"name":"medial circumflex femoral artery","muscles":["Adductor Brevis","Adductor Longus","Gracilis","Iliacus","Obturator Externus","Pectineus","Quadratus Femoris"]},{"name":"Medial plantar artery","muscles":["Abductor Hallucis","Flexor Digitorum Brevis","Flexor Hallucis Brevis"]},{"name":"mental artery","muscles":["Depressor Anguli Oris","Mentalis"]},{"name":"musculophrenic artery","muscles":["Diaphragm"]},{"name":"obturator artery","muscles":["Gracilis","Obturator Externus","Pectineus"]},{"name":"occipital artery","muscles":["Frontalis","Longissimus Capitis","Obliquus Capitis Inferior","Obliquus Capitis Superior","Occipitalis","Occipitofrontalis","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor","Semispinalis Capitis","Spinalis Capitis","Splenius Capitis","Sternocleidomastoid"]},{"name":"Ophthalmic artery","muscles":["Nasalis","Orbicularis Oculi"]},{"name":"Palmar digital arteries","muscles":["Palmar Aponeurosis","Palmar Interossei (Hand)"]},{"name":"pectoral branch","muscles":["Pectoralis Major"]},{"name":"Pectoral branch of thoracoacromial artery","muscles":["Pectoralis Minor"]},{"name":"perforating arteries","muscles":["Adductor Magnus","Biceps Femoris","Semimembranosus","Semitendinosus","Vastus Intermedius","Vastus Lateralis"]},{"name":"perforating branch of fibular artery","muscles":["Fibularis Tertius"]},{"name":"Pericardiacophrenic artery","muscles":["Diaphragm"]},{"name":"Perineal artery","muscles":["Superficial Transverse Perineal"]},{"name":"perineal branches","muscles":["Deep Transverse Perineal"]},{"name":"plantar arch","muscles":["Adductor Hallucis","Dorsal Interossei (Foot)","Flexor Hallucis Brevis"]},{"name":"Plantar metatarsal arteries","muscles":["Lumbricals (Foot)"]},{"name":"popliteal artery","muscles":["Biceps Femoris","Plantaris","Popliteus","Semimembranosus","Semitendinosus"]},{"name":"Posterior and anterior intercostal arteries","muscles":["External Intercostals","Internal Intercostals"]},{"name":"posterior auricular artery","muscles":["Sternocleidomastoid"]},{"name":"Posterior circumflex humeral artery","muscles":["Deltoid","Teres Minor","Triceps Brachii"]},{"name":"posterior intercostal arteries","muscles":["Iliocostalis Cervicis","Iliocostalis Thoracis","Interspinales","Intertransversarii","Latissimus Dorsi","Levatores Costarum","Longissimus Cervicis","Longissimus Thoracis","Multifidus","Rectus Abdominis","Rhomboid Major","Rotatores","Semispinalis Cervicis","Semispinalis Thoracis","Serratus Posterior Inferior","Serratus Posterior Superior","Spinalis Thoracis","Splenius Cervicis","Subcostales","Trapezius"]},{"name":"Posterior interosseous artery","muscles":["Abductor Pollicis Longus","Extensor Carpi Ulnaris","Extensor Digiti Minimi","Extensor Digitorum","Extensor Indicis","Extensor Pollicis Brevis","Extensor Pollicis Longus","Supinator"]},{"name":"Posterior interosseous recurrent artery","muscles":["Anconeus"]},{"name":"Posterior tibial artery","muscles":["Flexor Digitorum Longus","Flexor Hallucis Longus","Soleus","Tibialis Posterior"]},{"name":"posterior ulnar recurrent artery","muscles":["Flexor Carpi Ulnaris"]},{"name":"Pterygoid branches of maxillary artery","muscles":["Lateral Pterygoid","Medial Pterygoid"]},{"name":"radial artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Flexor Carpi Radialis","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Teres"]},{"name":"radial recurrent artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Supinator"]},{"name":"subcostal artery","muscles":["External Oblique","Internal Oblique"]},{"name":"Submental artery","muscles":["Platysma"]},{"name":"Subscapular artery","muscles":["Subscapularis"]},{"name":"Superficial palmar arch","muscles":["Flexor Pollicis Brevis","Lumbricales (Hand)"]},{"name":"Superficial palmar branch of radial artery","muscles":["Abductor Pollicis Brevis","Opponens Pollicis"]},{"name":"Superficial temporal artery","muscles":["Frontalis","Occipitalis","Occipitofrontalis","Orbicularis Oculi","Temporoparietalis"]},{"name":"Superior and inferior epigastric arteries","muscles":["Rectus Abdominis"]},{"name":"Superior and inferior labial arteries","muscles":["Orbicularis Oris"]},{"name":"Superior gluteal artery","muscles":["Gluteus Maximus","Gluteus Medius","Gluteus Minimus","Piriformis","Tensor Fasciae Latae"]},{"name":"Superior rectal artery","muscles":["Internal Anal Sphincter"]},{"name":"superior thoracic artery","muscles":["Serratus Anterior"]},{"name":"Superior thyroid artery","muscles":["Omohyoid","Sternocleidomastoid","Sternohyoid","Sternothyroid","Thyrohyoid"]},{"name":"supraorbital artery","muscles":["Corrugator Supercilii"]},{"name":"suprascapular artery","muscles":["Infraspinatus","Platysma","Subclavius","Supraspinatus"]},{"name":"Supratrochlear artery","muscles":["Corrugator Supercilii"]},{"name":"Sural arteries","muscles":["Gastrocnemius (Medial & Lateral Head)","Plantaris"]},{"name":"thoracoacromial artery","muscles":["Deltoid","Pectoralis Major"]},{"name":"Thoracodorsal artery","muscles":["Latissimus Dorsi","Serratus Anterior","Teres Major"]},{"name":"Transverse cervical artery","muscles":["Anterior Scalene","Iliocostalis Cervicis","Longissimus Capitis","Longissimus Cervicis","Middle Scalene","Posterior Scalene","Semispinalis Capitis","Semispinalis Cervicis","Spinalis Cervicis","Splenius Capitis","Splenius Cervicis","Trapezius"]},{"name":"transverse facial artery","muscles":["Risorius","Zygomaticus Major","Zygomaticus Minor"]},{"name":"Ulnar artery","muscles":["Abductor Digiti Minimi (Hand)","Extensor Carpi Ulnaris","Flexor Carpi Ulnaris","Flexor Digiti Minimi Brevis (Hand)","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Opponens Digiti Minimi","Palmaris Longus","Pronator Teres"]},{"name":"Vertebral artery","muscles":["Obliquus Capitis Inferior","Obliquus Capitis Superior","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor"]}];
 
@@ -2475,6 +2811,7 @@ function switchPanel(name) {
   if (name === 'bones')       { initBones(); }
   if (name === 'ligaments')   { initLigaments(); }
   if (name === 'nerves')      { initNerves(); }
+  if (name === 'fsrs-review') { initFSRS(); updateFSRSBadge(); }
   if (name === 'arteries')    { initArteries(); }
   if (name === 'ligs-recall')   { initLigsRecall(); }
   if (name === 'schema-quiz')   { startSchemaQuizDirect(); }
@@ -5721,6 +6058,7 @@ function seedBundledData() {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 seedBundledData();
+  setTimeout(updateFSRSBadge, 200);
 updateNavNecknt();
 populateFilters();
 renderList();
