@@ -244,13 +244,14 @@
           <div class="ql-body">
             <div class="ql-title">MCQ — Bone features</div>
             <div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div>
-        <div class="quiz-list-item" style="border-color:#8B735588" onclick="switchPanel('bones-articulation')">
+          </div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+        <div class="quiz-launcher-card" style="border-color:#8B735588" onclick="switchPanel('bones-articulation')">
           <div class="ql-icon">&#128203;</div>
           <div class="ql-body">
             <div class="ql-title">Articulation Recall</div>
-            <div class="ql-desc">For each bone, name all bones it articulates with</div>
-          </div>
-        </div>
+            <div class="ql-sub">Name all bones that articulate with each bone.</div>
           </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
@@ -264,6 +265,17 @@
           <div class="ql-body"><div class="ql-title">Schema labelling</div><div class="ql-sub">Numbered anatomical diagrams — fill in the structures.</div></div>
           <div class="ql-arrow">&#8594;</div>
         </div>
+
+      <div style="margin-top:2rem">
+        <h3 class="quiz-section-title" style="color:#c0392b;border-color:#c0392b44">Examen Blanc</h3>
+        <div class="quiz-list-item" style="border-color:#c0392b88" onclick="switchPanel('exam-blanc')">
+          <div class="ql-icon">&#128221;</div>
+          <div class="ql-body">
+            <div class="ql-title">Examen Blanc</div>
+            <div class="ql-desc">108 questions (QCM + ouvertes) — crâne, thorax, abdomen, épaule, membres, nerfs, artères, clinique</div>
+          </div>
+        </div>
+      </div>
       </div>
 
       <!-- ── Ligament quizzes ── -->
@@ -1488,6 +1500,40 @@
 
   
 
+
+  <!-- EXAM BLANC PANEL -->
+  <div class="panel" id="panel-exam-blanc">
+    <div id="exam-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')">&larr; Quiz</button>
+      <h2 class="recall-title" style="color:#c0392b">Examen Blanc</h2>
+      <p style="color:var(--text3);font-size:14px;margin-bottom:1.5rem">85 questions QCM couvrant toutes les régions anatomiques.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem">
+        <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="exam-shuffle" checked> Shuffle questions
+        </label>
+        <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="exam-instant"> Show answer immediately
+        </label>
+      </div>
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Filter by category</div>
+        <div id="exam-cat-checks" class="recall-region-checks"></div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" style="background:#c0392b;border-color:#c0392b" onclick="startExamBlanc()">Start exam</button>
+    </div>
+    <div id="exam-session" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <button class="btn btn-ghost btn-sm" onclick="stopExamBlanc()">&larr; Stop</button>
+        <span id="exam-progress" style="font-size:13px;color:var(--text3);font-weight:600"></span>
+      </div>
+      <div class="exam-progress-bar"><div id="exam-prog-fill" class="exam-progress-fill"></div></div>
+      <div id="exam-card" class="anat-card" style="margin-top:1rem"></div>
+    </div>
+    <div id="exam-results" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="showExamSetup()">&larr; Back</button>
+      <div id="exam-results-content"></div>
+    </div>
+  </div>
 </main>
 
 <!-- ── BOTTOM NAV (mobile) ── -->
@@ -1540,6 +1586,117 @@
 
 <script>
 'use strict';
+const EXAM_QUESTIONS = [
+  {"id":"e001","q":"Which bone articulates with the highest number of cranial bones?","opts":["Occipital","Frontal","Sphenoid","Temporal"],"correct":2,"cat":"Skull"},
+  {"id":"e002","q":"Which structure separates the anterior from the middle cranial fossa?","opts":["Perpendicular plate of ethmoid","Greater wings of the sphenoid","Squamous part of temporal bone","Mastoid process"],"correct":1,"cat":"Skull"},
+  {"id":"e003","q":"Which bone belongs to the neurocranium?","opts":["Frontal bone","Zygomatic bone","Vomer","Maxilla"],"correct":0,"cat":"Skull"},
+  {"id":"e004","q":"Which part of the mandible participates in the TMJ?","opts":["Coronoid process","Mylohyoid line","Mandibular angle","Mandibular condyle"],"correct":3,"cat":"Skull"},
+  {"id":"e005","q":"Which bone forms the floor of the anterior cranial fossa?","opts":["Sphenoid","Frontal bone and ethmoid","Temporal bone","Occipital bone"],"correct":1,"cat":"Skull"},
+  {"id":"e006","q":"Which foramen transmits the facial nerve (CN VII)?","opts":["Jugular foramen","Foramen ovale","Stylomastoid foramen","Foramen spinosum"],"correct":2,"cat":"Skull"},
+  {"id":"e007","q":"Which bone contains the internal acoustic meatus?","opts":["Occipital","Sphenoid","Temporal","Parietal"],"correct":2,"cat":"Skull"},
+  {"id":"e008","q":"The pterion overlies which artery?","opts":["Middle meningeal artery","Basilar artery","Internal carotid artery","Facial artery"],"correct":0,"cat":"Skull"},
+  {"id":"e009","q":"Which suture connects the frontal and parietal bones?","opts":["Lambdoid suture","Squamous suture","Coronal suture","Sagittal suture"],"correct":2,"cat":"Skull"},
+  {"id":"e010","q":"Which diaphragmatic opening combination is correct?","opts":["Esophageal hiatus transmits esophagus and phrenic nerve","Aortic hiatus transmits aorta, thoracic duct, and azygos vein","Aortic hiatus transmits aorta and vagus nerve","Vena cava foramen transmits the azygos vein"],"correct":1,"cat":"Thorax"},
+  {"id":"e011","q":"Which rib has grooves for the subclavian artery/vein and a tubercle for the anterior scalene?","opts":["Typical rib (3rd–9th)","Floating rib","First rib","Second rib"],"correct":2,"cat":"Thorax"},
+  {"id":"e012","q":"Which costovertebral joint statement is correct?","opts":["Radiate ligament stabilizes the costotransverse joint","Intra-articular ligament divides the rib head joint cavity into two","Superior costotransverse ligament connects rib head to vertebral body","Ribs 11 and 12 have a typical costotransverse joint"],"correct":1,"cat":"Thorax"},
+  {"id":"e013","q":"Which ribs articulate directly with the sternum via their own costal cartilage?","opts":["False ribs (8th–10th)","Atypical ribs","True ribs (1st–7th)","Floating ribs (11th–12th)"],"correct":2,"cat":"Thorax"},
+  {"id":"e014","q":"Which sternocostal joint statement is correct?","opts":["Ribs 1, 6, and 7 form synovial joints","All sternocostal joints are synovial","Floating ribs articulate directly with the sternum","The 1st rib forms a synchondrosis with the sternum"],"correct":3,"cat":"Thorax"},
+  {"id":"e015","q":"Which is the main inspiratory muscle?","opts":["Diaphragm","Internal oblique","Transversus abdominis","Rectus abdominis"],"correct":0,"cat":"Thorax"},
+  {"id":"e016","q":"What passes through the aortic hiatus alongside the aorta?","opts":["Vagus nerve","Phrenic nerve","Thoracic duct","Greater splanchnic nerve"],"correct":2,"cat":"Thorax"},
+  {"id":"e017","q":"The internal intercostal muscle fibers run in which direction?","opts":["Same as external intercostals","Perpendicular to the ribs","Downward and forward (anteromedially)","Downward and backward (posterolaterally)"],"correct":2,"cat":"Thorax"},
+  {"id":"e018","q":"Which intercostal level corresponds to the sternal angle (angle of Louis)?","opts":["1st rib","2nd rib","4th rib","6th rib"],"correct":1,"cat":"Thorax"},
+  {"id":"e019","q":"The serratus anterior inserts onto which structure?","opts":["Medial border of scapula — costal surface","Lateral border of scapula","Coracoid process","Acromion"],"correct":0,"cat":"Thorax"},
+  {"id":"e020","q":"Which muscle originates from lumbar vertebrae and inserts into the femur?","opts":["Internal oblique","Rectus abdominis","Psoas major","Transversus abdominis"],"correct":2,"cat":"Abdomen"},
+  {"id":"e021","q":"What is the main innervation of transversus abdominis?","opts":["Intercostal nerves and iliohypogastric & ilioinguinal nerves","Phrenic nerve","Femoral nerve","Vagus nerve"],"correct":0,"cat":"Abdomen"},
+  {"id":"e022","q":"Which muscle produces ipsilateral trunk rotation during unilateral contraction?","opts":["Rectus abdominis","Diaphragm","Internal oblique","External oblique"],"correct":2,"cat":"Abdomen"},
+  {"id":"e023","q":"Which psoas major combination is correct?","opts":["Origin: lumbar vertebrae – Insertion: lesser trochanter","Origin: sacrum – Insertion: pelvis","Origin: thoracic vertebrae – Insertion: ribs","Origin: iliac crest – Insertion: sternum"],"correct":0,"cat":"Abdomen"},
+  {"id":"e024","q":"What is the main function of the external oblique?","opts":["Cervical flexion","Rib elevation","Contralateral trunk rotation","Lumbar extension"],"correct":2,"cat":"Abdomen"},
+  {"id":"e025","q":"Where does the rectus abdominis insert?","opts":["Xiphoid process and costal cartilages V–VII","Iliac crest","Lumbar vertebrae","Ribs I–III"],"correct":0,"cat":"Abdomen"},
+  {"id":"e026","q":"Which muscle is the deepest layer of the lateral abdominal wall?","opts":["Diaphragm","External oblique","Rectus abdominis","Transversus abdominis"],"correct":3,"cat":"Abdomen"},
+  {"id":"e027","q":"Which structure forms the lateral boundary of Hesselbach's triangle?","opts":["Inguinal ligament","Inferior epigastric vessels","Linea alba","Rectus sheath"],"correct":1,"cat":"Abdomen"},
+  {"id":"e028","q":"The deep inguinal ring is an opening in which structure?","opts":["External oblique aponeurosis","Transversalis fascia","Internal oblique","Peritoneum"],"correct":1,"cat":"Abdomen"},
+  {"id":"e029","q":"Which muscle forms the cremasteric muscle in males?","opts":["External oblique","Transversus abdominis","Internal oblique","Pyramidalis"],"correct":2,"cat":"Abdomen"},
+  {"id":"e030","q":"Which shoulder girdle statement is correct?","opts":["The sternoclavicular joint lacks an articular disc","The coracoacromial ligament connects clavicle to acromion","The acromioclavicular joint is mainly stabilized by the coracoclavicular ligament","The middle glenohumeral ligament prevents forearm pronation"],"correct":2,"cat":"Shoulder"},
+  {"id":"e031","q":"Select the INCORRECT statement about teres major:","opts":["Participates in medial rotation","Inserts into the medial lip of the intertubercular groove","Participates in shoulder adduction","Inserts into the greater tubercle of the humerus"],"correct":3,"cat":"Shoulder"},
+  {"id":"e032","q":"Where does the subscapularis originate?","opts":["Infraspinous fossa","Acromion","Scapular spine","Subscapular fossa"],"correct":3,"cat":"Shoulder"},
+  {"id":"e033","q":"Which muscle is primarily responsible for external rotation of the shoulder?","opts":["Teres major","Subscapularis","Pectoralis major","Infraspinatus"],"correct":3,"cat":"Shoulder"},
+  {"id":"e034","q":"Which scapula statement is correct?","opts":["Scapular spine is on the costal surface","Glenoid cavity articulates with the clavicle","Subscapular fossa is on the posterior surface","Acromion is a continuation of the scapular spine"],"correct":3,"cat":"Shoulder"},
+  {"id":"e035","q":"Which clavicle statement is correct?","opts":["The clavicle has an S-shaped shaft","The inferior surface has no attachments","The sternal end is lateral and flat","The acromial end articulates with the sternum"],"correct":0,"cat":"Shoulder"},
+  {"id":"e036","q":"Which structure belongs to the scapula?","opts":["Glenoid cavity","Head of the ulna","Radial tuberosity","Humeral trochlea"],"correct":0,"cat":"Shoulder"},
+  {"id":"e037","q":"Which deltoid fiber statement is correct?","opts":["Anterior fibers — shoulder flexion and medial rotation","Middle fibers — shoulder adduction","Posterior fibers — shoulder flexion","Posterior fibers — initial shoulder abduction"],"correct":0,"cat":"Shoulder"},
+  {"id":"e038","q":"Select the CORRECT statement about the glenoid labrum:","opts":["Coracohumeral ligament inserts into the acetabular labrum","Glenoid labrum is part of the acromioclavicular joint","Glenoid labrum decreases glenoid cavity depth","Long head of biceps tendon relates to superior glenoid labrum"],"correct":3,"cat":"Shoulder"},
+  {"id":"e039","q":"Which muscle–distal insertion combination is correct?","opts":["Subscapularis → deltoid tuberosity","Supraspinatus → lesser tubercle","Teres major → acromion","Infraspinatus → greater tubercle of the humerus"],"correct":3,"cat":"Shoulder"},
+  {"id":"e040","q":"Which rotator cuff muscle is most commonly torn?","opts":["Subscapularis","Infraspinatus","Teres minor","Supraspinatus"],"correct":3,"cat":"Shoulder"},
+  {"id":"e041","q":"Which nerve is at risk in a surgical neck fracture of the humerus?","opts":["Radial nerve","Musculocutaneous nerve","Axillary nerve","Ulnar nerve"],"correct":2,"cat":"Shoulder"},
+  {"id":"e042","q":"Which ligament connects the coracoid process to the clavicle (two parts)?","opts":["Acromioclavicular ligament","Glenohumeral ligament","Coracoclavicular ligament","Transverse scapular ligament"],"correct":2,"cat":"Shoulder"},
+  {"id":"e043","q":"Winging of the scapula is caused by paralysis of which muscle?","opts":["Trapezius","Rhomboids","Serratus anterior","Levator scapulae"],"correct":2,"cat":"Shoulder"},
+  {"id":"e044","q":"Which muscles form the rotator cuff?","opts":["Supraspinatus, infraspinatus, teres minor, subscapularis","Supraspinatus, infraspinatus, teres major, subscapularis","Deltoid, supraspinatus, infraspinatus, teres minor","Supraspinatus, infraspinatus, teres minor, biceps brachii"],"correct":0,"cat":"Shoulder"},
+  {"id":"e045","q":"Which muscles form the pes anserinus (goose's foot) at the knee?","opts":["Sartorius, gracilis, semitendinosus","Sartorius, gracilis, semimembranosus","Gracilis, semitendinosus, biceps femoris","Rectus femoris, sartorius, gracilis"],"correct":0,"cat":"Shoulder"},
+  {"id":"e046","q":"Which radiocarpal joint statement is correct?","opts":["Ulna directly articulates with the triquetrum","Pisiform articulates with the radius","Radius directly articulates with scaphoid and lunate","Trapezium is a main component of the radiocarpal joint"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e047","q":"Which humerus statement is correct?","opts":["Deltoid tuberosity is on the distal epiphysis","Intertubercular groove is between greater and lesser tubercles","Humeral trochlea articulates with the radius","Humeral head articulates with the acetabulum"],"correct":1,"cat":"Upper Limb"},
+  {"id":"e048","q":"Which muscle–innervation combination is correct?","opts":["Coracobrachialis – radial nerve","Brachialis – axillary nerve","Triceps brachii – musculocutaneous nerve","Biceps brachii – musculocutaneous nerve"],"correct":3,"cat":"Upper Limb"},
+  {"id":"e049","q":"Which muscle belongs to the posterior compartment of the forearm?","opts":["Pronator quadratus","Extensor digitorum","Flexor carpi radialis","Palmaris longus"],"correct":1,"cat":"Upper Limb"},
+  {"id":"e050","q":"Which head of the triceps brachii originates from the scapula?","opts":["Medial head","Deep head","Long head","Lateral head"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e051","q":"The carpal tunnel transmits all the following EXCEPT:","opts":["Flexor digitorum superficialis tendons","Median nerve","Ulnar nerve","Flexor pollicis longus tendon"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e052","q":"Which muscle is responsible for opposition of the thumb?","opts":["Abductor pollicis brevis","Flexor pollicis brevis","Opponens pollicis","Adductor pollicis"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e053","q":"Wrist drop results from injury to which nerve?","opts":["Median nerve","Ulnar nerve","Radial nerve","Musculocutaneous nerve"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e054","q":"Which muscle flexes the elbow AND supinates the forearm?","opts":["Brachialis","Brachioradialis","Pronator teres","Biceps brachii"],"correct":3,"cat":"Upper Limb"},
+  {"id":"e055","q":"The anatomical snuffbox is bounded laterally by which tendons?","opts":["Extensor pollicis longus","Abductor pollicis longus and extensor pollicis brevis","Flexor carpi radialis","Extensor carpi radialis longus"],"correct":1,"cat":"Upper Limb"},
+  {"id":"e056","q":"Claw hand deformity is associated with injury to which nerve?","opts":["Radial nerve","Median nerve","Ulnar nerve","Axillary nerve"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e057","q":"Which is the deepest muscle of the anterior compartment of the arm?","opts":["Biceps brachii","Coracobrachialis","Brachialis","Pronator teres"],"correct":2,"cat":"Upper Limb"},
+  {"id":"e058","q":"Which muscle forms the lateral boundary of the femoral triangle?","opts":["Pectineus","Adductor longus","Sartorius","Iliopsoas"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e059","q":"Which muscle is the primary hip flexor?","opts":["Gluteus maximus","Iliopsoas","Rectus femoris","Sartorius"],"correct":1,"cat":"Lower Limb"},
+  {"id":"e060","q":"The common fibular nerve winds around which structure?","opts":["Medial malleolus","Head of the fibula","Lateral malleolus","Tibial tuberosity"],"correct":1,"cat":"Lower Limb"},
+  {"id":"e061","q":"Which ligament prevents anterior displacement of the tibia on the femur?","opts":["Posterior cruciate ligament","Medial collateral ligament","Anterior cruciate ligament","Patellar ligament"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e062","q":"Which compartment of the leg performs plantarflexion?","opts":["Anterior compartment","Lateral compartment","Posterior compartment (superficial)","Intrinsic foot muscles"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e063","q":"The obturator nerve (L2–L4) primarily innervates which muscle group?","opts":["Hamstrings","Hip abductors","Hip adductors","Hip external rotators"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e064","q":"Trendelenburg sign indicates weakness of which muscle?","opts":["Gluteus maximus","Adductor magnus","Gluteus medius","Iliopsoas"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e065","q":"Which bone forms the lateral malleolus?","opts":["Tibia","Talus","Fibula","Calcaneus"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e066","q":"The popliteal fossa is bounded superolaterally by which muscle?","opts":["Semimembranosus","Biceps femoris","Semitendinosus","Gastrocnemius"],"correct":1,"cat":"Lower Limb"},
+  {"id":"e067","q":"Which muscle is the primary hip abductor and inserts into the iliotibial band?","opts":["Piriformis","Gluteus medius","Gluteus maximus","Tensor fasciae latae"],"correct":3,"cat":"Lower Limb"},
+  {"id":"e068","q":"Which bone articulates with the talus superiorly to form the ankle mortise?","opts":["Fibula only","Tibia only","Both tibia and fibula","Calcaneus"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e069","q":"Which muscle performs dorsiflexion AND inversion of the foot?","opts":["Fibularis longus","Extensor digitorum longus","Tibialis anterior","Tibialis posterior"],"correct":2,"cat":"Lower Limb"},
+  {"id":"e070","q":"The brachial plexus is formed by ventral rami of which spinal levels?","opts":["C4–C8","C5–T1","C4–T1","C5–T2"],"correct":1,"cat":"Nerves"},
+  {"id":"e071","q":"Which nerve innervates most intrinsic hand muscles (except thenar + lateral 2 lumbricals)?","opts":["Median nerve","Radial nerve","Ulnar nerve","Musculocutaneous nerve"],"correct":2,"cat":"Nerves"},
+  {"id":"e072","q":"Saturday night palsy (axilla compression) affects which nerve?","opts":["Ulnar nerve","Median nerve","Radial nerve","Axillary nerve"],"correct":2,"cat":"Nerves"},
+  {"id":"e073","q":"Which dermatome covers the lateral aspect of the forearm?","opts":["C5","C6","C7","C8"],"correct":1,"cat":"Nerves"},
+  {"id":"e074","q":"The femoral nerve originates from which spinal levels?","opts":["L1–L3","L2–L4","L3–L5","L4–S1"],"correct":1,"cat":"Nerves"},
+  {"id":"e075","q":"Foot drop is caused by lesion of which nerve?","opts":["Tibial nerve","Common fibular nerve","Femoral nerve","Obturator nerve"],"correct":1,"cat":"Nerves"},
+  {"id":"e076","q":"The long thoracic nerve (C5–C7) innervates which muscle?","opts":["Trapezius","Serratus anterior","Pectoralis minor","Subclavius"],"correct":1,"cat":"Nerves"},
+  {"id":"e077","q":"Which nerve passes through the carpal tunnel?","opts":["Ulnar nerve","Radial nerve","Median nerve","Anterior interosseous nerve"],"correct":2,"cat":"Nerves"},
+  {"id":"e078","q":"Which nerve innervates the deltoid muscle?","opts":["Musculocutaneous nerve","Radial nerve","Axillary nerve","Suprascapular nerve"],"correct":2,"cat":"Nerves"},
+  {"id":"e079","q":"The brachial artery bifurcates at which level?","opts":["Shoulder joint","Elbow — level of the radial neck","Wrist","Mid-forearm"],"correct":1,"cat":"Arteries"},
+  {"id":"e080","q":"The deep palmar arch is formed mainly by which artery?","opts":["Ulnar artery","Radial artery","Common interosseous artery","Anterior interosseous artery"],"correct":1,"cat":"Arteries"},
+  {"id":"e081","q":"Which artery supplies the femoral head and is damaged in femoral neck fractures?","opts":["Obturator artery","Medial circumflex femoral artery","Lateral circumflex femoral artery","Femoral artery"],"correct":1,"cat":"Arteries"},
+  {"id":"e082","q":"The popliteal artery divides at which level?","opts":["Above the knee","Lower border of popliteus muscle","Mid-leg","Ankle"],"correct":1,"cat":"Arteries"},
+  {"id":"e083","q":"Which artery is palpable in the anatomical snuffbox?","opts":["Ulnar artery","Radial artery","Princeps pollicis artery","Deep palmar arch"],"correct":1,"cat":"Arteries"},
+  {"id":"e084","q":"The superficial palmar arch is formed mainly by which artery?","opts":["Radial artery","Ulnar artery","Common interosseous artery","Anterior interosseous artery"],"correct":1,"cat":"Arteries"},
+  {"id":"e085","q":"A patient cannot flex the DIP joint of the index finger. Which muscle is most likely affected?","opts":["Flexor digitorum superficialis","Flexor digitorum profundus","Lumbrical","Interossei"],"correct":1,"cat":"Clinical"},
+  {"id":"e086","q":"Which structure is most commonly damaged in anterior shoulder dislocation (Bankart lesion)?","opts":["Supraspinatus","Anteroinferior glenoid labrum","Rotator interval","Long head of biceps"],"correct":1,"cat":"Clinical"},
+  {"id":"e087","q":"A medial epicondyle fracture most commonly damages which nerve?","opts":["Radial nerve","Median nerve","Ulnar nerve","Musculocutaneous nerve"],"correct":2,"cat":"Clinical"},
+  {"id":"e088","q":"Froment's sign tests which muscle?","opts":["Abductor pollicis longus","Flexor pollicis brevis","Adductor pollicis","Opponens pollicis"],"correct":2,"cat":"Clinical"},
+  {"id":"e089","q":"Cubitus valgus after lateral condyle fracture causes delayed palsy of which nerve?","opts":["Radial nerve","Median nerve","Ulnar nerve","Anterior interosseous nerve"],"correct":2,"cat":"Clinical"},
+  {"id":"e090","q":"Rupture of the anterior cruciate ligament produces which clinical sign?","opts":["Posterior drawer sign","Anterior drawer sign","Valgus stress test positive","McMurray's sign positive"],"correct":1,"cat":"Clinical"},
+  {"id":"e091","q":"Carpal tunnel syndrome produces which clinical pattern?","opts":["Numbness in ring and little finger","Weakness of wrist extension","Numbness in thumb, index, middle and lateral ring finger","Weakness of all intrinsic hand muscles"],"correct":2,"cat":"Clinical"},
+  {"id":"e092","q":"Which tendon is ruptured in a 'mallet finger' deformity?","opts":["Flexor digitorum profundus","Extensor digitorum at the DIP","Central slip of extensor digitorum","Flexor digitorum superficialis"],"correct":1,"cat":"Clinical"},
+  {"id":"e093","q":"Which clinical test specifically assesses the anterior cruciate ligament?","opts":["McMurray test","Valgus stress test","Lachman test","Anterior impingement test"],"correct":2,"cat":"Clinical"},
+  {"id":"e094","q":"A patient has foot drop and cannot evert the foot. Which nerve is injured?","opts":["Tibial nerve","Superficial fibular nerve","Common fibular nerve","Femoral nerve"],"correct":2,"cat":"Clinical"},
+  {"id":"e095","q":"Which muscle group is weakened in a patient with an L4–L5 disc herniation compressing L5?","opts":["Hip flexors","Ankle plantarflexors","Ankle dorsiflexors and foot evertors","Hip abductors"],"correct":2,"cat":"Clinical"},
+  {"id":"e096","q":"In a fall on an outstretched hand (FOOSH), which carpal bone is most commonly fractured?","opts":["Lunate","Triquetrum","Scaphoid","Pisiform"],"correct":2,"cat":"Clinical"},
+  {"id":"e097","q":"De Quervain's tenosynovitis affects which tendons?","opts":["Extensor pollicis longus","Abductor pollicis longus and extensor pollicis brevis","Flexor pollicis longus","Extensor carpi radialis longus and brevis"],"correct":1,"cat":"Clinical"},
+  {"id":"e098","q":"Tennis elbow (lateral epicondylitis) most commonly involves which muscle origin?","opts":["Flexor carpi radialis","Extensor carpi radialis brevis","Brachioradialis","Extensor digitorum"],"correct":1,"cat":"Clinical"},
+  {"id":"e099","q":"Which muscle is absent in about 14% of the population and used as a graft?","opts":["Flexor carpi radialis","Plantaris","Palmaris longus","Gracilis"],"correct":2,"cat":"Clinical"},
+  {"id":"e100","q":"Golfer's elbow (medial epicondylitis) involves the origin of which muscles?","opts":["Wrist extensors","Wrist flexors and pronators","Elbow flexors","Supinators"],"correct":1,"cat":"Clinical"},
+  {"id":"o001","type":"open","q":"Which structures contribute to TMJ (temporomandibular joint) stability?","model":"Articular disc, joint capsule, lateral (temporomandibular) ligament, sphenomandibular ligament, stylomandibular ligament, muscles of mastication (masseter, temporalis, pterygoids).","cat":"Skull"},
+  {"id":"o002","type":"open","q":"List the bones that form the orbit.","model":"Frontal, zygomatic, maxilla, lacrimal, ethmoid, palatine, sphenoid (7 bones total).","cat":"Skull"},
+  {"id":"o003","type":"open","q":"State the superior and inferior boundaries of the abdomen.","model":"Superior: xiphoid process and costal margin (T10). Inferior: inguinal ligament, pubic symphysis, and iliac crests.","cat":"Abdomen"},
+  {"id":"o004","type":"open","q":"Name the main inspiratory and expiratory muscles.","model":"Inspiratory: diaphragm (primary), external intercostals, scalenes, sternocleidomastoid. Expiratory (forced): internal intercostals, transversus abdominis, internal/external oblique, rectus abdominis.","cat":"Thorax"},
+  {"id":"o005","type":"open","q":"State the origin of the median nerve and describe its course in the upper limb.","model":"Origin: lateral (C5–C7) and medial (C8–T1) roots from brachial plexus, forming medial to the axillary artery. Descends medial to brachial artery in the arm, passes through cubital fossa medial to biceps tendon, enters forearm between heads of pronator teres, runs deep to flexor digitorum superficialis, enters hand through carpal tunnel, divides into recurrent branch (thenar muscles) and digital branches.","cat":"Nerves"},
+  {"id":"o006","type":"open","q":"Name two muscles whose main function is external rotation of the shoulder, and two whose main function is internal rotation.","model":"External rotation: infraspinatus, teres minor. Internal rotation: subscapularis, teres major (also pectoralis major, latissimus dorsi, anterior deltoid).","cat":"Shoulder"},
+  {"id":"o007","type":"open","q":"Which muscles form the rotator cuff? State their individual functions.","model":"Supraspinatus (abduction initiation), infraspinatus (external rotation), teres minor (external rotation), subscapularis (internal rotation). All also stabilize the humeral head in the glenoid.","cat":"Shoulder"},
+  {"id":"o008","type":"open","q":"Which muscles form the pes anserinus (goose's foot)? What is their common insertion?","model":"Sartorius (femoral n.), gracilis (obturator n.), semitendinosus (tibial n.). They insert together on the medial aspect of the proximal tibia, just below the tibial tuberosity.","cat":"Lower Limb"}
+];
+
 
 // ══════════════════════════════════════════════════════════════════
 // FSRS-5 Spaced Repetition Engine
@@ -3153,6 +3310,7 @@ function switchPanel(name) {
   if (name === 'ligs-mcq')     { initLigsMCQ(); }
   if (name === 'bones-recall')       { initBonesRecall(); }
   if (name === 'bones-articulation') { initBonesArticulation(); }
+  if (name === 'exam-blanc')        { initExamBlanc(); }
   if (name === 'bones-mcq')   { initBonesMCQ(); }
   if (name === 'quiz')   { populateFilters(); }
   if (name === 'recall') { populateRecallFilters(); }
@@ -4961,6 +5119,171 @@ function initArteryPanZoom() {
 
 
 
+
+
+// ── EXAM BLANC ────────────────────────────────────────────────────────────────
+let examPool = [], examIdx = 0, examCorrect = 0, examAnswered = false, examInstant = false;
+
+function initExamBlanc() {
+  const cats = [...new Set(EXAM_QUESTIONS.map(q => q.cat))].sort();
+  const container = document.getElementById('exam-cat-checks');
+  if (container && !container.children.length) {
+    cats.forEach(c => {
+      container.innerHTML += `<label class="recall-region-label">
+        <input type="checkbox" value="${esc(c)}" checked>
+        <span>${esc(c)}</span>
+      </label>`;
+    });
+  }
+}
+
+function showExamSetup() {
+  document.getElementById('exam-setup').style.display   = 'block';
+  document.getElementById('exam-session').style.display = 'none';
+  document.getElementById('exam-results').style.display = 'none';
+}
+
+function startExamBlanc() {
+  const selCats = [...document.querySelectorAll('#exam-cat-checks input:checked')].map(c => c.value);
+  if (!selCats.length) { toast('Select at least one category!'); return; }
+  examInstant = document.getElementById('exam-instant').checked;
+  const shuffle = document.getElementById('exam-shuffle').checked;
+
+  examPool = EXAM_QUESTIONS.filter(q => selCats.includes(q.cat));
+  if (shuffle) examPool.sort(() => Math.random() - 0.5);
+  examIdx = 0; examCorrect = 0; examAnswered = false;
+
+  document.getElementById('exam-setup').style.display   = 'none';
+  document.getElementById('exam-results').style.display = 'none';
+  document.getElementById('exam-session').style.display = 'block';
+  renderExamCard();
+}
+
+function renderExamCard() {
+  if (examIdx >= examPool.length) { showExamResults(); return; }
+  const q = examPool[examIdx];
+  examAnswered = false;
+
+  const pct = Math.round(examIdx / examPool.length * 100);
+  document.getElementById('exam-progress').textContent = (examIdx+1) + ' / ' + examPool.length;
+  document.getElementById('exam-prog-fill').style.width = pct + '%';
+
+  const catBadge = '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#c0392b;margin-bottom:8px">' + esc(q.cat) + (q.type==='open' ? ' — <span style="color:var(--text3)">Open answer</span>' : '') + '</div>';
+  const qText = '<div style="font-size:16px;font-weight:600;color:var(--text);line-height:1.5">' + esc(q.q) + '</div>';
+
+  if (q.type === 'open') {
+    document.getElementById('exam-card').innerHTML =
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border)">' + catBadge + qText + '</div>'
+      + '<div style="padding:16px 20px">'
+      + '<textarea id="exam-open-input" style="width:100%;min-height:100px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px;color:var(--text);font-size:14px;resize:vertical;box-sizing:border-box" placeholder="Write your answer here..."></textarea>'
+      + '<button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="revealOpenAnswer()">Reveal answer</button>'
+      + '</div>';
+  } else {
+    const shuffled = q.opts.map((o,i) => ({text:o,orig:i})).sort(() => Math.random()-0.5);
+    const correctShuffled = shuffled.findIndex(o => o.orig === q.correct);
+    document.getElementById('exam-card').innerHTML =
+      '<div style="padding:16px 20px;border-bottom:1px solid var(--border)">' + catBadge + qText + '</div>'
+      + '<div class="exam-opts" id="exam-opts">'
+      + shuffled.map((o,i) =>
+          '<button class="exam-opt" id="exam-opt-'+i+'" onclick="checkExamAnswer('+i+','+correctShuffled+')">'
+          + '<span class="exam-opt-letter">'+'ABCD'[i]+'</span>'
+          + '<span class="exam-opt-text">'+esc(o.text)+'</span>'
+          + '</button>'
+        ).join('')
+      + '</div>';
+  }
+}
+
+function checkExamAnswer(chosen, correct) {
+  if (examAnswered) return;
+  examAnswered = true;
+
+  const opts = document.querySelectorAll('.exam-opt');
+  opts[correct].classList.add('exam-opt--correct');
+  if (chosen !== correct) {
+    opts[chosen].classList.add('exam-opt--wrong');
+  } else {
+    examCorrect++;
+  }
+
+  if (examInstant) {
+    // Show next button
+    const card = document.getElementById('exam-card');
+    const nextBtn = document.createElement('div');
+    nextBtn.style.cssText = 'padding:12px 16px;text-align:right';
+    nextBtn.innerHTML = '<button class="btn btn-primary" onclick="examIdx++;renderExamCard()">'
+      + (examIdx+1 < examPool.length ? 'Next →' : 'Results') + '</button>';
+    card.appendChild(nextBtn);
+  } else {
+    // Auto-advance after 1.5s
+    setTimeout(() => { examIdx++; renderExamCard(); }, 1400);
+  }
+}
+
+function showExamResults() {
+  document.getElementById('exam-session').style.display = 'none';
+  document.getElementById('exam-results').style.display = 'block';
+
+  const total = examPool.length;
+  const pct = Math.round(examCorrect / total * 100);
+  const color = pct >= 70 ? 'var(--ok)' : pct >= 50 ? '#e67e22' : 'var(--err)';
+
+  // Score by category
+  const bycat = {};
+  examPool.forEach((q, i) => {
+    if (!bycat[q.cat]) bycat[q.cat] = {correct:0,total:0};
+    bycat[q.cat].total++;
+  });
+  // We need to track per-question results — rebuild with answered tracking
+  // Simple: just show total for now
+
+  document.getElementById('exam-results-content').innerHTML =
+    '<div style="text-align:center;padding:2rem 1rem">'
+    + '<div style="font-size:56px;font-weight:800;color:' + color + '">' + pct + '%</div>'
+    + '<div style="font-size:18px;color:var(--text2);margin-top:4px">' + examCorrect + ' / ' + total + ' correct</div>'
+    + '<div style="display:flex;gap:8px;justify-content:center;margin-top:1.5rem">'
+    + '<button class="btn btn-primary" style="background:#c0392b;border-color:#c0392b" onclick="startExamBlanc()">Retry</button>'
+    + '<button class="btn" onclick="showExamSetup()">Settings</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function revealOpenAnswer() {
+  if (examAnswered) return;
+  examAnswered = true;
+  const q = examPool[examIdx];
+
+  // Show model answer
+  const card = document.getElementById('exam-card');
+  const modelDiv = document.createElement('div');
+  modelDiv.style.cssText = 'padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border)';
+  modelDiv.innerHTML =
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:6px">Model answer</div>'
+    + '<div style="font-size:14px;color:var(--text);line-height:1.6">' + esc(q.model_answer || q.model) + '</div>';
+  card.appendChild(modelDiv);
+
+  // Self-assessment buttons
+  const selfDiv = document.createElement('div');
+  selfDiv.style.cssText = 'padding:12px 16px;display:flex;gap:8px;border-top:1px solid var(--border)';
+  selfDiv.innerHTML =
+    '<span style="font-size:13px;color:var(--text3);align-self:center;flex:1">Was your answer correct?</span>'
+    + '<button class="btn btn-sm" style="background:rgba(40,160,80,.12);border-color:var(--ok);color:var(--ok)" onclick="gradeOpen(true)">✓ Yes</button>'
+    + '<button class="btn btn-sm" style="background:rgba(192,57,43,.08);border-color:#c0392b;color:#c0392b" onclick="gradeOpen(false)">✗ No</button>';
+  card.appendChild(selfDiv);
+}
+
+function gradeOpen(correct) {
+  if (correct) examCorrect++;
+  examIdx++;
+  renderExamCard();
+}
+
+function stopExamBlanc() {
+  showModal('Stop exam?', '<p style="color:var(--text3)">Your progress will be lost.</p>', [
+    { label: 'Stop', cls: 'btn-primary', action: () => { showExamSetup(); } },
+    { label: 'Continue', cls: 'btn', action: () => {} },
+  ]);
+}
 
 // ── BONES ARTICULATION RECALL ─────────────────────────────────────
 let barticPool = [], barticIdx = 0, barticFound = new Set(), barticTotal = 0;
