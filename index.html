@@ -22,7 +22,7 @@
       <button class="nav-btn active" data-panel="list" onclick="switchPanel('list')">Muscles <span class="nav-badge" id="nav-count">179</span></button>
       <button class="nav-btn" data-panel="bones"     onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
       <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge">58</span></button>
-      <button class="nav-btn" data-panel="arteries"  onclick="switchPanel('arteries')">Arteries <span class="nav-badge">102</span></button>
+      <button class="nav-btn" data-panel="arteries"  onclick="switchPanel('arteries')">Arteries <span class="nav-badge">119</span></button>
       <button class="nav-btn" data-panel="nerves"    onclick="switchPanel('nerves')">Nerves <span class="nav-badge">41</span></button>
       <button class="nav-btn" data-panel="cards"     onclick="switchPanel('cards')">Cards</button>
       <button class="nav-btn" data-panel="quiz"      onclick="switchPanel('quiz')">Quiz</button>
@@ -244,6 +244,13 @@
           <div class="ql-body">
             <div class="ql-title">MCQ — Bone features</div>
             <div class="ql-sub">Given a feature, identify the correct bone from 4 options.</div>
+        <div class="quiz-list-item" style="border-color:#8B735588" onclick="switchPanel('bones-articulation')">
+          <div class="ql-icon">&#128203;</div>
+          <div class="ql-body">
+            <div class="ql-title">Articulation Recall</div>
+            <div class="ql-desc">For each bone, name all bones it articulates with</div>
+          </div>
+        </div>
           </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
@@ -1174,6 +1181,28 @@
     </div>
   </div>
 
+  <!-- BONES ARTICULATION RECALL PANEL -->
+  <div class="panel" id="panel-bones-articulation">
+    <div id="bartic-setup">
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')">&larr; Quiz</button>
+      <h2 class="recall-title">Articulation Recall</h2>
+      <p style="color:var(--text3);font-size:14px;margin-bottom:1.5rem">For each bone, type all bones it articulates with. Press Enter or comma to submit each one.</p>
+
+      <div class="recall-filters">
+        <div id="bartic-region-checks" class="recall-region-checks"></div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="startBonesArticulation()">Start</button>
+    </div>
+
+    <div id="bartic-session" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <button class="btn btn-ghost btn-sm" onclick="stopBonesArticulation()">&larr; Stop</button>
+        <span id="bartic-progress" style="font-size:13px;color:var(--text3)"></span>
+      </div>
+      <div id="bartic-card" class="anat-card"></div>
+    </div>
+  </div>
+
   <!-- BONES MCQ PANEL -->
   <div class="panel" id="panel-bones-mcq">
     <div id="bmcq-setup">
@@ -1427,7 +1456,7 @@
     <!-- Interactive pathway button -->
     <div style="margin-bottom:1.5rem;">
       <button class="btn" style="background:#e74c3c18;border-color:#e74c3c88;color:#e74c3c;font-size:13px;" onclick="switchPanel('artery')">
-        &#128247; Lower limb arterial pathway map &#8594;
+        &#128247; Arterial pathway map (upper &amp; lower limb) &#8594;
       </button>
     </div>
 
@@ -1887,21 +1916,26 @@ const ARTERY_DATA = [
   {"name":"anterior interosseous artery","muscles":["Abductor Pollicis Longus","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Quadratus"]},
   {"name":"Anterior tibial artery","muscles":["Extensor Digitorum Longus","Extensor Hallucis Longus","Fibularis Longus","Fibularis Tertius","Tibialis Anterior"]},
   {"name":"ascending cervical artery","muscles":["Anterior Scalene","Levator Scapulae","Middle Scalene","Posterior Scalene"]},
+  {"name":"Axillary artery","muscles":["Buccinator","Lateral Pterygoid","Masseter","Medial Pterygoid","Temporalis"]},
   {"name":"Brachial artery","muscles":["Biceps Brachii","Brachialis","Coracobrachialis"]},
   {"name":"branch of internal pudendal artery","muscles":["External Anal Sphincter"]},
   {"name":"branches of popliteal artery","muscles":["Gastrocnemius (Medial & Lateral Head)"]},
   {"name":"Buccal artery","muscles":["Buccinator"]},
   {"name":"circumflex scapular artery","muscles":["Infraspinatus","Teres Major","Teres Minor"]},
   {"name":"Clavicular branch of thoracoacromial artery","muscles":["Subclavius"]},
+  {"name":"Common interosseous artery","muscles":[]},
   {"name":"common palmar digital arteries","muscles":["Lumbricales (Hand)"]},
   {"name":"Deep brachial artery","muscles":["Triceps Brachii"]},
   {"name":"deep circumflex iliac artery","muscles":["External Oblique","Internal Oblique","Transversus Abdominis"]},
   {"name":"Deep femoral artery","muscles":["Adductor Brevis","Adductor Longus","Adductor Magnus"]},
   {"name":"deep palmar arch","muscles":["Adductor Pollicis","Dorsal Interossei (Hand)","Flexor Digiti Minimi Brevis (Hand)","Palmar Interossei (Hand)"]},
+  {"name":"Deep palmar branch of ulnar artery","muscles":[]},
   {"name":"Deep temporal arteries","muscles":["Temporalis"]},
   {"name":"deltoid branch","muscles":["Deltoid"]},
   {"name":"descending branch","muscles":["Rectus Femoris"]},
   {"name":"descending genicular artery","muscles":["Vastus Medialis"]},
+  {"name":"Dorsal carpal arch","muscles":[]},
+  {"name":"Dorsal digital arteries","muscles":[]},
   {"name":"Dorsal metacarpal arteries","muscles":["Dorsal Interossei (Hand)"]},
   {"name":"Dorsal metatarsal arteries","muscles":["Dorsal Interossei (Foot)"]},
   {"name":"dorsal nasal artery","muscles":["Procerus"]},
@@ -1909,6 +1943,7 @@ const ARTERY_DATA = [
   {"name":"facial artery","muscles":["Buccinator","Depressor Anguli Oris","Depressor Labii Inferioris","Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi","Masseter","Nasalis","Orbicularis Oculi","Orbicularis Oris","Risorius","Zygomaticus Major","Zygomaticus Minor"]},
   {"name":"Femoral artery","muscles":["Sartorius","Vastus Medialis"]},
   {"name":"Fibular (peroneal) artery","muscles":["Fibularis Brevis","Fibularis Longus","Flexor Hallucis Longus","Soleus","Tibialis Posterior"]},
+  {"name":"First dorsal metacarpal artery","muscles":[]},
   {"name":"first perforating artery","muscles":["Gluteus Maximus"]},
   {"name":"Iliac branches of iliolumbar artery","muscles":["Iliacus"]},
   {"name":"iliolumbar artery","muscles":["Psoas Major","Quadratus Lumborum"]},
@@ -1934,16 +1969,22 @@ const ARTERY_DATA = [
   {"name":"maxillary artery","muscles":["Buccinator","Masseter","Temporalis"]},
   {"name":"medial circumflex femoral artery","muscles":["Adductor Brevis","Adductor Longus","Gracilis","Iliacus","Obturator Externus","Pectineus","Quadratus Femoris"]},
   {"name":"Medial plantar artery","muscles":["Abductor Hallucis","Flexor Digitorum Brevis","Flexor Hallucis Brevis"]},
+  {"name":"Median artery","muscles":[]},
   {"name":"mental artery","muscles":["Depressor Anguli Oris","Mentalis"]},
   {"name":"musculophrenic artery","muscles":["Diaphragm"]},
   {"name":"obturator artery","muscles":["Gracilis","Obturator Externus","Pectineus"]},
   {"name":"occipital artery","muscles":["Frontalis","Longissimus Capitis","Obliquus Capitis Inferior","Obliquus Capitis Superior","Occipitalis","Occipitofrontalis","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor","Semispinalis Capitis","Spinalis Capitis","Splenius Capitis","Sternocleidomastoid"]},
   {"name":"Ophthalmic artery","muscles":["Nasalis","Orbicularis Oculi"]},
+  {"name":"Palmar branch of ulnar artery","muscles":[]},
   {"name":"Palmar digital arteries","muscles":["Palmar Aponeurosis","Palmar Interossei (Hand)"]},
+  {"name":"Palmar metacarpal arteries","muscles":[]},
   {"name":"pectoral branch","muscles":["Pectoralis Major"]},
   {"name":"Pectoral branch of thoracoacromial artery","muscles":["Pectoralis Minor"]},
+  {"name":"Pectoral branches of thoracoacromial artery","muscles":[]},
   {"name":"perforating arteries","muscles":["Adductor Magnus","Biceps Femoris","Semimembranosus","Semitendinosus","Vastus Intermedius","Vastus Lateralis"]},
+  {"name":"Perforating arteries of posterior intercostal arteries","muscles":[]},
   {"name":"perforating branch of fibular artery","muscles":["Fibularis Tertius"]},
+  {"name":"Perforating branches of internal thoracic artery","muscles":[]},
   {"name":"Pericardiacophrenic artery","muscles":["Diaphragm"]},
   {"name":"Perineal artery","muscles":["Superficial Transverse Perineal"]},
   {"name":"perineal branches","muscles":["Deep Transverse Perineal"]},
@@ -1958,9 +1999,12 @@ const ARTERY_DATA = [
   {"name":"Posterior interosseous recurrent artery","muscles":["Anconeus"]},
   {"name":"Posterior tibial artery","muscles":["Flexor Digitorum Longus","Flexor Hallucis Longus","Soleus","Tibialis Posterior"]},
   {"name":"posterior ulnar recurrent artery","muscles":["Flexor Carpi Ulnaris"]},
+  {"name":"Princeps pollicis artery","muscles":[]},
+  {"name":"Proper palmar digital arteries","muscles":[]},
   {"name":"Pterygoid branches of maxillary artery","muscles":["Lateral Pterygoid","Medial Pterygoid"]},
   {"name":"radial artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Flexor Carpi Radialis","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Teres"]},
   {"name":"radial recurrent artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Supinator"]},
+  {"name":"Radialis indicis artery","muscles":[]},
   {"name":"subcostal artery","muscles":["External Oblique","Internal Oblique"]},
   {"name":"Submental artery","muscles":["Platysma"]},
   {"name":"Subscapular artery","muscles":["Subscapularis"]},
@@ -1973,6 +2017,7 @@ const ARTERY_DATA = [
   {"name":"Superior rectal artery","muscles":["Internal Anal Sphincter"]},
   {"name":"superior thoracic artery","muscles":["Serratus Anterior"]},
   {"name":"Superior thyroid artery","muscles":["Omohyoid","Sternocleidomastoid","Sternohyoid","Sternothyroid","Thyrohyoid"]},
+  {"name":"Superior ulnar collateral artery","muscles":[]},
   {"name":"supraorbital artery","muscles":["Corrugator Supercilii"]},
   {"name":"suprascapular artery","muscles":["Infraspinatus","Platysma","Subclavius","Supraspinatus"]},
   {"name":"Supratrochlear artery","muscles":["Corrugator Supercilii"]},
@@ -1982,6 +2027,7 @@ const ARTERY_DATA = [
   {"name":"Transverse cervical artery","muscles":["Anterior Scalene","Iliocostalis Cervicis","Longissimus Capitis","Longissimus Cervicis","Middle Scalene","Posterior Scalene","Semispinalis Capitis","Semispinalis Cervicis","Spinalis Cervicis","Splenius Capitis","Splenius Cervicis","Trapezius"]},
   {"name":"transverse facial artery","muscles":["Risorius","Zygomaticus Major","Zygomaticus Minor"]},
   {"name":"Ulnar artery","muscles":["Abductor Digiti Minimi (Hand)","Extensor Carpi Ulnaris","Flexor Carpi Ulnaris","Flexor Digiti Minimi Brevis (Hand)","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Opponens Digiti Minimi","Palmaris Longus","Pronator Teres"]},
+  {"name":"Ulnar recurrent artery","muscles":["Flexor Carpi Ulnaris"]},
   {"name":"Vertebral artery","muscles":["Obliquus Capitis Inferior","Obliquus Capitis Superior","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor"]}
 ];
 
@@ -2570,7 +2616,6 @@ function renderArteriesList() {
     const idx = ARTERY_DATA.indexOf(ARTERY_DATA.find(x => x.name === a.name));
     return '<div class="nerve-row" onclick="openArteryDetail(' + idx + ',\'' + region + '\')">'
       + '<div class="nerve-row-main">'
-      + parentTag
       + '<div class="nerve-row-name">' + esc(a.name) + '</div>'
       + '</div>'
       + '<div class="nerve-row-count">' + a.muscles.length + ' muscle' + (a.muscles.length !== 1 ? 's' : '') + '</div>'
@@ -3106,7 +3151,8 @@ function switchPanel(name) {
   if (name === 'schema-quiz')   { startSchemaQuizDirect(); }
   if (name === 'schema-quiz')  { initSchemaQuiz(); }
   if (name === 'ligs-mcq')     { initLigsMCQ(); }
-  if (name === 'bones-recall') { initBonesRecall(); }
+  if (name === 'bones-recall')       { initBonesRecall(); }
+  if (name === 'bones-articulation') { initBonesArticulation(); }
   if (name === 'bones-mcq')   { initBonesMCQ(); }
   if (name === 'quiz')   { populateFilters(); }
   if (name === 'recall') { populateRecallFilters(); }
@@ -4915,6 +4961,150 @@ function initArteryPanZoom() {
 
 
 
+
+// ── BONES ARTICULATION RECALL ─────────────────────────────────────
+let barticPool = [], barticIdx = 0, barticFound = new Set(), barticTotal = 0;
+
+function initBonesArticulation() {
+  const regions = [...new Set(bonesData.map(b => b.region))].sort();
+  const container = document.getElementById('bartic-region-checks');
+  if (container && !container.children.length) {
+    regions.forEach(r => {
+      const color = brc(r);
+      container.innerHTML += `<label class="recall-region-label">
+        <input type="checkbox" value="${esc(r)}" checked>
+        <span class="region-dot" style="background:${color}"></span>
+        <span>${esc(r)}</span>
+      </label>`;
+    });
+  }
+}
+
+function startBonesArticulation() {
+  const sel = [...document.querySelectorAll('#bartic-region-checks input:checked')].map(c => c.value);
+  if (!sel.length) { toast('Select at least one region!'); return; }
+
+  barticPool = bonesData.filter(b => sel.includes(b.region) && (b.features?.articulations?.length > 0));
+  barticPool.sort(() => Math.random() - 0.5);
+  barticIdx = 0;
+
+  document.getElementById('bartic-setup').style.display = 'none';
+  document.getElementById('bartic-session').style.display = 'block';
+  renderBarticCard();
+}
+
+function renderBarticCard() {
+  if (barticIdx >= barticPool.length) {
+    document.getElementById('bartic-card').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">All done!</div></div>';
+    document.getElementById('bartic-progress').textContent = '';
+    return;
+  }
+
+  const bone = barticPool[barticIdx];
+  const articulations = bone.features?.articulations || [];
+  const total = articulations.length;
+  barticFound = new Set();
+  barticTotal = total;
+
+  document.getElementById('bartic-progress').textContent = (barticIdx+1) + ' / ' + barticPool.length;
+
+  const color = brc(bone.region);
+
+  document.getElementById('bartic-card').innerHTML =
+    '<div class="brecall-bone-header" style="border-top:4px solid ' + color + '">'
+    + '<span class="brecall-region-tag" style="background:' + color + '22;color:' + color + '">' + esc(bone.region) + '</span>'
+    + '<h2 class="brecall-bone-name">' + esc(bone.name) + '</h2>'
+    + '<p style="color:var(--text3);font-size:13px;margin:4px 0 0">Articulates with <strong>' + total + '</strong> bone' + (total!==1?'s':'') + ' — name them all</p>'
+    + '</div>'
+
+    + '<div class="bartic-found-row" id="bartic-found-row"></div>'
+
+    + '<div style="padding:12px 16px;border-top:1px solid var(--border)">'
+    + '<input type="text" id="bartic-input" class="brecall-input" placeholder="Type a bone name and press Enter..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"'
+    + ' onkeydown="barticKey(event,' + JSON.stringify(bone.id) + ',' + JSON.stringify(articulations) + ')">'
+    + '<div id="bartic-feedback" style="font-size:12px;color:var(--err);min-height:18px;margin-top:4px"></div>'
+    + '</div>'
+
+    + '<div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">'
+    + '<button class="btn btn-sm" onclick="barticGiveUp(' + JSON.stringify(articulations) + ')">Show all</button>'
+    + '<button class="btn btn-sm btn-primary" style="margin-left:auto" onclick="barticNext()">Next bone &rarr;</button>'
+    + '</div>';
+
+  setTimeout(() => document.getElementById('bartic-input')?.focus(), 50);
+  renderBarticFound(articulations);
+}
+
+function renderBarticFound(articulations) {
+  const row = document.getElementById('bartic-found-row');
+  if (!row) return;
+  row.innerHTML = articulations.map(a => {
+    const found = barticFound.has(a.toLowerCase());
+    return '<span class="bartic-chip ' + (found ? 'bartic-chip--found' : 'bartic-chip--hidden') + '">'
+      + (found ? esc(a) : '?')
+      + '</span>';
+  }).join('');
+}
+
+function barticKey(e, boneId, articulations) {
+  if (e.key !== 'Enter' && e.key !== ',') return;
+  e.preventDefault();
+  const inp = document.getElementById('bartic-input');
+  const val = inp.value.trim().replace(/,$/, '');
+  inp.value = '';
+  if (!val) return;
+
+  const fb = document.getElementById('bartic-feedback');
+  const valLow = val.toLowerCase();
+
+  // Check match (fuzzy: starts with, or any word matches)
+  const match = articulations.find(a => {
+    const aLow = a.toLowerCase();
+    return aLow === valLow
+      || aLow.startsWith(valLow)
+      || valLow.startsWith(aLow.split(' ')[0]);
+  });
+
+  if (match && !barticFound.has(match.toLowerCase())) {
+    barticFound.add(match.toLowerCase());
+    fb.style.color = 'var(--ok)';
+    fb.textContent = '\u2713 ' + match;
+    renderBarticFound(articulations);
+    // Auto-advance if all found
+    if (barticFound.size === articulations.length) {
+      fb.textContent = '\u2713 All found! Moving on...';
+      setTimeout(barticNext, 800);
+    }
+  } else if (match) {
+    fb.style.color = 'var(--text3)';
+    fb.textContent = 'Already found: ' + match;
+  } else {
+    fb.style.color = 'var(--err)';
+    fb.textContent = '\u2717 Not in the list';
+    // Small shake animation
+    const inp2 = document.getElementById('bartic-input');
+    if (inp2) { inp2.classList.add('shake'); setTimeout(() => inp2.classList.remove('shake'), 300); }
+  }
+}
+
+function barticGiveUp(articulations) {
+  articulations.forEach(a => barticFound.add(a.toLowerCase()));
+  renderBarticFound(articulations);
+  const inp = document.getElementById('bartic-input');
+  if (inp) inp.disabled = true;
+  document.getElementById('bartic-feedback').textContent = '';
+}
+
+function barticNext() {
+  barticIdx++;
+  renderBarticCard();
+}
+
+function stopBonesArticulation() {
+  document.getElementById('bartic-session').style.display = 'none';
+  document.getElementById('bartic-setup').style.display = 'block';
+}
+
 // ── BONES RECALL ──────────────────────────────────────────────────────────────
 let brecallPool = [], brecallFound = new Set(), brecallIndex = [];
 
@@ -5300,24 +5490,49 @@ function closeBoneDetail() {
 // ── ARTERIAL PATHWAYS ─────────────────────────────────────────────────────────
 
 const ARTERY_TREE = {
-  "Aorta":                           ["L Common Iliac Artery"],
-  "L Common Iliac Artery":           ["External Iliac Artery","Internal Iliac Artery"],
-    "External Iliac Artery":           ["Femoral Artery"],
-  "Internal Iliac Artery":           ["Superior Gluteal Artery","Inferior Gluteal Artery"],
-  "Superior Gluteal Artery":         ["Superficial Superior Gluteal Artery","Deep Superior Gluteal Artery"],
-  "Femoral Artery":                  ["Superficial Circumflex Iliac Artery","Deep Circumflex Iliac Artery","Superficial External Pudendal Artery","Deep External Pudendal Artery","Deep Femoral Artery","Popliteal Artery"],
-  "Deep Femoral Artery":             ["Medial Circumflex Femoral Artery","Lateral Circumflex Femoral Artery","Four Perforating"],
-  "Lateral Circumflex Femoral Artery":["Descending Branch","Ascending Branch","Transverse Branch"],
-  "Popliteal Artery":                ["Descending Genicular Artery","Medial Superior Genicular Artery","Lateral Superior Genicular Artery","Anterior Tibial Artery","Posterior Tibial Artery","Medial Inferior Genicular Artery","Lateral Inferior Genicular Artery"],
-  "Anterior Tibial Artery":          ["Anteromedial Malleolar Artery","Anterolateral Malleolar Artery","Lateral Tarsal Artery","Medial Tarsal Artery","Dorsal Pedis Artery"],
-  "Dorsal Pedis Artery":             ["Arcuate Artery","Hallucis Artery"],
-  "Arcuate Artery":                  ["Digitorum Irrigation"],
-  "Hallucis Artery":                 ["Hallucis Irrigation"],
-  "Posterior Tibial Artery":         ["Posterior Tibial Recurrent Artery","Fibular Artery","Calcaneal Artery","Medial Plantar Artery","Lateral Plantar Artery"],
-  "Fibular Artery":                  ["Calcaneal Artery"],
-  "Medial Plantar Artery":           ["Every Plantar Arteries Of the Foot"],
-  "Lateral Plantar Artery":          ["Every Plantar Arteries Of the Foot"],
+  "Aorta":                                    ["L Common Iliac Artery", "Subclavian Artery"],
+
+  // ── UPPER LIMB ──────────────────────────────────────────────────
+  "Subclavian Artery":                        ["Vertebral Artery", "Internal Thoracic Artery", "Thyrocervical Trunk", "Costocervical Trunk", "Axillary Artery"],
+  "Thyrocervical Trunk":                      ["Suprascapular Artery", "Transverse Cervical Artery", "Ascending Cervical Artery"],
+  "Transverse Cervical Artery":               ["Superficial Cervical Artery", "Dorsal Scapular Artery"],
+  "Internal Thoracic Artery":                 ["Perforating Branches of Internal Thoracic Artery", "Superior Thoracic Artery"],
+  "Axillary Artery":                          ["Superior Thoracic Artery", "Thoracoacromial Artery", "Lateral Thoracic Artery", "Subscapular Artery", "Anterior Circumflex Humeral Artery", "Posterior Circumflex Humeral Artery", "Brachial Artery ↓"],
+  "Thoracoacromial Artery":                   ["Deltoid Branch", "Acromial Branch", "Pectoral Branches", "Clavicular Branch"],
+  "Subscapular Artery":                       ["Circumflex Scapular Artery", "Thoracodorsal Artery"],
+  "Lateral Thoracic Artery":                  ["Long Thoracic Artery Branches"],
+  "Brachial Artery ↓":                        ["Deep Brachial Artery", "Superior Ulnar Collateral Artery", "Inferior Ulnar Collateral Artery", "Radial Artery", "Ulnar Artery"],
+  "Brachial Artery":                          ["Deep Brachial Artery", "Superior Ulnar Collateral Artery", "Inferior Ulnar Collateral Artery", "Radial Artery", "Ulnar Artery"],
+  "Deep Brachial Artery":                     ["Radial Collateral Artery", "Middle Collateral Artery", "Radial Recurrent Artery"],
+  "Radial Artery":                            ["Radial Recurrent Artery", "Superficial Palmar Branch of Radial Artery", "Deep Palmar Arch", "Princeps Pollicis Artery", "Radialis Indicis Artery", "First Dorsal Metacarpal Artery", "Dorsal Carpal Arch"],
+  "Ulnar Artery":                             ["Anterior Ulnar Recurrent Artery", "Posterior Ulnar Recurrent Artery", "Common Interosseous Artery", "Superficial Palmar Arch", "Deep Palmar Branch of Ulnar Artery", "Palmar Branch of Ulnar Artery"],
+  "Common Interosseous Artery":               ["Anterior Interosseous Artery", "Posterior Interosseous Artery"],
+  "Posterior Interosseous Artery":            ["Posterior Interosseous Recurrent Artery"],
+  "Deep Palmar Arch":                         ["Palmar Metacarpal Arteries", "Proximal Perforating Arteries"],
+  "Superficial Palmar Arch":                  ["Common Palmar Digital Arteries"],
+  "Common Palmar Digital Arteries":           ["Proper Palmar Digital Arteries"],
+  "Dorsal Carpal Arch":                       ["Second Dorsal Metacarpal Artery", "Third Dorsal Metacarpal Artery", "Fourth Dorsal Metacarpal Artery", "Dorsal Digital Arteries"],
+  "Palmar Metacarpal Arteries":               ["Distal Perforating Arteries"],
+
+  // ── LOWER LIMB ──────────────────────────────────────────────────
+  "L Common Iliac Artery":                    ["External Iliac Artery", "Internal Iliac Artery"],
+  "External Iliac Artery":                    ["Femoral Artery"],
+  "Internal Iliac Artery":                    ["Superior Gluteal Artery", "Inferior Gluteal Artery"],
+  "Superior Gluteal Artery":                  ["Superficial Superior Gluteal Artery", "Deep Superior Gluteal Artery"],
+  "Femoral Artery":                           ["Superficial Circumflex Iliac Artery", "Deep Circumflex Iliac Artery", "Superficial External Pudendal Artery", "Deep External Pudendal Artery", "Deep Femoral Artery", "Popliteal Artery"],
+  "Deep Femoral Artery":                      ["Medial Circumflex Femoral Artery", "Lateral Circumflex Femoral Artery", "Four Perforating"],
+  "Lateral Circumflex Femoral Artery":        ["Descending Branch", "Ascending Branch", "Transverse Branch"],
+  "Popliteal Artery":                         ["Descending Genicular Artery", "Medial Superior Genicular Artery", "Lateral Superior Genicular Artery", "Anterior Tibial Artery", "Posterior Tibial Artery", "Medial Inferior Genicular Artery", "Lateral Inferior Genicular Artery"],
+  "Anterior Tibial Artery":                   ["Anteromedial Malleolar Artery", "Anterolateral Malleolar Artery", "Lateral Tarsal Artery", "Medial Tarsal Artery", "Dorsal Pedis Artery"],
+  "Dorsal Pedis Artery":                      ["Arcuate Artery", "Hallucis Artery"],
+  "Arcuate Artery":                           ["Digitorum Irrigation"],
+  "Hallucis Artery":                          ["Hallucis Irrigation"],
+  "Posterior Tibial Artery":                  ["Posterior Tibial Recurrent Artery", "Fibular Artery", "Calcaneal Artery", "Medial Plantar Artery", "Lateral Plantar Artery"],
+  "Fibular Artery":                           ["Calcaneal Artery"],
+  "Medial Plantar Artery":                    ["Every Plantar Arteries Of the Foot"],
+  "Lateral Plantar Artery":                   ["Every Plantar Arteries Of the Foot"],
 };
+
 
 // Find all parents of a node
 function arteryParents(name) {
@@ -5360,22 +5575,29 @@ function renderArteryNode(name) {
 
   // Children
   const ch = document.getElementById('artery-children');
-  if (!children.length) {
+  const makeBtn = c => {
+    const hasBranches = !!(ARTERY_TREE[c] && ARTERY_TREE[c].length);
+    return '<button class="artery-btn' + (hasBranches ? '' : ' artery-btn--leaf') + '"'
+      + ' onclick="arteryDrillDown(\'' + c.replace(/'/g, "\\'") + '\')">'
+      + '<span class="artery-btn-name">' + esc(c) + '</span>'
+      + (hasBranches ? '<span class="artery-btn-arrow">›</span>' : '<span class="artery-btn-terminal">●</span>')
+      + '</button>';
+  };
+
+  if (name === 'Aorta') {
+    const otherBranches = children.filter(c => c !== 'Subclavian Artery' && c !== 'L Common Iliac Artery');
+    ch.innerHTML =
+      '<div class="artery-aorta-layout">'
+      + '<div class="artery-aorta-col"><div class="artery-aorta-col-label" style="color:#5080c0">← Upper limb</div>' + makeBtn('Subclavian Artery') + '</div>'
+      + '<div class="artery-aorta-center"><div style="font-size:32px">🫀</div><div class="artery-aorta-title">Aorta</div></div>'
+      + '<div class="artery-aorta-col"><div class="artery-aorta-col-label" style="color:#60aa78">Lower limb →</div>' + makeBtn('L Common Iliac Artery') + '</div>'
+      + '</div>'
+      + (otherBranches.length ? '<div class="artery-label" style="margin-top:1rem">Other branches</div><div class="artery-grid">' + otherBranches.map(makeBtn).join('') + '</div>' : '');
+  } else if (!children.length) {
     ch.innerHTML = '<p class="artery-empty">No further branches in this map.</p>';
   } else {
     ch.innerHTML = '<div class="artery-label">Branches (' + children.length + ')</div>'
-      + '<div class="artery-grid">'
-      + children.map(c => {
-          const hasBranches = !!(ARTERY_TREE[c] && ARTERY_TREE[c].length);
-          return '<button class="artery-btn' + (hasBranches ? '' : ' artery-btn--leaf') + '"'
-            + ' onclick="arteryDrillDown(\'' + c.replace(/'/g, "\\'") + '\')">'
-            + '<span class="artery-btn-name">' + esc(c) + '</span>'
-            + (hasBranches
-                ? '<span class="artery-btn-arrow">›</span>'
-                : '<span class="artery-btn-terminal">●</span>')
-            + '</button>';
-        }).join('')
-      + '</div>';
+      + '<div class="artery-grid">' + children.map(makeBtn).join('') + '</div>';
   }
 
   // Back nav
