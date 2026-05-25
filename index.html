@@ -1810,11 +1810,8 @@ function fsrsGetCard(id) {
 function fsrsDueCount() {
   const store = fsrsLoad();
   const today = new Date(); today.setHours(0,0,0,0);
-  // Count reviewed cards that are due
-  const reviewedDue = Object.values(store).filter(c => new Date(c.due) <= today).length;
-  // Count new cards (never reviewed = not in store)
-  const newCards = muscles.filter(m => !store[m.id]).length;
-  return reviewedDue + newCards;
+  // Only count reviewed cards that are due (not new cards)
+  return Object.values(store).filter(c => new Date(c.due) <= today).length;
 }
 
 // Process a review and compute next state
@@ -1888,19 +1885,15 @@ function loadFSRSQueue() {
   const store = fsrsLoad();
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // All due muscles
+  // Only cards with a past due date (no new cards)
   fsrsQueue = muscles.filter(m => {
     const card = store[m.id];
-    if (!card) return true; // new card
-    return new Date(card.due) <= today;
+    return card && new Date(card.due) <= today;
   });
 
-  // New cards first (no card data), then by due date
+  // Sort by due date (oldest first)
   fsrsQueue.sort((a, b) => {
     const ca = store[a.id], cb = store[b.id];
-    if (!ca && !cb) return a.name.localeCompare(b.name);
-    if (!ca) return -1;
-    if (!cb) return 1;
     return new Date(ca.due) - new Date(cb.due);
   });
 
@@ -6774,7 +6767,7 @@ function initCards() {
     const today = new Date(); today.setHours(0,0,0,0);
     const dueDeck = muscles.filter(m => {
       const card = store[m.id];
-      return !card || new Date(card.due) <= today;
+      return card && new Date(card.due) <= today;
     });
     if (!dueDeck.length) {
       cardsDueMode = false;
@@ -6955,7 +6948,7 @@ function onFSRSRate(G, muscleId) {
     const today = new Date(); today.setHours(0,0,0,0);
     const dueDeck = muscles.filter(m => {
       const card = store[m.id];
-      return !card || new Date(card.due) <= today;
+      return card && new Date(card.due) <= today;
     });
 
     if (!dueDeck.length) {
