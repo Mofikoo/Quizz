@@ -1520,7 +1520,7 @@
       <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&larr; Quiz</button>
       <div class="page-title">
         <h1 style="color:#c0392b">Anatomy Exam</h1>
-        <p>85 questions QCM couvrant toutes les régions anatomiques.</p>
+        <p id="exam-question-count">MCQ covering all anatomical regions.</p>
       </div>
       <div class="card">
         <div class="card-header">
@@ -5205,6 +5205,8 @@ let examPool = [], examIdx = 0, examCorrect = 0, examAnswered = false, examInsta
 
 function initExamBlanc() {
   const cats = [...new Set(EXAM_QUESTIONS.map(q => q.cat))].sort();
+  const countEl = document.getElementById('exam-question-count');
+  if (countEl) countEl.textContent = EXAM_QUESTIONS.length + ' MCQ questions covering all anatomical regions.';
   const container = document.getElementById('exam-cat-checks');
   if (container) {
     container.innerHTML = '';
