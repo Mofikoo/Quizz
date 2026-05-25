@@ -2548,12 +2548,14 @@ function renderLigCard() {
   const ORDER = ['origin','insertion','function','type','components','notes'];
 
   // FRONT
+  const _ligCardBadge = fsrsGetCard(l.id);
+  const ligSrBadge = !_ligCardBadge ? '<span class="fsrs-badge-new">NEW</span>' : '<span class="fsrs-badge-review">REVIEW</span>';
   document.getElementById('fc-front').innerHTML =
     '<div class="fc-region-bar" style="background:' + color + '"></div>'
     + '<div class="fc-front-body">'
     + '<span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(l.region) + '</span>'
     + '<h2 class="fc-muscle-name" style="font-size:clamp(13px,2vw,20px)">' + esc(l.name) + '</h2>'
-    + '<span class="fc-depth-badge">' + esc(l.joint) + '</span>'
+    + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span class="fc-depth-badge">' + esc(l.joint) + '</span>' + ligSrBadge + '</div>'
     + '<p class="fc-tap-hint">Tap to reveal details</p>'
     + '</div>';
 
@@ -6728,12 +6730,14 @@ function renderBoneCard() {
   };
 
   // FRONT
+  const _boneCardBadge = fsrsGetCard(b.id);
+  const boneSrBadge = !_boneCardBadge ? '<span class="fsrs-badge-new">NEW</span>' : '<span class="fsrs-badge-review">REVIEW</span>';
   document.getElementById('fc-front').innerHTML =
     '<div class="fc-region-bar" style="background:' + color + '"></div>'
     + '<div class="fc-front-body">'
     + '<span class="fc-region-label" style="color:' + color + '"><span class="region-dot" style="background:' + color + '"></span>' + esc(b.region) + '</span>'
     + '<h2 class="fc-muscle-name">' + esc(b.name) + '</h2>'
-    + '<span class="fc-depth-badge">' + esc(b.type) + '</span>'
+    + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><span class="fc-depth-badge">' + esc(b.type) + '</span>' + boneSrBadge + '</div>'
     + '<p class="fc-tap-hint">Tap to reveal features</p>'
     + '</div>';
 
@@ -6843,6 +6847,10 @@ function renderCard() {
   // ── FRONT ──────────────────────────────────────────────────────
   const depthBadge = m.depth
     ? `<span class="fc-depth-badge">${esc(m.depth)}</span>` : '';
+  const _fsrsCardForBadge = fsrsGetCard(m.id);
+  const srBadge = !_fsrsCardForBadge
+    ? `<span class="fsrs-badge-new">NEW</span>`
+    : `<span class="fsrs-badge-review">REVIEW</span>`;
   const imgHTML = m.image
     ? `<div class="fc-img-wrap"><img src="${esc(m.image)}" alt="${esc(m.name)}" class="fc-img" onerror="this.style.display='none'"/></div>` : '';
 
@@ -6855,7 +6863,7 @@ function renderCard() {
       </span>
       ${imgHTML}
       <h2 class="fc-muscle-name">${esc(m.name)}</h2>
-      ${depthBadge}
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${depthBadge}${srBadge}</div>
       ${m.synonyms && m.synonyms.length
         ? `<p class="fc-synonyms">${m.synonyms.map(esc).join(' &middot; ')}</p>` : ''}
       <p class="fc-tap-hint">${cardsDueMode ? "Flip & rate to advance" : "Tap to reveal anatomy"}</p>
