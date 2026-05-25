@@ -1530,12 +1530,12 @@
         <div class="form-field" style="margin-bottom:1.25rem;">
           <label class="form-label" style="margin-bottom:8px;display:block;">Options</label>
           <div class="recall-region-checks">
-            <label class="recall-region-chip checked" id="exam-shuffle-chip" onclick="this.classList.toggle('checked');document.getElementById('exam-shuffle').checked=this.classList.contains('checked')">
-              <input type="checkbox" id="exam-shuffle" checked style="display:none">
+            <label class="recall-region-chip checked" id="exam-shuffle-chip">
+              <input type="checkbox" id="exam-shuffle" checked style="display:none" onchange="this.closest('label').classList.toggle('checked',this.checked)">
               <span>&#128256; Shuffle questions</span>
             </label>
-            <label class="recall-region-chip" id="exam-instant-chip" onclick="this.classList.toggle('checked');document.getElementById('exam-instant').checked=this.classList.contains('checked')">
-              <input type="checkbox" id="exam-instant" style="display:none">
+            <label class="recall-region-chip" id="exam-instant-chip">
+              <input type="checkbox" id="exam-instant" style="display:none" onchange="this.closest('label').classList.toggle('checked',this.checked)">
               <span>&#9889; Show answer immediately</span>
             </label>
           </div>
