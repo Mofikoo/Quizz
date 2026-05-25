@@ -1528,12 +1528,15 @@
           <h2>Settings</h2>
         </div>
         <div class="form-field" style="margin-bottom:1.25rem;">
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;">
-              <input type="checkbox" id="exam-shuffle" checked> Shuffle questions
+          <label class="form-label" style="margin-bottom:8px;display:block;">Options</label>
+          <div class="recall-region-checks">
+            <label class="recall-region-chip checked" id="exam-shuffle-chip" onclick="this.classList.toggle('checked');document.getElementById('exam-shuffle').checked=this.classList.contains('checked')">
+              <input type="checkbox" id="exam-shuffle" checked style="display:none">
+              <span>&#128256; Shuffle questions</span>
             </label>
-            <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;">
-              <input type="checkbox" id="exam-instant"> Show answer immediately
+            <label class="recall-region-chip" id="exam-instant-chip" onclick="this.classList.toggle('checked');document.getElementById('exam-instant').checked=this.classList.contains('checked')">
+              <input type="checkbox" id="exam-instant" style="display:none">
+              <span>&#9889; Show answer immediately</span>
             </label>
           </div>
         </div>
@@ -5203,13 +5206,13 @@ let examPool = [], examIdx = 0, examCorrect = 0, examAnswered = false, examInsta
 function initExamBlanc() {
   const cats = [...new Set(EXAM_QUESTIONS.map(q => q.cat))].sort();
   const container = document.getElementById('exam-cat-checks');
-  if (container && !container.children.length) {
-    const FR = {};
+  if (container) {
+    container.innerHTML = '';
     cats.forEach(c => {
-      container.innerHTML += `<label class="recall-region-label">
-        <input type="checkbox" value="${esc(c)}" checked>
-        <span>${FR[c] || esc(c)}</span>
-      </label>`;
+      const lbl = document.createElement('label');
+      lbl.className = 'recall-region-chip checked';
+      lbl.innerHTML = `<input type="checkbox" value="${esc(c)}" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span>${esc(c)}</span>`;
+      container.appendChild(lbl);
     });
   }
 }
@@ -5384,30 +5387,20 @@ let barticPool = [], barticIdx = 0, barticFound = new Set(), barticTotal = 0, ba
 function initBonesArticulation() {
   const regions = [...new Set(bonesData.map(b => b.region))].sort();
   const container = document.getElementById('bartic-region-checks');
-  if (container && !container.children.length) {
+  if (container) {
+    container.innerHTML = '';
     regions.forEach(r => {
       const color = brc(r);
-      const chip = document.createElement('div');
-      chip.className = 'region-chip active';
-      chip.dataset.region = r;
-      chip.style.cssText = 'border-color:' + color + ';color:' + color;
-      chip.innerHTML = '<span class="region-dot" style="background:' + color + '"></span>' + esc(r);
-      chip.onclick = () => {
-        chip.classList.toggle('active');
-        if (chip.classList.contains('active')) {
-          chip.style.cssText = 'border-color:' + color + ';color:' + color + ';background:' + color + '22';
-        } else {
-          chip.style.cssText = 'border-color:' + color + ';color:' + color;
-        }
-      };
-      chip.style.background = color + '22';
-      container.appendChild(chip);
+      const lbl = document.createElement('label');
+      lbl.className = 'recall-region-chip checked';
+      lbl.innerHTML = `<input type="checkbox" value="${r}" checked onchange="this.closest('label').classList.toggle('checked',this.checked)" style="display:none"><span class="region-dot" style="background:${color}"></span><span>${esc(r)}</span>`;
+      container.appendChild(lbl);
     });
   }
 }
 
 function startBonesArticulation() {
-  const sel = [...document.querySelectorAll('#bartic-region-checks .region-chip.active')].map(c => c.dataset.region);
+  const sel = [...document.querySelectorAll('#bartic-region-checks input:checked')].map(c => c.value);
   if (!sel.length) { toast('Select at least one region!'); return; }
 
   barticPool = bonesData.filter(b => sel.includes(b.region) && (b.features?.articulations?.length > 0));
