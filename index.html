@@ -1197,14 +1197,26 @@
   <!-- BONES ARTICULATION RECALL PANEL -->
   <div class="panel" id="panel-bones-articulation">
     <div id="bartic-setup">
-      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')">&larr; Quiz</button>
-      <h2 class="recall-title">Articulation Recall</h2>
-      <p style="color:var(--text3);font-size:14px;margin-bottom:1.5rem">For each bone, type all bones it articulates with. Press Enter or comma to submit each one.</p>
-
-      <div class="recall-filters">
-        <div id="bartic-region-checks" class="recall-region-checks"></div>
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&larr; Quiz</button>
+      <div class="page-title">
+        <h1>Articulation Recall</h1>
+        <p>For each bone, type all bones it articulates with. Press Enter or comma to submit each one.</p>
       </div>
-      <button class="btn btn-primary btn-full btn-lg" onclick="startBonesArticulation()">Start</button>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Regions</label>
+          </div>
+          <div id="bartic-region-checks" class="recall-region-checks"></div>
+        </div>
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" onclick="startBonesArticulation()">Start</button>
+        </div>
+      </div>
     </div>
 
     <div id="bartic-session" style="display:none">
@@ -1505,22 +1517,36 @@
   <!-- EXAM BLANC PANEL -->
   <div class="panel" id="panel-exam-blanc">
     <div id="exam-setup">
-      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')">&larr; Quiz</button>
-      <h2 class="recall-title" style="color:#c0392b">Anatomy Exam</h2>
-      <p style="color:var(--text3);font-size:14px;margin-bottom:1.5rem">85 questions QCM couvrant toutes les régions anatomiques.</p>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem">
-        <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px">
-          <input type="checkbox" id="exam-shuffle" checked> Shuffle questions
-        </label>
-        <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px">
-          <input type="checkbox" id="exam-instant"> Show answer immediately
-        </label>
+      <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')" style="margin-bottom:1rem;">&larr; Quiz</button>
+      <div class="page-title">
+        <h1 style="color:#c0392b">Anatomy Exam</h1>
+        <p>85 questions QCM couvrant toutes les régions anatomiques.</p>
       </div>
-      <div style="margin-bottom:1.5rem">
-        <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Filter by category</div>
-        <div id="exam-cat-checks" class="recall-region-checks"></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-header-icon">&#9881;</div>
+          <h2>Settings</h2>
+        </div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;">
+              <input type="checkbox" id="exam-shuffle" checked> Shuffle questions
+            </label>
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;font-weight:normal;cursor:pointer;">
+              <input type="checkbox" id="exam-instant"> Show answer immediately
+            </label>
+          </div>
+        </div>
+        <div class="form-field" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <label class="form-label">Filter by category</label>
+          </div>
+          <div id="exam-cat-checks" class="recall-region-checks"></div>
+        </div>
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <button class="btn btn-primary btn-full btn-lg" style="background:#c0392b;border-color:#c0392b" onclick="startExamBlanc()">Start exam</button>
+        </div>
       </div>
-      <button class="btn btn-primary btn-full btn-lg" style="background:#c0392b;border-color:#c0392b" onclick="startExamBlanc()">Start exam</button>
     </div>
     <div id="exam-session" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
