@@ -259,30 +259,6 @@
 
       <!-- ── Ligament quizzes ── -->
       <div class="quiz-section-label">&#129513; Ligament quizzes</div>
-
-      <!-- ── Schema quizzes ── -->
-      <div class="quiz-section-label">&#128247; Schema quizzes</div>
-      <div class="quiz-launchers" style="margin-bottom:1.5rem">
-        <div class="quiz-launcher-card" style="border-color:#7c6c9088" onclick="switchPanel('schema-quiz')">
-          <div class="ql-icon">&#128247;</div>
-          <div class="ql-body"><div class="ql-title">Schema labelling</div><div class="ql-sub">Numbered anatomical diagrams — fill in the structures.</div></div>
-          <div class="ql-arrow">&#8594;</div>
-        </div>
-
-      <div style="margin-top:2rem">
-        <h3 class="quiz-section-title" style="color:#c0392b;border-color:#c0392b44">Anatomy Exam</h3>
-        <div class="quiz-launcher-card" style="border-color:#c0392b88" onclick="switchPanel('exam-blanc')">
-          <div class="ql-icon">&#128221;</div>
-          <div class="ql-body">
-            <div class="ql-title">Anatomy Exam</div>
-            <div class="ql-sub">102 questions (MCQ + open) — all regions</div>
-          </div>
-          <div class="ql-arrow">&#8594;</div>
-        </div>
-      </div>
-      </div>
-
-      
       <div class="quiz-launchers" style="margin-bottom:1.5rem">
         <div class="quiz-launcher-card" style="border-color:#60aa7888" onclick="switchPanel('ligs-recall')">
           <div class="ql-icon">&#128302;</div>
@@ -300,6 +276,18 @@
           </div>
           <div class="ql-arrow">&#8594;</div>
         </div>
+      </div>
+
+      <!-- ── Schema quizzes ── -->
+      <div class="quiz-section-label">&#128247; Schema quizzes</div>
+      <div class="quiz-launchers" style="margin-bottom:1.5rem">
+        <div class="quiz-launcher-card" style="border-color:#7c6c9088" onclick="switchPanel('schema-quiz')">
+          <div class="ql-icon">&#128247;</div>
+          <div class="ql-body"><div class="ql-title">Schema labelling</div><div class="ql-sub">Numbered anatomical diagrams — fill in the structures.</div></div>
+          <div class="ql-arrow">&#8594;</div>
+        </div>
+
+
       </div>
 
       <div class="quiz-section-label">Quick quiz — regions &amp; names</div>
@@ -425,7 +413,22 @@
         <button class="btn" onclick="showQuizSetup()">Change settings</button>
       </div>
     </div>
-  </div>
+  
+
+      <!-- ── Anatomy Exam ── -->
+      <div style="margin-top:2rem">
+        <h3 class="quiz-section-title" style="color:#c0392b;border-color:#c0392b44">Anatomy Exam</h3>
+        <div class="quiz-launchers">
+          <div class="quiz-launcher-card" style="border-color:#c0392b88" onclick="switchPanel('exam-blanc')">
+            <div class="ql-icon">&#128221;</div>
+            <div class="ql-body">
+              <div class="ql-title">Anatomy Exam</div>
+              <div class="ql-sub">102 questions (MCQ + open) — all regions</div>
+            </div>
+            <div class="ql-arrow">&#8594;</div>
+          </div>
+        </div>
+      </div></div>
 
   <!-- ══ STATS PANEL ══ -->
   <div class="panel" id="panel-stats">
@@ -1120,47 +1123,7 @@
           <button class="artery-ctrl-btn" onclick="arteryResetView()" title="Reset">⤢</button>
         </div>
       </div>
-      <!-- Full arterial map: Aorta center, Upper limb left, Lower limb right -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);padding:1.25rem;">
-        <p style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em;">Full arterial map</p>
-        <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start">
-          <div style="font-size:11px;color:var(--text2)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#5080c0;margin-bottom:8px;text-align:right">← Upper limb</div>
-            <div style="text-align:right;line-height:2">
-              <span style="color:var(--text3)">Subclavian</span><br>
-              <span>Thyrocervical trunk</span><br>
-              <span style="font-size:10px;color:var(--text3)">Suprascapular · Transverse cervical</span><br>
-              <span>Axillary</span><br>
-              <span style="font-size:10px;color:var(--text3)">Thoracoacromial · Subscapular · Lateral thoracic</span><br>
-              <span style="font-size:10px;color:var(--text3)">Ant./Post. circumflex humeral</span><br>
-              <span>Brachial</span><br>
-              <span style="font-size:10px;color:var(--text3)">Deep brachial · Collaterals</span><br>
-              <span>Radial · Ulnar</span><br>
-              <span style="font-size:10px;color:var(--text3)">Common interosseous → Ant./Post. interosseous</span><br>
-              <span>Deep palmar arch · Superficial palmar arch</span><br>
-              <span style="font-size:10px;color:var(--text3)">Digital arteries</span>
-            </div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 14px;background:var(--surface2);border:2px solid #e74c3c55;border-radius:var(--r-lg)">
-            <span style="font-size:26px">🫀</span>
-            <span style="font-size:12px;font-weight:700;color:#e74c3c">Aorta</span>
-          </div>
-          <div style="font-size:11px;color:var(--text2)">
-            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#60aa78;margin-bottom:8px">Lower limb →</div>
-            <div style="line-height:2">
-              <span style="color:var(--text3)">L Common Iliac</span><br>
-              <span>External Iliac → Femoral</span><br>
-              <span style="padding-left:10px;font-size:10px;color:var(--text3)">Deep femoral → Circumflex femoral</span><br>
-              <span style="padding-left:10px">Popliteal</span><br>
-              <span style="padding-left:20px;font-size:10px">Anterior tibial → Dorsal pedis</span><br>
-              <span style="padding-left:20px;font-size:10px">Posterior tibial</span><br>
-              <span style="padding-left:30px;font-size:10px;color:var(--text3)">Fibular · Med./Lat. plantar</span><br>
-              <span>Internal Iliac</span><br>
-              <span style="padding-left:10px;font-size:10px;color:var(--text3)">Sup./Inf. gluteal</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      
   </div>
 
   <!-- ══ BONES PANEL ══ -->
@@ -1817,7 +1780,11 @@ function fsrsGetCard(id) {
 function fsrsDueCount() {
   const store = fsrsLoad();
   const today = new Date(); today.setHours(0,0,0,0);
-  return Object.values(store).filter(c => new Date(c.due) <= today).length;
+  // Count reviewed cards that are due
+  const reviewedDue = Object.values(store).filter(c => new Date(c.due) <= today).length;
+  // Count new cards (never reviewed = not in store)
+  const newCards = muscles.filter(m => !store[m.id]).length;
+  return reviewedDue + newCards;
 }
 
 // Process a review and compute next state
@@ -2047,10 +2014,17 @@ function fsrsRate(G, muscleId) {
 
 function updateFSRSDueBadge() {
   const count = fsrsDueCount();
-  const badge = document.getElementById('fsrs-due-badge');
-  if (badge) {
-    badge.textContent = count;
-    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+  // Update toolbar badge (inside cards panel)
+  const toolbarBadge = document.getElementById('cards-due-count');
+  if (toolbarBadge) {
+    toolbarBadge.textContent = count;
+    toolbarBadge.style.display = count > 0 ? 'inline' : 'none';
+  }
+  // Update nav badge (if it exists)
+  const navBadge = document.getElementById('fsrs-due-badge');
+  if (navBadge) {
+    navBadge.textContent = count;
+    navBadge.style.display = count > 0 ? 'inline-flex' : 'none';
   }
 }
 
@@ -6779,8 +6753,8 @@ function initCards() {
     if (!dueDeck.length) {
       cardsDueMode = false;
       const db = document.getElementById('cards-due-btn');
-      if (db) { db.style.background=''; db.style.color='#e74c3c'; db.style.borderColor='#e74c3c'; }
-      toast('No due cards right now! ??');
+      if (db) { db.style.background=''; db.style.color=''; db.style.borderColor=''; }
+      toast('No due cards right now!');
     } else {
       cardDeck = dueDeck; cardIdx = 0; cardFlipped = false;
       renderCard(); renderCardDots(); updateCardNav(); updateFSRSDueBadge();
@@ -6862,7 +6836,7 @@ function renderCard() {
       ${depthBadge}
       ${m.synonyms && m.synonyms.length
         ? `<p class="fc-synonyms">${m.synonyms.map(esc).join(' &middot; ')}</p>` : ''}
-      <p class="fc-tap-hint">Tap to reveal anatomy</p>
+      <p class="fc-tap-hint">${cardsDueMode ? "Flip & rate to advance" : "Tap to reveal anatomy"}</p>
     </div>
   `;
 
@@ -6945,21 +6919,31 @@ function onFSRSRate(G, muscleId) {
   fsrsReview(muscleId, G);
   updateFSRSDueBadge();
 
-  // In due mode: skip to next due card or show done
   if (cardsDueMode) {
-    // Rebuild deck of due cards (may have changed)
-    const wasIdx = cardIdx;
-    initCards();
-    // If no more due, exit due mode
-    if (!cardDeck.length) {
+    // Rebuild due deck — rated card now has future due date, so it drops out
+    const store = fsrsLoad();
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dueDeck = muscles.filter(m => {
+      const card = store[m.id];
+      return !card || new Date(card.due) <= today;
+    });
+
+    if (!dueDeck.length) {
+      // All done — exit due mode cleanly
       cardsDueMode = false;
-      document.getElementById('cards-due-btn').classList.remove('active');
-      document.getElementById('cards-due-btn').style.borderColor = '#e74c3c';
-      document.getElementById('cards-due-btn').style.color = '#e74c3c';
-      toast('All due cards reviewed! 🎉');
-      setCardsType('muscle');
+      const db = document.getElementById('cards-due-btn');
+      if (db) { db.classList.remove('active'); db.style.background=''; db.style.color=''; db.style.borderColor=''; }
+      toast('All due cards reviewed! ??');
+      cardDeck = muscles; cardIdx = 0; cardFlipped = false;
+      renderCard(); renderCardDots(); updateCardNav();
       return;
     }
+
+    // Stay at idx 0 — always show first remaining due card
+    cardDeck = dueDeck;
+    cardIdx = 0;
+    cardFlipped = false;
+    renderCard(); renderCardDots(); updateCardNav();
   } else {
     nextCard();
   }
@@ -6998,12 +6982,14 @@ function flipCard() {
 }
 
 function nextCard() {
+  if (cardsDueMode) return; // in due mode, use FSRS rating buttons to advance
   if (cardIdx >= cardDeck.length - 1) return;
   cardIdx++;
   renderCard();
 }
 
 function prevCard() {
+  if (cardsDueMode) return; // in due mode, no going back
   if (cardIdx <= 0) return;
   cardIdx--;
   renderCard();
