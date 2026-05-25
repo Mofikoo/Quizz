@@ -347,7 +347,7 @@ select { cursor: pointer; }
 .select-wrap select { padding-right: 32px; }
 
 .form-hint { font-size: 12px; color: var(--text3); margin-top: 2px; }
-.form-error { font-size: 12px; color: var(--err); min-height: 18px; }
+.form-error { font-size: 12px; color: var(--err); min-height: 18px; display: block; }
 
 .form-actions {
   display: flex;

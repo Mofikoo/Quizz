@@ -51,7 +51,7 @@
       </div>
 
       <div class="form-grid form-grid--3">
-        <div class="form-field" style="grid-column:1/3">
+        <div class="form-field">
           <label class="form-label">Official name <span class="required">*</span></label>
           <input type="text" id="inp-name" placeholder="e.g. Biceps brachii" autocomplete="off" />
         </div>
@@ -268,12 +268,13 @@
 
       <div style="margin-top:2rem">
         <h3 class="quiz-section-title" style="color:#c0392b;border-color:#c0392b44">Examen Blanc</h3>
-        <div class="quiz-list-item" style="border-color:#c0392b88" onclick="switchPanel('exam-blanc')">
+        <div class="quiz-launcher-card" style="border-color:#c0392b88" onclick="switchPanel('exam-blanc')">
           <div class="ql-icon">&#128221;</div>
           <div class="ql-body">
             <div class="ql-title">Examen Blanc</div>
-            <div class="ql-desc">108 questions (QCM + ouvertes) — crâne, thorax, abdomen, épaule, membres, nerfs, artères, clinique</div>
+            <div class="ql-sub">102 questions (QCM + ouvertes) — toutes régions</div>
           </div>
+          <div class="ql-arrow">&#8594;</div>
         </div>
       </div>
       </div>
@@ -556,8 +557,8 @@
         <button class="btn btn-sm cards-type-btn active" id="cards-type-muscle" onclick="setCardsType('muscle')">Muscles</button>
         <button class="btn btn-sm cards-type-btn" id="cards-type-bone" onclick="setCardsType('bone')">Bones</button>
         <button class="btn btn-sm cards-type-btn" id="cards-type-lig" onclick="setCardsType('lig')">Ligaments</button>
-        <button class="btn btn-sm" id="cards-due-btn" onclick="toggleDueMode()" style="border-color:#e74c3c;color:#e74c3c;position:relative">
-          Due <span id="cards-due-count" style="font-size:10px;background:#e74c3c;color:#fff;border-radius:99px;padding:0 5px;margin-left:3px">0</span>
+        <button class="btn btn-sm" id="cards-due-btn" onclick="toggleDueMode()">
+          Due <span id="cards-due-count" style="font-size:10px;background:var(--accent);color:#fff;border-radius:99px;padding:0 5px;margin-left:3px;display:none">0</span>
         </button>
       </div>
       <div class="cards-search-wrap">
@@ -1505,8 +1506,8 @@
   <div class="panel" id="panel-exam-blanc">
     <div id="exam-setup">
       <button class="btn btn-ghost btn-sm" onclick="switchPanel('quiz')">&larr; Quiz</button>
-      <h2 class="recall-title" style="color:#c0392b">Examen Blanc</h2>
-      <p style="color:var(--text3);font-size:14px;margin-bottom:1.5rem">85 questions QCM couvrant toutes les régions anatomiques.</p>
+      <h2 class="recall-title" style="color:#c0392b">Practice Exam</h2>
+      <p style="color:var(--text3);font-size:14px;margin-bottom:1.5rem">102 MCQ questions on all anatomical regions.</p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem">
         <label style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:8px">
           <input type="checkbox" id="exam-shuffle" checked> Shuffle questions
@@ -1590,7 +1591,6 @@ const EXAM_QUESTIONS = [
   {"id":"e001","q":"Which bone articulates with the highest number of cranial bones?","opts":["Occipital","Frontal","Sphenoid","Temporal"],"correct":2,"cat":"Skull"},
   {"id":"e002","q":"Which structure separates the anterior from the middle cranial fossa?","opts":["Perpendicular plate of ethmoid","Greater wings of the sphenoid","Squamous part of temporal bone","Mastoid process"],"correct":1,"cat":"Skull"},
   {"id":"e003","q":"Which bone belongs to the neurocranium?","opts":["Frontal bone","Zygomatic bone","Vomer","Maxilla"],"correct":0,"cat":"Skull"},
-  {"id":"e004","q":"Which part of the mandible participates in the TMJ?","opts":["Coronoid process","Mylohyoid line","Mandibular angle","Mandibular condyle"],"correct":3,"cat":"Skull"},
   {"id":"e005","q":"Which bone forms the floor of the anterior cranial fossa?","opts":["Sphenoid","Frontal bone and ethmoid","Temporal bone","Occipital bone"],"correct":1,"cat":"Skull"},
   {"id":"e006","q":"Which foramen transmits the facial nerve (CN VII)?","opts":["Jugular foramen","Foramen ovale","Stylomastoid foramen","Foramen spinosum"],"correct":2,"cat":"Skull"},
   {"id":"e007","q":"Which bone contains the internal acoustic meatus?","opts":["Occipital","Sphenoid","Temporal","Parietal"],"correct":2,"cat":"Skull"},
@@ -1601,7 +1601,6 @@ const EXAM_QUESTIONS = [
   {"id":"e012","q":"Which costovertebral joint statement is correct?","opts":["Radiate ligament stabilizes the costotransverse joint","Intra-articular ligament divides the rib head joint cavity into two","Superior costotransverse ligament connects rib head to vertebral body","Ribs 11 and 12 have a typical costotransverse joint"],"correct":1,"cat":"Thorax"},
   {"id":"e013","q":"Which ribs articulate directly with the sternum via their own costal cartilage?","opts":["False ribs (8th–10th)","Atypical ribs","True ribs (1st–7th)","Floating ribs (11th–12th)"],"correct":2,"cat":"Thorax"},
   {"id":"e014","q":"Which sternocostal joint statement is correct?","opts":["Ribs 1, 6, and 7 form synovial joints","All sternocostal joints are synovial","Floating ribs articulate directly with the sternum","The 1st rib forms a synchondrosis with the sternum"],"correct":3,"cat":"Thorax"},
-  {"id":"e015","q":"Which is the main inspiratory muscle?","opts":["Diaphragm","Internal oblique","Transversus abdominis","Rectus abdominis"],"correct":0,"cat":"Thorax"},
   {"id":"e016","q":"What passes through the aortic hiatus alongside the aorta?","opts":["Vagus nerve","Phrenic nerve","Thoracic duct","Greater splanchnic nerve"],"correct":2,"cat":"Thorax"},
   {"id":"e017","q":"The internal intercostal muscle fibers run in which direction?","opts":["Same as external intercostals","Perpendicular to the ribs","Downward and forward (anteromedially)","Downward and backward (posterolaterally)"],"correct":2,"cat":"Thorax"},
   {"id":"e018","q":"Which intercostal level corresponds to the sternal angle (angle of Louis)?","opts":["1st rib","2nd rib","4th rib","6th rib"],"correct":1,"cat":"Thorax"},
@@ -1619,19 +1618,15 @@ const EXAM_QUESTIONS = [
   {"id":"e030","q":"Which shoulder girdle statement is correct?","opts":["The sternoclavicular joint lacks an articular disc","The coracoacromial ligament connects clavicle to acromion","The acromioclavicular joint is mainly stabilized by the coracoclavicular ligament","The middle glenohumeral ligament prevents forearm pronation"],"correct":2,"cat":"Shoulder"},
   {"id":"e031","q":"Select the INCORRECT statement about teres major:","opts":["Participates in medial rotation","Inserts into the medial lip of the intertubercular groove","Participates in shoulder adduction","Inserts into the greater tubercle of the humerus"],"correct":3,"cat":"Shoulder"},
   {"id":"e032","q":"Where does the subscapularis originate?","opts":["Infraspinous fossa","Acromion","Scapular spine","Subscapular fossa"],"correct":3,"cat":"Shoulder"},
-  {"id":"e033","q":"Which muscle is primarily responsible for external rotation of the shoulder?","opts":["Teres major","Subscapularis","Pectoralis major","Infraspinatus"],"correct":3,"cat":"Shoulder"},
   {"id":"e034","q":"Which scapula statement is correct?","opts":["Scapular spine is on the costal surface","Glenoid cavity articulates with the clavicle","Subscapular fossa is on the posterior surface","Acromion is a continuation of the scapular spine"],"correct":3,"cat":"Shoulder"},
   {"id":"e035","q":"Which clavicle statement is correct?","opts":["The clavicle has an S-shaped shaft","The inferior surface has no attachments","The sternal end is lateral and flat","The acromial end articulates with the sternum"],"correct":0,"cat":"Shoulder"},
   {"id":"e036","q":"Which structure belongs to the scapula?","opts":["Glenoid cavity","Head of the ulna","Radial tuberosity","Humeral trochlea"],"correct":0,"cat":"Shoulder"},
   {"id":"e037","q":"Which deltoid fiber statement is correct?","opts":["Anterior fibers — shoulder flexion and medial rotation","Middle fibers — shoulder adduction","Posterior fibers — shoulder flexion","Posterior fibers — initial shoulder abduction"],"correct":0,"cat":"Shoulder"},
   {"id":"e038","q":"Select the CORRECT statement about the glenoid labrum:","opts":["Coracohumeral ligament inserts into the acetabular labrum","Glenoid labrum is part of the acromioclavicular joint","Glenoid labrum decreases glenoid cavity depth","Long head of biceps tendon relates to superior glenoid labrum"],"correct":3,"cat":"Shoulder"},
   {"id":"e039","q":"Which muscle–distal insertion combination is correct?","opts":["Subscapularis → deltoid tuberosity","Supraspinatus → lesser tubercle","Teres major → acromion","Infraspinatus → greater tubercle of the humerus"],"correct":3,"cat":"Shoulder"},
-  {"id":"e040","q":"Which rotator cuff muscle is most commonly torn?","opts":["Subscapularis","Infraspinatus","Teres minor","Supraspinatus"],"correct":3,"cat":"Shoulder"},
   {"id":"e041","q":"Which nerve is at risk in a surgical neck fracture of the humerus?","opts":["Radial nerve","Musculocutaneous nerve","Axillary nerve","Ulnar nerve"],"correct":2,"cat":"Shoulder"},
   {"id":"e042","q":"Which ligament connects the coracoid process to the clavicle (two parts)?","opts":["Acromioclavicular ligament","Glenohumeral ligament","Coracoclavicular ligament","Transverse scapular ligament"],"correct":2,"cat":"Shoulder"},
   {"id":"e043","q":"Winging of the scapula is caused by paralysis of which muscle?","opts":["Trapezius","Rhomboids","Serratus anterior","Levator scapulae"],"correct":2,"cat":"Shoulder"},
-  {"id":"e044","q":"Which muscles form the rotator cuff?","opts":["Supraspinatus, infraspinatus, teres minor, subscapularis","Supraspinatus, infraspinatus, teres major, subscapularis","Deltoid, supraspinatus, infraspinatus, teres minor","Supraspinatus, infraspinatus, teres minor, biceps brachii"],"correct":0,"cat":"Shoulder"},
-  {"id":"e045","q":"Which muscles form the pes anserinus (goose's foot) at the knee?","opts":["Sartorius, gracilis, semitendinosus","Sartorius, gracilis, semimembranosus","Gracilis, semitendinosus, biceps femoris","Rectus femoris, sartorius, gracilis"],"correct":0,"cat":"Shoulder"},
   {"id":"e046","q":"Which radiocarpal joint statement is correct?","opts":["Ulna directly articulates with the triquetrum","Pisiform articulates with the radius","Radius directly articulates with scaphoid and lunate","Trapezium is a main component of the radiocarpal joint"],"correct":2,"cat":"Upper Limb"},
   {"id":"e047","q":"Which humerus statement is correct?","opts":["Deltoid tuberosity is on the distal epiphysis","Intertubercular groove is between greater and lesser tubercles","Humeral trochlea articulates with the radius","Humeral head articulates with the acetabulum"],"correct":1,"cat":"Upper Limb"},
   {"id":"e048","q":"Which muscle–innervation combination is correct?","opts":["Coracobrachialis – radial nerve","Brachialis – axillary nerve","Triceps brachii – musculocutaneous nerve","Biceps brachii – musculocutaneous nerve"],"correct":3,"cat":"Upper Limb"},
@@ -2068,101 +2063,101 @@ const NERVE_DATA = [
 ];
 const ARTERY_DATA = [
   {"name":"Angular artery","muscles":["Procerus"]},
-  {"name":"anterior circumflex humeral artery","muscles":["Biceps Brachii","Brachialis","Coracobrachialis"]},
-  {"name":"anterior intercostal arteries","muscles":["Pectoralis Major"]},
-  {"name":"anterior interosseous artery","muscles":["Abductor Pollicis Longus","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Quadratus"]},
+  {"name":"Anterior circumflex humeral artery","muscles":["Biceps Brachii","Brachialis","Coracobrachialis"]},
+  {"name":"Anterior intercostal arteries","muscles":["Pectoralis Major"]},
+  {"name":"Anterior interosseous artery","muscles":["Abductor Pollicis Longus","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Quadratus"]},
   {"name":"Anterior tibial artery","muscles":["Extensor Digitorum Longus","Extensor Hallucis Longus","Fibularis Longus","Fibularis Tertius","Tibialis Anterior"]},
-  {"name":"ascending cervical artery","muscles":["Anterior Scalene","Levator Scapulae","Middle Scalene","Posterior Scalene"]},
+  {"name":"Ascending cervical artery","muscles":["Anterior Scalene","Levator Scapulae","Middle Scalene","Posterior Scalene"]},
   {"name":"Axillary artery","muscles":["Buccinator","Lateral Pterygoid","Masseter","Medial Pterygoid","Temporalis"]},
   {"name":"Brachial artery","muscles":["Biceps Brachii","Brachialis","Coracobrachialis"]},
-  {"name":"branch of internal pudendal artery","muscles":["External Anal Sphincter"]},
-  {"name":"branches of popliteal artery","muscles":["Gastrocnemius (Medial & Lateral Head)"]},
+  {"name":"Branch of internal pudendal artery","muscles":["External Anal Sphincter"]},
+  {"name":"Branches of popliteal artery","muscles":["Gastrocnemius (Medial & Lateral Head)"]},
   {"name":"Buccal artery","muscles":["Buccinator"]},
-  {"name":"circumflex scapular artery","muscles":["Infraspinatus","Teres Major","Teres Minor"]},
+  {"name":"Circumflex scapular artery","muscles":["Infraspinatus","Teres Major","Teres Minor"]},
   {"name":"Clavicular branch of thoracoacromial artery","muscles":["Subclavius"]},
   {"name":"Common interosseous artery","muscles":[]},
-  {"name":"common palmar digital arteries","muscles":["Lumbricales (Hand)"]},
+  {"name":"Common palmar digital arteries","muscles":["Lumbricales (Hand)"]},
   {"name":"Deep brachial artery","muscles":["Triceps Brachii"]},
-  {"name":"deep circumflex iliac artery","muscles":["External Oblique","Internal Oblique","Transversus Abdominis"]},
+  {"name":"Deep circumflex iliac artery","muscles":["External Oblique","Internal Oblique","Transversus Abdominis"]},
   {"name":"Deep femoral artery","muscles":["Adductor Brevis","Adductor Longus","Adductor Magnus"]},
-  {"name":"deep palmar arch","muscles":["Adductor Pollicis","Dorsal Interossei (Hand)","Flexor Digiti Minimi Brevis (Hand)","Palmar Interossei (Hand)"]},
+  {"name":"Deep palmar arch","muscles":["Adductor Pollicis","Dorsal Interossei (Hand)","Flexor Digiti Minimi Brevis (Hand)","Palmar Interossei (Hand)"]},
   {"name":"Deep palmar branch of ulnar artery","muscles":[]},
   {"name":"Deep temporal arteries","muscles":["Temporalis"]},
-  {"name":"deltoid branch","muscles":["Deltoid"]},
-  {"name":"descending branch","muscles":["Rectus Femoris"]},
-  {"name":"descending genicular artery","muscles":["Vastus Medialis"]},
+  {"name":"Deltoid branch","muscles":["Deltoid"]},
+  {"name":"Descending branch","muscles":["Rectus Femoris"]},
+  {"name":"Descending genicular artery","muscles":["Vastus Medialis"]},
   {"name":"Dorsal carpal arch","muscles":[]},
   {"name":"Dorsal digital arteries","muscles":[]},
   {"name":"Dorsal metacarpal arteries","muscles":["Dorsal Interossei (Hand)"]},
   {"name":"Dorsal metatarsal arteries","muscles":["Dorsal Interossei (Foot)"]},
-  {"name":"dorsal nasal artery","muscles":["Procerus"]},
-  {"name":"dorsal scapular artery","muscles":["Levator Scapulae","Rhomboid Major","Rhomboid Minor","Supraspinatus","Trapezius"]},
-  {"name":"facial artery","muscles":["Buccinator","Depressor Anguli Oris","Depressor Labii Inferioris","Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi","Masseter","Nasalis","Orbicularis Oculi","Orbicularis Oris","Risorius","Zygomaticus Major","Zygomaticus Minor"]},
+  {"name":"Dorsal nasal artery","muscles":["Procerus"]},
+  {"name":"Dorsal scapular artery","muscles":["Levator Scapulae","Rhomboid Major","Rhomboid Minor","Supraspinatus","Trapezius"]},
+  {"name":"Facial artery","muscles":["Buccinator","Depressor Anguli Oris","Depressor Labii Inferioris","Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi","Masseter","Nasalis","Orbicularis Oculi","Orbicularis Oris","Risorius","Zygomaticus Major","Zygomaticus Minor"]},
   {"name":"Femoral artery","muscles":["Sartorius","Vastus Medialis"]},
   {"name":"Fibular (peroneal) artery","muscles":["Fibularis Brevis","Fibularis Longus","Flexor Hallucis Longus","Soleus","Tibialis Posterior"]},
   {"name":"First dorsal metacarpal artery","muscles":[]},
-  {"name":"first perforating artery","muscles":["Gluteus Maximus"]},
+  {"name":"First perforating artery","muscles":["Gluteus Maximus"]},
   {"name":"Iliac branches of iliolumbar artery","muscles":["Iliacus"]},
-  {"name":"iliolumbar artery","muscles":["Psoas Major","Quadratus Lumborum"]},
-  {"name":"inferior alveolar artery","muscles":["Mentalis"]},
-  {"name":"inferior epigastric artery","muscles":["Pyramidalis","Transversus Abdominis"]},
-  {"name":"inferior genicular arteries","muscles":["Popliteus"]},
+  {"name":"Iliolumbar artery","muscles":["Psoas Major","Quadratus Lumborum"]},
+  {"name":"Inferior alveolar artery","muscles":["Mentalis"]},
+  {"name":"Inferior epigastric artery","muscles":["Pyramidalis","Transversus Abdominis"]},
+  {"name":"Inferior genicular arteries","muscles":["Popliteus"]},
   {"name":"Inferior gluteal artery","muscles":["Coccygeus (Ischiococcygeus)","Gluteus Maximus","Inferior Gemellus","Obturator Internus","Piriformis","Quadratus Femoris","Superior Gemellus"]},
   {"name":"Inferior labial artery","muscles":["Depressor Labii Inferioris"]},
-  {"name":"inferior phrenic arteries","muscles":["Diaphragm"]},
+  {"name":"Inferior phrenic arteries","muscles":["Diaphragm"]},
   {"name":"Inferior rectal artery","muscles":["External Anal Sphincter","Internal Anal Sphincter"]},
-  {"name":"inferior thyroid artery","muscles":["Sternohyoid","Sternothyroid"]},
-  {"name":"infraorbital artery","muscles":["Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi"]},
+  {"name":"Inferior thyroid artery","muscles":["Sternohyoid","Sternothyroid"]},
+  {"name":"Infraorbital artery","muscles":["Levator Anguli Oris","Levator Labii Superioris","Levator Labii Superioris Alaeque Nasi"]},
   {"name":"Internal pudendal artery","muscles":["Bulbospongiosus","Coccygeus (Ischiococcygeus)","Compressor Urethrae","Deep Transverse Perineal","External Urethral Sphincter","Iliococcygeus","Ischiocavernosus","Obturator Internus","Pubococcygeus","Puborectalis","Sphincter Urethrovaginalis","Superficial Transverse Perineal"]},
   {"name":"Internal thoracic artery","muscles":["Transversus Thoracis"]},
-  {"name":"lateral circumflex femoral artery","muscles":["Rectus Femoris","Sartorius","Tensor Fasciae Latae","Vastus Intermedius","Vastus Lateralis"]},
+  {"name":"Lateral circumflex femoral artery","muscles":["Rectus Femoris","Sartorius","Tensor Fasciae Latae","Vastus Intermedius","Vastus Lateralis"]},
   {"name":"Lateral plantar artery","muscles":["Abductor Digiti Minimi (Foot)","Adductor Hallucis","Flexor Digiti Minimi Brevis (Foot)","Quadratus Plantae"]},
   {"name":"Lateral sacral artery","muscles":["Iliocostalis Lumborum","Multifidus"]},
-  {"name":"lateral thoracic artery","muscles":["Pectoralis Major","Pectoralis Minor","Serratus Anterior","Subscapularis"]},
+  {"name":"Lateral thoracic artery","muscles":["Pectoralis Major","Pectoralis Minor","Serratus Anterior","Subscapularis"]},
   {"name":"Lingual artery","muscles":["Omohyoid"]},
   {"name":"Lower posterior intercostal arteries","muscles":["External Oblique","Internal Oblique","Transversus Abdominis"]},
-  {"name":"lumbar arteries","muscles":["Iliocostalis Lumborum","Interspinales","Intertransversarii","Longissimus Thoracis","Multifidus","Psoas Major","Psoas Minor","Quadratus Lumborum","Rotatores"]},
+  {"name":"Lumbar arteries","muscles":["Iliocostalis Lumborum","Interspinales","Intertransversarii","Longissimus Thoracis","Multifidus","Psoas Major","Psoas Minor","Quadratus Lumborum","Rotatores"]},
   {"name":"Masseteric artery","muscles":["Masseter"]},
-  {"name":"maxillary artery","muscles":["Buccinator","Masseter","Temporalis"]},
-  {"name":"medial circumflex femoral artery","muscles":["Adductor Brevis","Adductor Longus","Gracilis","Iliacus","Obturator Externus","Pectineus","Quadratus Femoris"]},
+  {"name":"Maxillary artery","muscles":["Buccinator","Masseter","Temporalis"]},
+  {"name":"Medial circumflex femoral artery","muscles":["Adductor Brevis","Adductor Longus","Gracilis","Iliacus","Obturator Externus","Pectineus","Quadratus Femoris"]},
   {"name":"Medial plantar artery","muscles":["Abductor Hallucis","Flexor Digitorum Brevis","Flexor Hallucis Brevis"]},
   {"name":"Median artery","muscles":[]},
-  {"name":"mental artery","muscles":["Depressor Anguli Oris","Mentalis"]},
-  {"name":"musculophrenic artery","muscles":["Diaphragm"]},
-  {"name":"obturator artery","muscles":["Gracilis","Obturator Externus","Pectineus"]},
-  {"name":"occipital artery","muscles":["Frontalis","Longissimus Capitis","Obliquus Capitis Inferior","Obliquus Capitis Superior","Occipitalis","Occipitofrontalis","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor","Semispinalis Capitis","Spinalis Capitis","Splenius Capitis","Sternocleidomastoid"]},
+  {"name":"Mental artery","muscles":["Depressor Anguli Oris","Mentalis"]},
+  {"name":"Musculophrenic artery","muscles":["Diaphragm"]},
+  {"name":"Obturator artery","muscles":["Gracilis","Obturator Externus","Pectineus"]},
+  {"name":"Occipital artery","muscles":["Frontalis","Longissimus Capitis","Obliquus Capitis Inferior","Obliquus Capitis Superior","Occipitalis","Occipitofrontalis","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor","Semispinalis Capitis","Spinalis Capitis","Splenius Capitis","Sternocleidomastoid"]},
   {"name":"Ophthalmic artery","muscles":["Nasalis","Orbicularis Oculi"]},
   {"name":"Palmar branch of ulnar artery","muscles":[]},
   {"name":"Palmar digital arteries","muscles":["Palmar Aponeurosis","Palmar Interossei (Hand)"]},
   {"name":"Palmar metacarpal arteries","muscles":[]},
-  {"name":"pectoral branch","muscles":["Pectoralis Major"]},
+  {"name":"Pectoral branch","muscles":["Pectoralis Major"]},
   {"name":"Pectoral branch of thoracoacromial artery","muscles":["Pectoralis Minor"]},
   {"name":"Pectoral branches of thoracoacromial artery","muscles":[]},
-  {"name":"perforating arteries","muscles":["Adductor Magnus","Biceps Femoris","Semimembranosus","Semitendinosus","Vastus Intermedius","Vastus Lateralis"]},
+  {"name":"Perforating arteries","muscles":["Adductor Magnus","Biceps Femoris","Semimembranosus","Semitendinosus","Vastus Intermedius","Vastus Lateralis"]},
   {"name":"Perforating arteries of posterior intercostal arteries","muscles":[]},
-  {"name":"perforating branch of fibular artery","muscles":["Fibularis Tertius"]},
+  {"name":"Perforating branch of fibular artery","muscles":["Fibularis Tertius"]},
   {"name":"Perforating branches of internal thoracic artery","muscles":[]},
   {"name":"Pericardiacophrenic artery","muscles":["Diaphragm"]},
   {"name":"Perineal artery","muscles":["Superficial Transverse Perineal"]},
-  {"name":"perineal branches","muscles":["Deep Transverse Perineal"]},
-  {"name":"plantar arch","muscles":["Adductor Hallucis","Dorsal Interossei (Foot)","Flexor Hallucis Brevis"]},
+  {"name":"Perineal branches","muscles":["Deep Transverse Perineal"]},
+  {"name":"Plantar arch","muscles":["Adductor Hallucis","Dorsal Interossei (Foot)","Flexor Hallucis Brevis"]},
   {"name":"Plantar metatarsal arteries","muscles":["Lumbricals (Foot)"]},
-  {"name":"popliteal artery","muscles":["Biceps Femoris","Plantaris","Popliteus","Semimembranosus","Semitendinosus"]},
+  {"name":"Popliteal artery","muscles":["Biceps Femoris","Plantaris","Popliteus","Semimembranosus","Semitendinosus"]},
   {"name":"Posterior and anterior intercostal arteries","muscles":["External Intercostals","Internal Intercostals"]},
-  {"name":"posterior auricular artery","muscles":["Sternocleidomastoid"]},
+  {"name":"Posterior auricular artery","muscles":["Sternocleidomastoid"]},
   {"name":"Posterior circumflex humeral artery","muscles":["Deltoid","Teres Minor","Triceps Brachii"]},
-  {"name":"posterior intercostal arteries","muscles":["Iliocostalis Cervicis","Iliocostalis Thoracis","Interspinales","Intertransversarii","Latissimus Dorsi","Levatores Costarum","Longissimus Cervicis","Longissimus Thoracis","Multifidus","Rectus Abdominis","Rhomboid Major","Rotatores","Semispinalis Cervicis","Semispinalis Thoracis","Serratus Posterior Inferior","Serratus Posterior Superior","Spinalis Thoracis","Splenius Cervicis","Subcostales","Trapezius"]},
+  {"name":"Posterior intercostal arteries","muscles":["Iliocostalis Cervicis","Iliocostalis Thoracis","Interspinales","Intertransversarii","Latissimus Dorsi","Levatores Costarum","Longissimus Cervicis","Longissimus Thoracis","Multifidus","Rectus Abdominis","Rhomboid Major","Rotatores","Semispinalis Cervicis","Semispinalis Thoracis","Serratus Posterior Inferior","Serratus Posterior Superior","Spinalis Thoracis","Splenius Cervicis","Subcostales","Trapezius"]},
   {"name":"Posterior interosseous artery","muscles":["Abductor Pollicis Longus","Extensor Carpi Ulnaris","Extensor Digiti Minimi","Extensor Digitorum","Extensor Indicis","Extensor Pollicis Brevis","Extensor Pollicis Longus","Supinator"]},
   {"name":"Posterior interosseous recurrent artery","muscles":["Anconeus"]},
   {"name":"Posterior tibial artery","muscles":["Flexor Digitorum Longus","Flexor Hallucis Longus","Soleus","Tibialis Posterior"]},
-  {"name":"posterior ulnar recurrent artery","muscles":["Flexor Carpi Ulnaris"]},
+  {"name":"Posterior ulnar recurrent artery","muscles":["Flexor Carpi Ulnaris"]},
   {"name":"Princeps pollicis artery","muscles":[]},
   {"name":"Proper palmar digital arteries","muscles":[]},
   {"name":"Pterygoid branches of maxillary artery","muscles":["Lateral Pterygoid","Medial Pterygoid"]},
-  {"name":"radial artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Flexor Carpi Radialis","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Teres"]},
-  {"name":"radial recurrent artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Supinator"]},
+  {"name":"Radial artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Flexor Carpi Radialis","Flexor Digitorum Superficialis","Flexor Pollicis Longus","Pronator Teres"]},
+  {"name":"Radial recurrent artery","muscles":["Brachioradialis","Extensor Carpi Radialis Brevis","Extensor Carpi Radialis Longus","Supinator"]},
   {"name":"Radialis indicis artery","muscles":[]},
-  {"name":"subcostal artery","muscles":["External Oblique","Internal Oblique"]},
+  {"name":"Subcostal artery","muscles":["External Oblique","Internal Oblique"]},
   {"name":"Submental artery","muscles":["Platysma"]},
   {"name":"Subscapular artery","muscles":["Subscapularis"]},
   {"name":"Superficial palmar arch","muscles":["Flexor Pollicis Brevis","Lumbricales (Hand)"]},
@@ -2172,17 +2167,17 @@ const ARTERY_DATA = [
   {"name":"Superior and inferior labial arteries","muscles":["Orbicularis Oris"]},
   {"name":"Superior gluteal artery","muscles":["Gluteus Maximus","Gluteus Medius","Gluteus Minimus","Piriformis","Tensor Fasciae Latae"]},
   {"name":"Superior rectal artery","muscles":["Internal Anal Sphincter"]},
-  {"name":"superior thoracic artery","muscles":["Serratus Anterior"]},
+  {"name":"Superior thoracic artery","muscles":["Serratus Anterior"]},
   {"name":"Superior thyroid artery","muscles":["Omohyoid","Sternocleidomastoid","Sternohyoid","Sternothyroid","Thyrohyoid"]},
   {"name":"Superior ulnar collateral artery","muscles":[]},
-  {"name":"supraorbital artery","muscles":["Corrugator Supercilii"]},
-  {"name":"suprascapular artery","muscles":["Infraspinatus","Platysma","Subclavius","Supraspinatus"]},
+  {"name":"Supraorbital artery","muscles":["Corrugator Supercilii"]},
+  {"name":"Suprascapular artery","muscles":["Infraspinatus","Platysma","Subclavius","Supraspinatus"]},
   {"name":"Supratrochlear artery","muscles":["Corrugator Supercilii"]},
   {"name":"Sural arteries","muscles":["Gastrocnemius (Medial & Lateral Head)","Plantaris"]},
-  {"name":"thoracoacromial artery","muscles":["Deltoid","Pectoralis Major"]},
+  {"name":"Thoracoacromial artery","muscles":["Deltoid","Pectoralis Major"]},
   {"name":"Thoracodorsal artery","muscles":["Latissimus Dorsi","Serratus Anterior","Teres Major"]},
   {"name":"Transverse cervical artery","muscles":["Anterior Scalene","Iliocostalis Cervicis","Longissimus Capitis","Longissimus Cervicis","Middle Scalene","Posterior Scalene","Semispinalis Capitis","Semispinalis Cervicis","Spinalis Cervicis","Splenius Capitis","Splenius Cervicis","Trapezius"]},
-  {"name":"transverse facial artery","muscles":["Risorius","Zygomaticus Major","Zygomaticus Minor"]},
+  {"name":"Transverse facial artery","muscles":["Risorius","Zygomaticus Major","Zygomaticus Minor"]},
   {"name":"Ulnar artery","muscles":["Abductor Digiti Minimi (Hand)","Extensor Carpi Ulnaris","Flexor Carpi Ulnaris","Flexor Digiti Minimi Brevis (Hand)","Flexor Digitorum Profundus","Flexor Digitorum Superficialis","Opponens Digiti Minimi","Palmaris Longus","Pronator Teres"]},
   {"name":"Ulnar recurrent artery","muscles":["Flexor Carpi Ulnaris"]},
   {"name":"Vertebral artery","muscles":["Obliquus Capitis Inferior","Obliquus Capitis Superior","Rectus Capitis Posterior Major","Rectus Capitis Posterior Minor"]}
@@ -3342,8 +3337,24 @@ function addMuscle() {
   const notes       = document.getElementById('inp-notes').value.trim();
   const errEl     = document.getElementById('add-error');
 
-  if (!name)   { errEl.textContent = 'Name is required.'; return; }
-  if (!region) { errEl.textContent = 'Region is required.'; return; }
+  // Clear previous errors
+  ['inp-name','inp-region'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.borderColor = '';
+  });
+  if (!name) {
+    errEl.textContent = 'Name is required.';
+    const el = document.getElementById('inp-name');
+    if (el) el.style.borderColor = 'var(--err)';
+    el?.focus();
+    return;
+  }
+  if (!region) {
+    errEl.textContent = 'Region is required.';
+    const el = document.getElementById('inp-region');
+    if (el) el.style.borderColor = 'var(--err)';
+    return;
+  }
   if (muscles.find(m => m.name.toLowerCase() === name.toLowerCase())) {
     errEl.textContent = 'Already exists.'; return;
   }
@@ -5122,16 +5133,17 @@ function initArteryPanZoom() {
 
 
 // ── EXAM BLANC ────────────────────────────────────────────────────────────────
-let examPool = [], examIdx = 0, examCorrect = 0, examAnswered = false, examInstant = false;
+let examPool = [], examIdx = 0, examCorrect = 0, examAnswered = false, examInstant = false, examCatScores = {};
 
 function initExamBlanc() {
   const cats = [...new Set(EXAM_QUESTIONS.map(q => q.cat))].sort();
   const container = document.getElementById('exam-cat-checks');
   if (container && !container.children.length) {
+    const FR = {'Skull':'Crâne','Thorax':'Thorax','Abdomen':'Abdomen','Shoulder':'Épaule','Upper Limb':'Membre supérieur','Lower Limb':'Membre inférieur','Nerves':'Nerfs','Arteries':'Artères','Clinical':'Clinique'};
     cats.forEach(c => {
       container.innerHTML += `<label class="recall-region-label">
         <input type="checkbox" value="${esc(c)}" checked>
-        <span>${esc(c)}</span>
+        <span>${FR[c] || esc(c)}</span>
       </label>`;
     });
   }
@@ -5151,7 +5163,7 @@ function startExamBlanc() {
 
   examPool = EXAM_QUESTIONS.filter(q => selCats.includes(q.cat));
   if (shuffle) examPool.sort(() => Math.random() - 0.5);
-  examIdx = 0; examCorrect = 0; examAnswered = false;
+  examIdx = 0; examCorrect = 0; examAnswered = false; examCatScores = {};
 
   document.getElementById('exam-setup').style.display   = 'none';
   document.getElementById('exam-results').style.display = 'none';
@@ -5200,10 +5212,14 @@ function checkExamAnswer(chosen, correct) {
 
   const opts = document.querySelectorAll('.exam-opt');
   opts[correct].classList.add('exam-opt--correct');
+  const q = examPool[examIdx];
+  if (!examCatScores[q.cat]) examCatScores[q.cat] = {correct:0,total:0};
+  examCatScores[q.cat].total++;
   if (chosen !== correct) {
     opts[chosen].classList.add('exam-opt--wrong');
   } else {
     examCorrect++;
+    examCatScores[q.cat].correct++;
   }
 
   if (examInstant) {
@@ -5227,24 +5243,33 @@ function showExamResults() {
   const total = examPool.length;
   const pct = Math.round(examCorrect / total * 100);
   const color = pct >= 70 ? 'var(--ok)' : pct >= 50 ? '#e67e22' : 'var(--err)';
+  const emoji = pct >= 70 ? '🎉' : pct >= 50 ? '👍' : '📚';
 
-  // Score by category
-  const bycat = {};
-  examPool.forEach((q, i) => {
-    if (!bycat[q.cat]) bycat[q.cat] = {correct:0,total:0};
-    bycat[q.cat].total++;
-  });
-  // We need to track per-question results — rebuild with answered tracking
-  // Simple: just show total for now
+  const FR = {'Skull':'Crâne','Thorax':'Thorax','Abdomen':'Abdomen','Shoulder':'Épaule','Upper Limb':'Membre sup.','Lower Limb':'Membre inf.','Nerves':'Nerfs','Arteries':'Artères','Clinical':'Clinique'};
 
   document.getElementById('exam-results-content').innerHTML =
-    '<div style="text-align:center;padding:2rem 1rem">'
-    + '<div style="font-size:56px;font-weight:800;color:' + color + '">' + pct + '%</div>'
-    + '<div style="font-size:18px;color:var(--text2);margin-top:4px">' + examCorrect + ' / ' + total + ' correct</div>'
-    + '<div style="display:flex;gap:8px;justify-content:center;margin-top:1.5rem">'
-    + '<button class="btn btn-primary" style="background:#c0392b;border-color:#c0392b" onclick="startExamBlanc()">Retry</button>'
-    + '<button class="btn" onclick="showExamSetup()">Settings</button>'
+    '<div style="text-align:center;padding:1.5rem 1rem 1rem">'
+    + '<div style="font-size:40px">' + emoji + '</div>'
+    + '<div style="font-size:52px;font-weight:800;color:' + color + ';margin-top:4px">' + pct + '%</div>'
+    + '<div style="font-size:16px;color:var(--text2);margin-top:4px">' + examCorrect + ' / ' + total + ' correct</div>'
     + '</div>'
+    + '<div style="padding:0 16px 16px">'
+    + '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:10px">Score by category</div>'
+    + Object.entries(examCatScores).sort((a,b)=>b[1].correct/b[1].total - a[1].correct/a[1].total).map(([cat,s]) => {
+        const p = Math.round(s.correct / s.total * 100);
+        const c = p >= 70 ? 'var(--ok)' : p >= 50 ? '#e67e22' : 'var(--err)';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">'
+          + '<div style="flex:1;font-size:13px">' + (FR[cat]||cat) + '</div>'
+          + '<div style="font-size:12px;color:var(--text3)">' + s.correct + '/' + s.total + '</div>'
+          + '<div style="width:80px;height:6px;background:var(--border);border-radius:99px;overflow:hidden">'
+          + '<div style="height:100%;width:' + p + '%;background:' + c + ';border-radius:99px"></div></div>'
+          + '<div style="font-size:12px;font-weight:700;color:' + c + ';width:36px;text-align:right">' + p + '%</div>'
+          + '</div>';
+      }).join('')
+    + '</div>'
+    + '<div style="padding:0 16px 24px;display:flex;gap:8px">'
+    + '<button class="btn btn-primary btn-full" style="background:#c0392b;border-color:#c0392b" onclick="startExamBlanc()">Retry</button>'
+    + '<button class="btn btn-full" onclick="showExamSetup()">Settings</button>'
     + '</div>';
 }
 
@@ -5273,7 +5298,10 @@ function revealOpenAnswer() {
 }
 
 function gradeOpen(correct) {
-  if (correct) examCorrect++;
+  const q = examPool[examIdx];
+  if (!examCatScores[q.cat]) examCatScores[q.cat] = {correct:0,total:0};
+  examCatScores[q.cat].total++;
+  if (correct) { examCorrect++; examCatScores[q.cat].correct++; }
   examIdx++;
   renderExamCard();
 }
@@ -5286,7 +5314,7 @@ function stopExamBlanc() {
 }
 
 // ── BONES ARTICULATION RECALL ─────────────────────────────────────
-let barticPool = [], barticIdx = 0, barticFound = new Set(), barticTotal = 0;
+let barticPool = [], barticIdx = 0, barticFound = new Set(), barticTotal = 0, barticSession = {totalFound:0,totalPossible:0};
 
 function initBonesArticulation() {
   const regions = [...new Set(bonesData.map(b => b.region))].sort();
@@ -5294,22 +5322,33 @@ function initBonesArticulation() {
   if (container && !container.children.length) {
     regions.forEach(r => {
       const color = brc(r);
-      container.innerHTML += `<label class="recall-region-label">
-        <input type="checkbox" value="${esc(r)}" checked>
-        <span class="region-dot" style="background:${color}"></span>
-        <span>${esc(r)}</span>
-      </label>`;
+      const chip = document.createElement('div');
+      chip.className = 'region-chip active';
+      chip.dataset.region = r;
+      chip.style.cssText = 'border-color:' + color + ';color:' + color;
+      chip.innerHTML = '<span class="region-dot" style="background:' + color + '"></span>' + esc(r);
+      chip.onclick = () => {
+        chip.classList.toggle('active');
+        if (chip.classList.contains('active')) {
+          chip.style.cssText = 'border-color:' + color + ';color:' + color + ';background:' + color + '22';
+        } else {
+          chip.style.cssText = 'border-color:' + color + ';color:' + color;
+        }
+      };
+      chip.style.background = color + '22';
+      container.appendChild(chip);
     });
   }
 }
 
 function startBonesArticulation() {
-  const sel = [...document.querySelectorAll('#bartic-region-checks input:checked')].map(c => c.value);
+  const sel = [...document.querySelectorAll('#bartic-region-checks .region-chip.active')].map(c => c.dataset.region);
   if (!sel.length) { toast('Select at least one region!'); return; }
 
   barticPool = bonesData.filter(b => sel.includes(b.region) && (b.features?.articulations?.length > 0));
   barticPool.sort(() => Math.random() - 0.5);
   barticIdx = 0;
+  barticSession = { totalFound: 0, totalPossible: barticPool.reduce((s,b) => s+(b.features?.articulations?.length||0), 0) };
 
   document.getElementById('bartic-setup').style.display = 'none';
   document.getElementById('bartic-session').style.display = 'block';
@@ -5318,9 +5357,16 @@ function startBonesArticulation() {
 
 function renderBarticCard() {
   if (barticIdx >= barticPool.length) {
+    const pct = barticPool.length ? Math.round(barticSession.totalFound / barticSession.totalPossible * 100) : 0;
+    const color = pct >= 70 ? 'var(--ok)' : pct >= 50 ? '#e67e22' : 'var(--err)';
     document.getElementById('bartic-card').innerHTML =
-      '<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">All done!</div></div>';
-    document.getElementById('bartic-progress').textContent = '';
+      '<div style="text-align:center;padding:2rem 1rem">'
+      + '<div style="font-size:48px">🎉</div>'
+      + '<div style="font-size:28px;font-weight:800;color:' + color + ';margin-top:8px">' + pct + '%</div>'
+      + '<div style="color:var(--text3);font-size:14px;margin-top:4px">' + barticSession.totalFound + ' / ' + barticSession.totalPossible + ' articulations found</div>'
+      + '<button class="btn btn-primary" style="margin-top:1.5rem" onclick="stopBonesArticulation()">Back to setup</button>'
+      + '</div>';
+    document.getElementById('bartic-progress').textContent = 'Complete!';
     return;
   }
 
@@ -5339,6 +5385,7 @@ function renderBarticCard() {
     + '<span class="brecall-region-tag" style="background:' + color + '22;color:' + color + '">' + esc(bone.region) + '</span>'
     + '<h2 class="brecall-bone-name">' + esc(bone.name) + '</h2>'
     + '<p style="color:var(--text3);font-size:13px;margin:4px 0 0">Articulates with <strong>' + total + '</strong> bone' + (total!==1?'s':'') + ' — name them all</p>'
+    + '<div id="bartic-score" style="font-size:12px;color:var(--text3);margin-top:4px">Found: <strong id="bartic-found-count">0</strong> / ' + total + '</div>'
     + '</div>'
 
     + '<div class="bartic-found-row" id="bartic-found-row"></div>'
@@ -5346,12 +5393,12 @@ function renderBarticCard() {
     + '<div style="padding:12px 16px;border-top:1px solid var(--border)">'
     + '<input type="text" id="bartic-input" class="brecall-input" placeholder="Type a bone name and press Enter..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"'
     + ' onkeydown="barticKey(event,' + JSON.stringify(bone.id) + ',' + JSON.stringify(articulations) + ')">'
-    + '<div id="bartic-feedback" style="font-size:12px;color:var(--err);min-height:18px;margin-top:4px"></div>'
+    + '<div id="bartic-feedback" style="font-size:12px;color:var(--err);min-height:20px;margin-top:6px;display:block"></div>'
     + '</div>'
 
     + '<div style="display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--border)">'
     + '<button class="btn btn-sm" onclick="barticGiveUp(' + JSON.stringify(articulations) + ')">Show all</button>'
-    + '<button class="btn btn-sm btn-primary" style="margin-left:auto" onclick="barticNext()">Next bone &rarr;</button>'
+    + '<button class="btn btn-sm btn-primary" id="bartic-next-btn" style="margin-left:auto;opacity:0.4" onclick="barticNextConfirm(' + JSON.stringify(articulations) + ')">Next bone &rarr;</button>'
     + '</div>';
 
   setTimeout(() => document.getElementById('bartic-input')?.focus(), 50);
@@ -5367,6 +5414,8 @@ function renderBarticFound(articulations) {
       + (found ? esc(a) : '?')
       + '</span>';
   }).join('');
+  const countEl = document.getElementById('bartic-found-count');
+  if (countEl) countEl.textContent = barticFound.size;
 }
 
 function barticKey(e, boneId, articulations) {
@@ -5393,9 +5442,11 @@ function barticKey(e, boneId, articulations) {
     fb.style.color = 'var(--ok)';
     fb.textContent = '\u2713 ' + match;
     renderBarticFound(articulations);
+    const nb = document.getElementById('bartic-next-btn'); if (nb) nb.style.opacity = '1';
     // Auto-advance if all found
     if (barticFound.size === articulations.length) {
       fb.textContent = '\u2713 All found! Moving on...';
+      barticSession.totalFound += barticFound.size;
       setTimeout(barticNext, 800);
     }
   } else if (match) {
@@ -5411,11 +5462,28 @@ function barticKey(e, boneId, articulations) {
 }
 
 function barticGiveUp(articulations) {
+  // Add all to found set
   articulations.forEach(a => barticFound.add(a.toLowerCase()));
-  renderBarticFound(articulations);
+  // Directly update chips in DOM
+  const row = document.getElementById('bartic-found-row');
+  if (row) {
+    row.innerHTML = articulations.map(a =>
+      '<span class="bartic-chip bartic-chip--found">' + esc(a) + '</span>'
+    ).join('');
+  }
   const inp = document.getElementById('bartic-input');
-  if (inp) inp.disabled = true;
-  document.getElementById('bartic-feedback').textContent = '';
+  if (inp) { inp.disabled = true; inp.style.opacity = '0.5'; }
+  const fb = document.getElementById('bartic-feedback');
+  if (fb) { fb.style.color = 'var(--text3)'; fb.textContent = 'All answers revealed.'; }
+}
+
+function barticNextConfirm(articulations) {
+  const remaining = articulations.length - barticFound.size;
+  if (remaining > 0 && barticFound.size === 0) {
+    toast('Try at least one! Click "Show all" if you want to skip.');
+    return;
+  }
+  barticNext();
 }
 
 function barticNext() {
@@ -6847,15 +6915,15 @@ function toggleDueMode() {
   const btn = document.getElementById('cards-due-btn');
   if (cardsDueMode) {
     btn.classList.add('active');
-    btn.style.background = '#e74c3c';
+    btn.style.background = 'var(--accent)';
     btn.style.color = '#fff';
-    btn.style.borderColor = '#e74c3c';
+    btn.style.borderColor = 'var(--accent)';
     setCardsType('muscle'); // trigger initCards with due filter
   } else {
     btn.classList.remove('active');
     btn.style.background = '';
-    btn.style.color = '#e74c3c';
-    btn.style.borderColor = '#e74c3c';
+    btn.style.color = '';
+    btn.style.borderColor = '';
     initCards();
   }
 }
