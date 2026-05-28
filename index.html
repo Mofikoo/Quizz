@@ -21,9 +21,9 @@
       <button class="nav-btn" data-panel="add"       onclick="switchPanel('add')">+ Add</button>
       <button class="nav-btn active" data-panel="list" onclick="switchPanel('list')">Muscles <span class="nav-badge" id="nav-count">179</span></button>
       <button class="nav-btn" data-panel="bones"     onclick="switchPanel('bones')">Bones <span class="nav-badge" id="nav-bones-count">53</span></button>
-      <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge">58</span></button>
-      <button class="nav-btn" data-panel="arteries"  onclick="switchPanel('arteries')">Arteries <span class="nav-badge">119</span></button>
-      <button class="nav-btn" data-panel="nerves"    onclick="switchPanel('nerves')">Nerves <span class="nav-badge">41</span></button>
+      <button class="nav-btn" data-panel="ligaments" onclick="switchPanel('ligaments')">Ligaments <span class="nav-badge" id="nav-ligs-count">58</span></button>
+      <button class="nav-btn" data-panel="arteries"  onclick="switchPanel('arteries')">Arteries <span class="nav-badge" id="nav-art-count">119</span></button>
+      <button class="nav-btn" data-panel="nerves"    onclick="switchPanel('nerves')">Nerves <span class="nav-badge" id="nav-nerves-count">41</span></button>
       <button class="nav-btn" data-panel="cards"     onclick="switchPanel('cards')">Cards</button>
       <button class="nav-btn" data-panel="quiz"      onclick="switchPanel('quiz')">Quiz</button>
       <button class="nav-btn" data-panel="stats"     onclick="switchPanel('stats')">Stats</button>
@@ -3386,11 +3386,31 @@ function switchPanel(name) {
   if (name === 'visual')  { initVisual(); }
 }
 
-function updateNavNecknt() {
-  const n = muscles.length;
-  document.getElementById('nav-count').textContent = n;
-  const m = document.getElementById('nav-count-mobile');
-  if (m) m.textContent = n;
+function updateNavNecknt() { updateAllNavBadges(); } // legacy alias
+
+function updateAllNavBadges() {
+  // Muscles
+  const muscleCount = muscles.length;
+  const el = document.getElementById('nav-count');
+  if (el) el.textContent = muscleCount;
+  const mob = document.getElementById('nav-count-mobile');
+  if (mob) mob.textContent = muscleCount;
+
+  // Bones
+  const bonesEl = document.getElementById('nav-bones-count');
+  if (bonesEl) bonesEl.textContent = (typeof bonesData !== 'undefined') ? bonesData.length : '';
+
+  // Ligaments
+  const ligsEl = document.getElementById('nav-ligs-count');
+  if (ligsEl) ligsEl.textContent = (typeof ligsData !== 'undefined') ? ligsData.length : '';
+
+  // Arteries
+  const artEl = document.getElementById('nav-art-count');
+  if (artEl) artEl.textContent = (typeof ARTERY_DATA !== 'undefined') ? ARTERY_DATA.length : '';
+
+  // Nerves
+  const nervesEl = document.getElementById('nav-nerves-count');
+  if (nervesEl) nervesEl.textContent = (typeof NERVE_DATA !== 'undefined') ? NERVE_DATA.length : '';
 }
 
 // ── ADD ───────────────────────────────────────────────────────────────────────
